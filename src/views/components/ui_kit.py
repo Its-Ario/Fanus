@@ -68,9 +68,7 @@ class SecondaryButton(QPushButton):
 
 
 class StatCard(QFrame):
-    def __init__(
-        self, title: str, value, icon_emoji: str = "📊", accent_color: str | None = None
-    ):
+    def __init__(self, title: str, value, icon_emoji: str = "📊", accent_color: str | None = None):
         super().__init__()
         accent = accent_color or Colors.PRIMARY
         self.setFixedHeight(100)
@@ -101,15 +99,11 @@ class StatCard(QFrame):
 
         value_label = QLabel(to_persian_digits(value))
         value_label.setAlignment(Qt.AlignRight)
-        value_label.setStyleSheet(
-            f"font-size: 22px; font-weight: 800; color: {Colors.TEXT_MAIN};"
-        )
+        value_label.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {Colors.TEXT_MAIN};")
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignRight)
-        title_label.setStyleSheet(
-            f"font-size: 12px; color: {Colors.TEXT_MUTED}; font-weight: 500;"
-        )
+        title_label.setStyleSheet(f"font-size: 12px; color: {Colors.TEXT_MUTED}; font-weight: 500;")
 
         text_box.addWidget(value_label)
         text_box.addWidget(title_label)
@@ -168,9 +162,7 @@ class AIInsightCard(QFrame):
 
         text = QLabel(message)
         text.setWordWrap(True)
-        text.setStyleSheet(
-            f"color: {Colors.AI_ACCENT}; font-size: 13px; font-weight: 600;"
-        )
+        text.setStyleSheet(f"color: {Colors.AI_ACCENT}; font-size: 13px; font-weight: 600;")
 
         layout.addWidget(icon)
         layout.addWidget(text, stretch=1)
@@ -200,9 +192,7 @@ class Avatar(QLabel):
         super().__init__()
         self.setFixedSize(size, size)
         parts = full_name.split()
-        initials = (
-            "".join([p[0] for p in parts[:2]]) if len(parts) > 1 else full_name[:2]
-        )
+        initials = "".join([p[0] for p in parts[:2]]) if len(parts) > 1 else full_name[:2]
 
         palette = [Colors.PRIMARY, Colors.AI_ACCENT, "#DB2777", "#EA580C", "#0891B2"]
         color = palette[hash(full_name) % len(palette)]
@@ -243,9 +233,7 @@ class StudentRow(QFrame):
         text_box = QVBoxLayout()
         text_box.setSpacing(1)
         name_label = QLabel(name)
-        name_label.setStyleSheet(
-            f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};"
-        )
+        name_label.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};")
         sub_label = QLabel(subtitle)
         sub_label.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
         text_box.addWidget(name_label)
@@ -285,9 +273,7 @@ class EmptyState(QWidget):
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(
-            f"font-size: 15px; font-weight: 700; color: {Colors.TEXT_MAIN};"
-        )
+        title_label.setStyleSheet(f"font-size: 15px; font-weight: 700; color: {Colors.TEXT_MAIN};")
 
         sub_label = QLabel(subtitle)
         sub_label.setAlignment(Qt.AlignCenter)
@@ -366,9 +352,7 @@ class SectionHeader(QWidget):
         title_label = QLabel(title)
         title_label.setFixedHeight(22)
         title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        title_label.setStyleSheet(
-            f"font-size: 16px; font-weight: 700; color: {Colors.TEXT_MAIN};"
-        )
+        title_label.setStyleSheet(f"font-size: 16px; font-weight: 700; color: {Colors.TEXT_MAIN};")
         layout.addWidget(title_label)
         layout.addStretch()
 

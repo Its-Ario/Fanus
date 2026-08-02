@@ -69,9 +69,7 @@ class MainWindow(QMainWindow):
         dashboard_page = DashboardPage()
         self.pages.addWidget(dashboard_page)
 
-        self.sidebar.add_nav_item(
-            "🏠", "داشبورد", lambda: self.pages.setCurrentIndex(0)
-        )
+        self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self.pages.setCurrentIndex(0))
         self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: print("TODO"))
         self.sidebar.add_nav_item("📅", "برنامه‌ها", lambda: print("TODO"))
         self.sidebar.add_nav_item("📊", "آمار", lambda: print("TODO"))
