@@ -11,10 +11,9 @@ from PyQt5.QtWidgets import (
 )
 
 from src.styles.app_style import APP_STYLE
-from src.utils.get_version import get_version
-from src.utils.persian_utils import to_persian_digits
 from src.views.components.sidebar import Sidebar
 from src.views.components.title_bar import TitleBar
+from src.views.pages.dashboard_page import DashboardPage
 
 
 class MainWindow(QMainWindow):
@@ -54,7 +53,7 @@ class MainWindow(QMainWindow):
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(14, 0, 10, 0)
 
-        footer_label = QLabel(f"فانوس - نسخه {to_persian_digits(get_version())}")
+        footer_label = QLabel("فانوس - نسخه ۱.۰.۰")
         footer_label.setObjectName("FooterText")
         footer_layout.addWidget(footer_label)
         footer_layout.addStretch()
@@ -67,6 +66,8 @@ class MainWindow(QMainWindow):
         self._setup_navigation()
 
     def _setup_navigation(self):
+        dashboard_page = DashboardPage()
+        self.pages.addWidget(dashboard_page)
 
         self.sidebar.add_nav_item(
             "🏠", "داشبورد", lambda: self.pages.setCurrentIndex(0)

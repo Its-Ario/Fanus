@@ -8,6 +8,7 @@ class Colors:
     AI_ACCENT = "#7C3AED"
     AI_BG = "#F5F3FF"
     AI_BORDER = "#DDD6FE"
+    AI_HOVER = "#6D28D9"
 
     # Status & Alerts
     SUCCESS = "#047857"
