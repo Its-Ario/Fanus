@@ -46,6 +46,7 @@ class PrimaryButton(QPushButton):
             QPushButton:pressed {{ background-color: {Colors.PRIMARY_ACTIVE}; }}
         """)
 
+
 class SecondaryButton(QPushButton):
     def __init__(self, text: str, icon: str | None = None):
         label = f"{icon}  {text}" if icon else text
@@ -65,8 +66,11 @@ class SecondaryButton(QPushButton):
             QPushButton:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
         """)
 
+
 class StatCard(QFrame):
-    def __init__(self, title: str, value, icon_emoji: str = "📊", accent_color: str | None = None):
+    def __init__(
+        self, title: str, value, icon_emoji: str = "📊", accent_color: str | None = None
+    ):
         super().__init__()
         accent = accent_color or Colors.PRIMARY
         self.setFixedHeight(100)
@@ -97,11 +101,15 @@ class StatCard(QFrame):
 
         value_label = QLabel(to_persian_digits(value))
         value_label.setAlignment(Qt.AlignRight)
-        value_label.setStyleSheet(f"font-size: 22px; font-weight: 800; color: {Colors.TEXT_MAIN};")
+        value_label.setStyleSheet(
+            f"font-size: 22px; font-weight: 800; color: {Colors.TEXT_MAIN};"
+        )
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignRight)
-        title_label.setStyleSheet(f"font-size: 12px; color: {Colors.TEXT_MUTED}; font-weight: 500;")
+        title_label.setStyleSheet(
+            f"font-size: 12px; color: {Colors.TEXT_MUTED}; font-weight: 500;"
+        )
 
         text_box.addWidget(value_label)
         text_box.addWidget(title_label)
@@ -121,9 +129,9 @@ class RiskBadge(QLabel):
     def set_level(self, level: str):
         level = level.capitalize()
         config = {
-            "Low":    (Colors.SUCCESS_BG, Colors.SUCCESS, "🟢 کم"),
+            "Low": (Colors.SUCCESS_BG, Colors.SUCCESS, "🟢 کم"),
             "Medium": (Colors.WARNING_BG, Colors.WARNING, "🟡 متوسط"),
-            "High":   (Colors.ERROR_BG,   Colors.ERROR,   "🔴 زیاد"),
+            "High": (Colors.ERROR_BG, Colors.ERROR, "🔴 زیاد"),
         }
         bg, text_color, label = config.get(level, config["Low"])
 
@@ -137,6 +145,7 @@ class RiskBadge(QLabel):
             border-radius: 10px;
         """)
         self.setFixedHeight(24)
+
 
 class AIInsightCard(QFrame):
     def __init__(self, message: str, on_review=None):
@@ -159,7 +168,9 @@ class AIInsightCard(QFrame):
 
         text = QLabel(message)
         text.setWordWrap(True)
-        text.setStyleSheet(f"color: {Colors.AI_ACCENT}; font-size: 13px; font-weight: 600;")
+        text.setStyleSheet(
+            f"color: {Colors.AI_ACCENT}; font-size: 13px; font-weight: 600;"
+        )
 
         layout.addWidget(icon)
         layout.addWidget(text, stretch=1)
@@ -183,12 +194,15 @@ class AIInsightCard(QFrame):
             review_btn.clicked.connect(on_review)
             layout.addWidget(review_btn)
 
+
 class Avatar(QLabel):
     def __init__(self, full_name: str, size: int = 40):
         super().__init__()
         self.setFixedSize(size, size)
         parts = full_name.split()
-        initials = "".join([p[0] for p in parts[:2]]) if len(parts) > 1 else full_name[:2]
+        initials = (
+            "".join([p[0] for p in parts[:2]]) if len(parts) > 1 else full_name[:2]
+        )
 
         palette = [Colors.PRIMARY, Colors.AI_ACCENT, "#DB2777", "#EA580C", "#0891B2"]
         color = palette[hash(full_name) % len(palette)]
@@ -202,6 +216,7 @@ class Avatar(QLabel):
             font-size: {int(size * 0.35)}px;
             border-radius: {size // 2}px;
         """)
+
 
 class StudentRow(QFrame):
     def __init__(self, name: str, subtitle: str, risk_level: str, on_click=None):
@@ -228,7 +243,9 @@ class StudentRow(QFrame):
         text_box = QVBoxLayout()
         text_box.setSpacing(1)
         name_label = QLabel(name)
-        name_label.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};")
+        name_label.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+        )
         sub_label = QLabel(subtitle)
         sub_label.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
         text_box.addWidget(name_label)
@@ -247,8 +264,16 @@ class StudentRow(QFrame):
             self._on_click()
         super().mousePressEvent(event)
 
+
 class EmptyState(QWidget):
-    def __init__(self, icon_emoji: str, title: str, subtitle: str, cta_text: str | None = None, on_cta=None):
+    def __init__(
+        self,
+        icon_emoji: str,
+        title: str,
+        subtitle: str,
+        cta_text: str | None = None,
+        on_cta=None,
+    ):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignCenter)
@@ -260,7 +285,9 @@ class EmptyState(QWidget):
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
-        title_label.setStyleSheet(f"font-size: 15px; font-weight: 700; color: {Colors.TEXT_MAIN};")
+        title_label.setStyleSheet(
+            f"font-size: 15px; font-weight: 700; color: {Colors.TEXT_MAIN};"
+        )
 
         sub_label = QLabel(subtitle)
         sub_label.setAlignment(Qt.AlignCenter)
@@ -277,6 +304,7 @@ class EmptyState(QWidget):
                 btn.clicked.connect(on_cta)
             layout.addSpacing(6)
             layout.addWidget(btn, alignment=Qt.AlignCenter)
+
 
 class SearchInput(QLineEdit):
     def __init__(self, placeholder="جستجوی دانش‌آموزان..."):
@@ -298,8 +326,10 @@ class SearchInput(QLineEdit):
             }}
         """)
 
+
 class ProgressBar(QWidget):
     """Custom-painted RTL progress bar. Fills from RIGHT to LEFT."""
+
     def __init__(self, value: int = 0, color: str | None = None):
         super().__init__()
         self.value = max(0, min(100, value))
@@ -336,7 +366,9 @@ class SectionHeader(QWidget):
         title_label = QLabel(title)
         title_label.setFixedHeight(22)
         title_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        title_label.setStyleSheet(f"font-size: 16px; font-weight: 700; color: {Colors.TEXT_MAIN};")
+        title_label.setStyleSheet(
+            f"font-size: 16px; font-weight: 700; color: {Colors.TEXT_MAIN};"
+        )
         layout.addWidget(title_label)
         layout.addStretch()
 
@@ -358,15 +390,18 @@ class SectionHeader(QWidget):
                 btn.clicked.connect(on_action)
             layout.addWidget(btn)
 
+
 class Divider(QFrame):
     def __init__(self, margin_v: int = 8):
         super().__init__()
         self.setFixedHeight(1)
         self.setStyleSheet(f"background-color: {Colors.BORDER}; border: none;")
         self.setContentsMargins(0, margin_v, 0, margin_v)
-        
+
+
 class Card(QFrame):
     """Generic white card container with border + soft shadow. Use as a wrapper for custom sections."""
+
     def __init__(self, padding: int = 18):
         super().__init__()
         self.setObjectName("GenericCard")

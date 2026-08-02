@@ -40,7 +40,9 @@ class DashboardPage(QWidget):
         title_box = QVBoxLayout()
         title_box.setSpacing(2)
         page_title = QLabel("داشبورد")
-        page_title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
+        page_title.setStyleSheet(
+            f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};"
+        )
 
         page_subtitle = QLabel("خلاصه‌ای از وضعیت دانش‌آموزان و برنامه‌های مطالعاتی")
         page_subtitle.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
@@ -60,14 +62,18 @@ class DashboardPage(QWidget):
         stats_row.addWidget(StatCard("کل دانش‌آموزان", 312, "👥"))
         stats_row.addWidget(StatCard("ریسک بالا", 8, "⚠️", accent_color=Colors.ERROR))
         stats_row.addWidget(StatCard("برنامه‌های فعال", 289, "📚"))
-        stats_row.addWidget(StatCard("نرخ تکمیل هفتگی", "۷۸٪", "✅", accent_color=Colors.SUCCESS))
+        stats_row.addWidget(
+            StatCard("نرخ تکمیل هفتگی", "۷۸٪", "✅", accent_color=Colors.SUCCESS)
+        )
 
         layout.addLayout(stats_row)
 
-        layout.addWidget(AIInsightCard(
-            "۳ دانش‌آموز بر اساس چک-این‌های این هفته نشانه‌های اولیه فرسودگی تحصیلی دارند.",
-            on_review=lambda: print("Navigate to risk page")
-        ))
+        layout.addWidget(
+            AIInsightCard(
+                "۳ دانش‌آموز بر اساس چک-این‌های این هفته نشانه‌های اولیه فرسودگی تحصیلی دارند.",
+                on_review=lambda: print("Navigate to risk page"),
+            )
+        )
 
         columns = QHBoxLayout()
         columns.setSpacing(18)
@@ -88,7 +94,12 @@ class DashboardPage(QWidget):
         ]
         for name, subtitle, risk in students:
             attention_card.body_layout.addWidget(
-                StudentRow(name, subtitle, risk, on_click=lambda n=name: print(f"Open profile: {n}"))
+                StudentRow(
+                    name,
+                    subtitle,
+                    risk,
+                    on_click=lambda n=name: print(f"Open profile: {n}"),
+                )
             )
 
         columns.addWidget(attention_card, stretch=6)
@@ -99,7 +110,9 @@ class DashboardPage(QWidget):
         progress_card = Card()
         progress_title = QLabel("پیشرفت هفتگی کلاس‌ها")
         progress_title.setAlignment(Qt.AlignRight)
-        progress_title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {Colors.TEXT_MAIN};")
+        progress_title.setStyleSheet(
+            f"font-size: 14px; font-weight: 700; color: {Colors.TEXT_MAIN};"
+        )
         progress_card.body_layout.addWidget(progress_title)
         progress_card.body_layout.addWidget(Divider())
 
@@ -116,10 +129,14 @@ class DashboardPage(QWidget):
             label_row = QHBoxLayout()
             name_label = QLabel(subject_name)
             name_label.setAlignment(Qt.AlignRight)
-            name_label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
+            name_label.setStyleSheet(
+                f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+            )
 
             percent_label = QLabel(to_persian_digits(f"{percent}٪"))
-            percent_label.setStyleSheet(f"font-size: 12px; font-weight: 700; color: {color};")
+            percent_label.setStyleSheet(
+                f"font-size: 12px; font-weight: 700; color: {color};"
+            )
 
             label_row.addWidget(name_label)
             label_row.addStretch()
@@ -135,13 +152,21 @@ class DashboardPage(QWidget):
         actions_card = Card()
         actions_title = QLabel("اقدامات سریع")
         actions_title.setAlignment(Qt.AlignRight)
-        actions_title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {Colors.TEXT_MAIN};")
+        actions_title.setStyleSheet(
+            f"font-size: 14px; font-weight: 700; color: {Colors.TEXT_MAIN};"
+        )
         actions_card.body_layout.addWidget(actions_title)
         actions_card.body_layout.addWidget(Divider())
 
-        actions_card.body_layout.addWidget(SecondaryButton("ساخت برنامه مطالعاتی", icon="📅"))
-        actions_card.body_layout.addWidget(SecondaryButton("افزودن دانش‌آموز", icon="👤"))
-        actions_card.body_layout.addWidget(SecondaryButton("خروجی گزارش هفتگی", icon="📄"))
+        actions_card.body_layout.addWidget(
+            SecondaryButton("ساخت برنامه مطالعاتی", icon="📅")
+        )
+        actions_card.body_layout.addWidget(
+            SecondaryButton("افزودن دانش‌آموز", icon="👤")
+        )
+        actions_card.body_layout.addWidget(
+            SecondaryButton("خروجی گزارش هفتگی", icon="📄")
+        )
 
         side_column.addWidget(actions_card)
         side_column.addStretch()

@@ -1,0 +1,81 @@
+name: CI Build Pipeline
+
+on:
+    push:
+        branches: ["main", "master"]
+    pull_request:
+        branches: ["main", "master"]
+    release:
+        types: [published]
+
+jobs:
+    quality:
+        name: Lint & Test
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v5
+              with:
+                  version: "latest"
+                  enable-cache: true
+
+            - name: Set up Python 3.8
+              run: uv python install 3.8
+
+            - name: Check Code Quality with Ruff
+              run: |
+                  uvx ruff check .
+                  uvx ruff format --check .
+
+            - name: Run Unit Tests
+              run: uv run pytest tests/ -v
+
+    build-windows:
+        name: Build Windows Executable (.exe)
+        needs: quality
+        runs-on: windows-2019 # Compatible Windows Server runner for PyInstaller
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v5
+              with:
+                  version: "latest"
+                  enable-cache: true
+
+            - name: Set up Python 3.8
+              run: uv python install 3.8
+
+            - name: Install Dependencies via uv
+              run: uv pip install -r pyproject.toml --optional dev
+
+            - name: Compile Executable with PyInstaller
+              shell: cmd
+              run: |
+                  uv run pyinstaller --noconfirm ^
+                    --onefile ^
+                    --windowed ^
+                    --name "Fanus" ^
+                    --add-data "src/styles;src/styles" ^
+                    main.py
+
+            - name: Upload Executable Artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Fanus-Windows-x64
+                  path: dist/Fanus.exe
+                  retention-days: 14
+
+            - name: Upload Executable to GitHub Release
+              if: github.event_name == 'release'
+              uses: softprops/action-gh-release@v1
+              with:
+                  files: dist/Fanus.exe
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
