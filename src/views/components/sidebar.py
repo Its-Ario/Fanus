@@ -18,7 +18,7 @@ class NavItem(QPushButton):
     def set_expanded(self, expanded: bool):
         if expanded:
             self.setText(f"{self.icon_emoji}   {self.label_text}")
-            self.setPropeurty("collapsed", "false")
+            self.setProperty("collapsed", "false")
         else:
             self.setText(self.icon_emoji)
             self.setProperty("collapsed", "true")
