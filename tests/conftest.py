@@ -18,3 +18,4 @@ def in_memory_db():
     test_db.connect()
     yield test_db
     test_db.close()
+
