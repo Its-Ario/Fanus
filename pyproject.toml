@@ -1,7 +1,7 @@
 [project]
 name = "fanus"
 version = "0.1.0"
-description = "Add your description here"
+description = "An offline-first study manager & planner designed for old hardwares"
 readme = "README.md"
 requires-python = ">=3.8.10"
 dependencies = [
@@ -15,6 +15,7 @@ dependencies = [
 dev = [
     "ruff>=0.3.0",
     "pytest>=7.4.0",
+    "pytest-qt>=4.2.0",
     "PyInstaller==5.13.2",
 ]
 train = [
@@ -34,13 +35,13 @@ exclude = [
     "build",
     "dist",
     "__pycache__",
-    "src/models/model_inference.py",  # Exclude auto-generated m2cgen code!
+    "src/models/model_inference.py",
 ]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 ignore = [
-    "E501",  # Line too long (handled by ruff format)
+    "E501",
 ]
 
 [tool.ruff.lint.isort]
