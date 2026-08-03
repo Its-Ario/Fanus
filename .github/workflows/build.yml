@@ -57,8 +57,10 @@ jobs:
       - name: Set up Python 3.8
         run: uv python install 3.8
 
-      - name: Install Dependencies via uv
-        run: uv pip install -r pyproject.toml --optional dev
+      - name: Create venv & Install Dependencies
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
 
       - name: Compile Executable with PyInstaller
         shell: cmd
