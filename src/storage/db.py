@@ -15,13 +15,15 @@ db = SqliteDatabase(
         "journal_mode": "wal",
         "foreign_keys": 1,
         "cache_size": -1024 * 64,
+        "synchronous": "normal",
+        "temp_store": "RAM"
     },
 )
 
 
 def connect_database():
     if db.is_closed():
-        db.connect()
+        db.connect(reuse_if_open=True)
 
 
 def close_database():

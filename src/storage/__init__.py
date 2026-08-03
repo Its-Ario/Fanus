@@ -1,11 +1,10 @@
-from src.storage.db import db
-from src.storage.models import StudyPlan, User
+from src.storage.db import close_database, connect_database, db
+from src.storage.models import ALL_MODELS
 
 
 def init_database():
 
-    db.connect()
+    connect_database()
+    db.create_tables(ALL_MODELS)
 
-    db.create_tables([User, StudyPlan])
-
-    db.close()
+    close_database()

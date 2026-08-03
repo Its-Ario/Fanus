@@ -1,6 +1,7 @@
 from datetime import date, datetime
 
 from peewee import (
+    AutoField,
     BooleanField,
     CharField,
     DateField,
@@ -68,6 +69,7 @@ class DayOfWeek:
 
 
 class BaseModel(Model):
+    id = AutoField(primary_key=True)
     created_at = DateTimeField(default=datetime.now)
     updated_at = DateTimeField(default=datetime.now)
 
@@ -231,3 +233,17 @@ class AuditLog(BaseModel):
     target_entity = CharField(max_length=50)
     target_id = IntegerField(null=True)
     details = TextField(null=True)
+
+
+ALL_MODELS = [
+    Counselor,
+    Classroom,
+    Student,
+    CounselorNote,
+    AcademicGrade,
+    AttendanceRecord,
+    StudyPlan,
+    StudySession,
+    DailyCheckIn,
+    AuditLog,
+]
