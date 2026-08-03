@@ -4,11 +4,14 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QFontDatabase
 from PyQt5.QtWidgets import QApplication
 
+from src.storage import init_database
 from src.styles.theme import MODERN_STYLE
 from src.views.main_window import MainWindow
 
 
 def main():
+    init_database()
+
     app = QApplication(sys.argv)
 
     font_id = QFontDatabase.addApplicationFont("assets/fonts/Vazir.ttf")
