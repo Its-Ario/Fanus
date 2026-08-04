@@ -16,7 +16,7 @@ db = SqliteDatabase(
         "foreign_keys": 1,
         "cache_size": -1024 * 64,
         "synchronous": "normal",
-        "temp_store": "RAM"
+        "temp_store": "RAM",
     },
 )
 

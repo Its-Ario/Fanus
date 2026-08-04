@@ -8,6 +8,7 @@ dependencies = [
     "PyQt5==5.15.9",
     "PyQt5-Qt5==5.15.2",
     "peewee==3.17.0",
+    "xgboost>=2.1.4",
 ]
 
 
