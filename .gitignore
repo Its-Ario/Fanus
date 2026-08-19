@@ -206,6 +206,11 @@ tempCodeRunnerFile.py
 # Ruff stuff:
 .ruff_cache/
 
+src/data/*.db*
+src/data/database_salts.json
+
+info.md
+
 # PyPI configuration file
 .pypirc
 

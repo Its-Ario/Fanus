@@ -1,7 +1,7 @@
 from datetime import date, datetime
+from uuid import uuid4
 
 from peewee import (
-    AutoField,
     BooleanField,
     CharField,
     DateField,
@@ -11,9 +11,10 @@ from peewee import (
     IntegerField,
     Model,
     TextField,
+    UUIDField,
 )
 
-from src.storage.db import db
+from src.storage.db import db, vault_db
 
 
 class AcademicMajor:
@@ -69,12 +70,25 @@ class DayOfWeek:
 
 
 class BaseModel(Model):
-    id = AutoField(primary_key=True)
+    id = UUIDField(primary_key=True, default=uuid4)
     created_at = DateTimeField(default=datetime.now)
     updated_at = DateTimeField(default=datetime.now)
 
     class Meta:
         database = db
+
+    def save(self, *args, **kwargs):
+        self.updated_at = datetime.now()
+        return super().save(**args, **kwargs)
+
+
+class VaultBaseModel(Model):
+    id = UUIDField(primary_key=True, default=uuid4)
+    created_at = DateTimeField(default=datetime.now)
+    updated_at = DateTimeField(default=datetime.now)
+
+    class Meta:
+        database = vault_db
 
     def save(self, *args, **kwargs):
         self.updated_at = datetime.now()
@@ -127,8 +141,7 @@ class Student(BaseModel):
     risk_factors_json = TextField(default="[]")  # json
 
     class Meta:
-        indexes = (("risk_level"), False)
-        table_name = "users"
+        table_name = "students"
 
     @property
     def full_name(self) -> str:
@@ -145,8 +158,8 @@ class Student(BaseModel):
         return round(sum(scores) / len(scores), 2)
 
 
-class CounselorNote(BaseModel):
-    student = ForeignKeyField(Student, backref="notes", on_delete="CASCADE")
+class CounselorNote(VaultBaseModel):
+    student_id = UUIDField(index=True)
     title = CharField(max_length=100, default="یادداشت مشاوره")
     content = TextField()
     is_confidential = BooleanField(default=True)
@@ -161,7 +174,7 @@ class AcademicGrade(BaseModel):
     subject_name = CharField(max_length=50, index=True)
     score = DoubleField()
     max_score = DoubleField(default=20.0)
-    exam_date = DateField(default=datetime.date.today, index=True)
+    exam_date = DateField(default=datetime.today, index=True)
     exam_type = CharField(max_length=30, default="مستمر")
 
     def get_percentage(self) -> float:
@@ -170,7 +183,7 @@ class AcademicGrade(BaseModel):
 
 class AttendanceRecord(BaseModel):
     student = ForeignKeyField(Student, backref="attendance", on_delete="CASCADE")
-    date = DateField(default=datetime.date.today, index=True)
+    date = DateField(default=datetime.today, index=True)
     status = CharField(max_length=20, default="present")
     reason = CharField(max_length=255, null=True)
 
@@ -215,7 +228,7 @@ class StudySession(BaseModel):
 
 class DailyCheckIn(BaseModel):
     student = ForeignKeyField(Student, backref="check_ins", on_delete="CASCADE")
-    date = DateField(default=datetime.date.today, index=True)
+    date = DateField(default=datetime.today, index=True)
     completed_sessions = IntegerField(default=0)
     total_sessions = IntegerField(default=0)
     completion_rate = DoubleField(default=0.0)
@@ -231,15 +244,14 @@ class AuditLog(BaseModel):
     actor_name = CharField(max_length=100, default="مشاور")
     action = CharField(max_length=50)
     target_entity = CharField(max_length=50)
-    target_id = IntegerField(null=True)
+    target_id = UUIDField(null=True)
     details = TextField(null=True)
 
 
-ALL_MODELS = [
+PUBLIC_MODELS = [
     Counselor,
     Classroom,
     Student,
-    CounselorNote,
     AcademicGrade,
     AttendanceRecord,
     StudyPlan,
@@ -247,3 +259,6 @@ ALL_MODELS = [
     DailyCheckIn,
     AuditLog,
 ]
+
+VAULT_MODELS = [CounselorNote]
+ALL_MODELS = PUBLIC_MODELS + VAULT_MODELS

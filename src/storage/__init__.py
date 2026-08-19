@@ -1,10 +1,21 @@
-from src.storage.db import close_database, connect_database, db
-from src.storage.models import ALL_MODELS
+from src.storage.db import (
+    DatabaseCredentials,
+    DatabaseManager,
+    configure_database_manager,
+    get_database_manager,
+)
 
 
-def init_database():
+def init_database(credentials: DatabaseCredentials) -> DatabaseManager:
+    manager = configure_database_manager(credentials)
+    manager.initialize()
+    return manager
 
-    connect_database()
-    db.create_tables(ALL_MODELS)
 
-    close_database()
+__all__ = [
+    "DatabaseCredentials",
+    "DatabaseManager",
+    "configure_database_manager",
+    "get_database_manager",
+    "init_database",
+]
