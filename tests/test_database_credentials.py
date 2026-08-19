@@ -1,8 +1,6 @@
 import sqlite3
 
-import pytest
-
-from src.storage.db import DatabaseConnectionError, DatabaseCredentials, DatabaseManager
+from src.storage.db import DatabaseCredentials, DatabaseManager, decrypt_vault_value, encrypt_vault_value
 
 
 def test_passwords_derive_stable_distinct_keys(tmp_path):
@@ -25,7 +23,7 @@ def test_different_password_does_not_unlock_existing_store(tmp_path):
     assert changed.vault_key == expected.vault_key
 
 
-def test_manager_creates_two_sqlcipher_databases(tmp_path):
+def test_manager_creates_two_plain_sqlite_databases(tmp_path):
     credentials = DatabaseCredentials.from_passwords(
         "admin-password", "1234", tmp_path / "database_salts.json"
     )
@@ -43,27 +41,24 @@ def test_manager_creates_two_sqlcipher_databases(tmp_path):
         assert manager.initialized
         assert fanus_path.exists()
         assert vault_path.exists()
-        assert fanus_path.read_bytes()[:16] != b"SQLite format 3\x00"
-        assert vault_path.read_bytes()[:16] != b"SQLite format 3\x00"
-        with pytest.raises(sqlite3.DatabaseError):
-            sqlite3.connect(fanus_path).execute("SELECT name FROM sqlite_master").fetchall()
+        sqlite3.connect(fanus_path).execute("SELECT name FROM sqlite_master").fetchall()
+        sqlite3.connect(vault_path).execute("SELECT name FROM sqlite_master").fetchall()
     finally:
         manager.close()
 
 
-def test_manager_rejects_an_incorrect_database_key(tmp_path):
-    salts_path = tmp_path / "database_salts.json"
-    paths = {"fanus_path": tmp_path / "fanus.db", "vault_path": tmp_path / "counselor_vault.db"}
-    migrations_path = tmp_path / "migrations"
-    credentials = DatabaseCredentials.from_passwords("admin-password", "1234", salts_path)
-    manager = DatabaseManager(credentials, migrations_dir=migrations_path, **paths)
-    manager.initialize()
-    manager.close()
+def test_vault_value_round_trips_and_is_not_stored_as_plaintext(tmp_path):
+    credentials = DatabaseCredentials.from_passwords(
+        "admin-password", "1234", tmp_path / "database_salts.json"
+    )
+    from src.storage.db import set_vault_cipher_key
 
-    wrong_credentials = DatabaseCredentials.from_passwords("wrong-password", "1234", salts_path)
-    rejected_manager = DatabaseManager(wrong_credentials, migrations_dir=migrations_path, **paths)
+    set_vault_cipher_key(credentials.vault_key)
     try:
-        with pytest.raises(DatabaseConnectionError):
-            rejected_manager.initialize()
+        secret = "این یک یادداشت محرمانه است"
+        encrypted = encrypt_vault_value(secret)
+
+        assert secret not in encrypted
+        assert decrypt_vault_value(encrypted) == secret
     finally:
-        rejected_manager.close()
+        set_vault_cipher_key(None)

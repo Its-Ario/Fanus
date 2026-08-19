@@ -14,7 +14,21 @@ from peewee import (
     UUIDField,
 )
 
-from src.storage.db import db, vault_db
+from src.storage.db import db, decrypt_vault_value, encrypt_vault_value, vault_db
+
+
+class EncryptedTextField(TextField):
+    """TextField encrypted with AES-256-GCM with vault key."""
+
+    def db_value(self, value):
+        if value is None:
+            return value
+        return encrypt_vault_value(value)
+
+    def python_value(self, value):
+        if value is None:
+            return value
+        return decrypt_vault_value(value)
 
 
 class AcademicMajor:
@@ -161,7 +175,7 @@ class Student(BaseModel):
 class CounselorNote(VaultBaseModel):
     student_id = UUIDField(index=True)
     title = CharField(max_length=100, default="یادداشت مشاوره")
-    content = TextField()
+    content = EncryptedTextField()
     is_confidential = BooleanField(default=True)
     tags = CharField(max_length=150, default="عمومی")
 

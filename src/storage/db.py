@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import logging
@@ -7,7 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Generator, Optional
 
-from peewee import DatabaseProxy
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from peewee import DatabaseProxy, SqliteDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,30 @@ MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
 db = DatabaseProxy()
 vault_db = DatabaseProxy()
 
+_vault_cipher_key: Optional[bytes] = None
+
+
+def set_vault_cipher_key(key_hex: Optional[str]) -> None:
+    """Set (or clear with None) the AES-256-GCM key used for vault field encryption."""
+    global _vault_cipher_key
+    _vault_cipher_key = bytes.fromhex(key_hex) if key_hex else None
+
+
+def encrypt_vault_value(plaintext: str) -> str:
+    if _vault_cipher_key is None:
+        raise DatabaseConfigurationError("Vault encryption key is not set.")
+    nonce = secrets.token_bytes(12)
+    ciphertext = AESGCM(_vault_cipher_key).encrypt(nonce, plaintext.encode("utf-8"), None)
+    return base64.b64encode(nonce + ciphertext).decode("ascii")
+
+
+def decrypt_vault_value(stored: str) -> str:
+    if _vault_cipher_key is None:
+        raise DatabaseConfigurationError("Vault encryption key is not set.")
+    raw = base64.b64decode(stored)
+    nonce, ciphertext = raw[:12], raw[12:]
+    return AESGCM(_vault_cipher_key).decrypt(nonce, ciphertext, None).decode("utf-8")
+
 
 class DatabaseError(RuntimeError):
     """Base class for errors safe to present to the application layer."""
@@ -31,7 +57,7 @@ class DatabaseConfigurationError(DatabaseError):
 
 
 class DatabaseConnectionError(DatabaseError):
-    """Raised when an encrypted database cannot be opened."""
+    """Raised when a database cannot be opened."""
 
 
 class DatabaseMigrationError(DatabaseError):
@@ -87,17 +113,17 @@ class DatabaseManager:
         return self._initialized
 
     def initialize(self) -> None:
-        """Open both encrypted stores and bring their schemas up to date."""
         if self._initialized:
             return
 
         self.fanus_path.parent.mkdir(parents=True, exist_ok=True)
         self.vault_path.parent.mkdir(parents=True, exist_ok=True)
 
-        public_database = self._new_cipher_database(self.fanus_path, self._credentials.fanus_key)
-        private_database = self._new_cipher_database(self.vault_path, self._credentials.vault_key)
+        public_database = self._new_sqlite_database(self.fanus_path)
+        private_database = self._new_sqlite_database(self.vault_path)
         db.initialize(public_database)
         vault_db.initialize(private_database)
+        set_vault_cipher_key(self._credentials.vault_key)
 
         try:
             self._open_and_verify(public_database, self.fanus_path)
@@ -109,30 +135,21 @@ class DatabaseManager:
         except Exception as exc:
             self.close()
             logger.exception("Unexpected database initialization failure")
-            raise DatabaseConnectionError("Could not initialize the encrypted data stores.") from exc
+            raise DatabaseConnectionError("Could not initialize the data stores.") from exc
 
         self._initialized = True
-        logger.info("Encrypted Fanus databases initialized")
+        logger.info("Fanus databases initialized")
 
     @staticmethod
-    def _new_cipher_database(path: Path, passphrase: str):
-        try:
-            from playhouse.sqlcipher_ext import SqlCipherDatabase
-        except ImportError as exc:
-            raise DatabaseConfigurationError(
-                "SQLCipher support is unavailable. Install the pysqlcipher3-binary runtime."
-            ) from exc
-
-        return SqlCipherDatabase(
+    def _new_sqlite_database(path: Path):
+        return SqliteDatabase(
             str(path),
-            passphrase=passphrase,
             pragmas={
                 "foreign_keys": 1,
                 "journal_mode": "wal",
                 "cache_size": -1024 * 64,
                 "synchronous": "normal",
                 "temp_store": "memory",
-                "cipher_memory_security": "on",
             },
         )
 
@@ -142,9 +159,9 @@ class DatabaseManager:
             database.connect(reuse_if_open=True)
             database.execute_sql("SELECT count(*) FROM sqlite_master").fetchone()
         except Exception as exc:
-            logger.warning("Could not open encrypted database at %s", path)
+            logger.warning("Could not open database at %s", path)
             raise DatabaseConnectionError(
-                "Could not open an encrypted database. Check the key or restore a valid backup."
+                "Could not open the database. Restore a valid backup."
             ) from exc
 
     def _migrate(self, public_database, private_database) -> None:
@@ -184,7 +201,7 @@ class DatabaseManager:
             raise DatabaseMigrationError(f"Required database tables are missing: {names}.")
 
     @contextmanager
-    def transaction(self, vault: bool = False) -> Generator[None]:
+    def transaction(self, vault: bool = False) -> Generator[None, None, None]:
         if not self._initialized:
             raise DatabaseConfigurationError("DatabaseManager.initialize() must be called first.")
         database = vault_db if vault else db
@@ -202,6 +219,7 @@ class DatabaseManager:
                     database.close()
             except Exception:
                 logger.exception("Could not close database connection cleanly")
+        set_vault_cipher_key(None)
         self._initialized = False
 
 
