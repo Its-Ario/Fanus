@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, timedelta
 
 import pytest
 
@@ -10,8 +11,18 @@ from src.storage.db import (
     DatabaseManager,
     encrypt_vault_value,
 )
-from src.storage.models import User
+from src.storage.models import (
+    AcademicGrade,
+    Classroom,
+    DailyCheckIn,
+    PlanStatus,
+    RiskLevel,
+    Student,
+    StudyPlan,
+    User,
+)
 from src.views.components.ui_kit import Avatar
+from src.views.pages.dashboard_page import load_dashboard_data
 from src.views.pages.login_dialog import LoginDialog
 
 
@@ -46,6 +57,83 @@ def test_public_database_initializes_without_creating_or_unlocking_vault(tmp_pat
                 pass
         with pytest.raises(DatabaseConfigurationError):
             encrypt_vault_value("نباید بدون بازگشایی ذخیره شود")
+    finally:
+        manager.close()
+
+
+def test_dashboard_data_is_derived_from_public_records(tmp_path):
+    manager = DatabaseManager(
+        fanus_path=tmp_path / "fanus.db",
+        vault_path=tmp_path / "counselor_vault.db",
+        migrations_dir=tmp_path / "migrations",
+    )
+    today = date(2026, 8, 20)
+    try:
+        manager.initialize_public()
+        classroom = Classroom.create(name="دهم الف", grade_level=10)
+        high_risk = Student.create(
+            national_id="1000000001",
+            first_name="سارا",
+            last_name="احمدی",
+            classroom=classroom,
+            risk_level=RiskLevel.HIGH,
+            burnout_score=90,
+        )
+        medium_risk = Student.create(
+            national_id="1000000002",
+            first_name="رضا",
+            last_name="کریمی",
+            classroom=classroom,
+            risk_level=RiskLevel.MEDIUM,
+        )
+        Student.create(
+            national_id="1000000003",
+            first_name="غیرفعال",
+            last_name="دانش‌آموز",
+            classroom=classroom,
+            risk_level=RiskLevel.HIGH,
+            is_active=False,
+        )
+        StudyPlan.create(
+            student=high_risk,
+            title="برنامه فعال",
+            end_date=today + timedelta(days=7),
+            status=PlanStatus.ACTIVE,
+        )
+        StudyPlan.create(
+            student=medium_risk,
+            title="پیش‌نویس",
+            end_date=today + timedelta(days=7),
+            status=PlanStatus.DRAFT,
+        )
+        DailyCheckIn.create(
+            student=high_risk,
+            date=today,
+            completed_sessions=3,
+            total_sessions=4,
+        )
+        DailyCheckIn.create(
+            student=medium_risk,
+            date=today,
+            completed_sessions=2,
+            total_sessions=2,
+        )
+        AcademicGrade.create(student=high_risk, subject_name="ریاضی", score=16)
+        AcademicGrade.create(student=medium_risk, subject_name="ریاضی", score=18)
+        AcademicGrade.create(student=high_risk, subject_name="فیزیک", score=10)
+
+        data = load_dashboard_data(today)
+
+        assert data.active_student_count == 2
+        assert data.high_risk_student_count == 1
+        assert data.active_plan_count == 1
+        assert data.weekly_completion_rate == 83
+        assert [student.full_name for student in data.attention_students] == [
+            "سارا احمدی",
+            "رضا کریمی",
+        ]
+        assert data.subject_averages[0].name == "ریاضی"
+        assert data.subject_averages[0].percentage == 85
     finally:
         manager.close()
 
