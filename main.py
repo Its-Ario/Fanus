@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QFontDatabase
 from PyQt5.QtWidgets import QApplication
 
+from src.core.config import ConfigManager
 from src.styles.theme import MODERN_STYLE
 from src.views.main_window import MainWindow
 
@@ -22,6 +23,12 @@ def main():
     app.setLayoutDirection(Qt.RightToLeft)
 
     app.setStyleSheet(MODERN_STYLE)
+
+    config = ConfigManager.load()
+    if not config.is_configured:
+        print("First run")
+        # TODO: Add first run wizard
+
 
     window = MainWindow()
     window.show()

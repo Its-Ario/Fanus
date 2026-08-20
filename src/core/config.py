@@ -14,6 +14,7 @@ HMAC_SECRET = b"SECRET_HERE"
 @dataclass
 class AppConfig:
     version: int = 1
+    is_configured: bool = False
     operation_mode: str = "STANDALONE"  # Future proofing for LAN
     hub: dict = {}  # Future proofing for LAN
     signature: str = ""
@@ -74,7 +75,7 @@ class ConfigManager:
 
         if not config_path.exists():
             default_config = AppConfig()
-            # cls.save()
+            cls.save()
             return default_config
 
         try:
@@ -92,6 +93,7 @@ class ConfigManager:
                     operation_mode=data.get("operation_mode", "STANDALONE"),
                     hub=data.get("hub", {}),
                     signature=data.get("signature", ""),
+                    is_configured=data.get("is_configured", False)
                 )
         except Exception as e:
             print(f"Failed to read config.json: {e}")
