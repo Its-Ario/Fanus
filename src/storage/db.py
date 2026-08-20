@@ -66,30 +66,25 @@ class DatabaseMigrationError(DatabaseError):
 
 @dataclass(frozen=True)
 class DatabaseCredentials:
-    """Independent passphrase by the authentication flow."""
+    """Key material for encrypted vault fields."""
 
-    fanus_key: str
     vault_key: str
 
     def __post_init__(self) -> None:
-        if not self.fanus_key or not self.vault_key:
-            raise DatabaseConfigurationError("Database encryption keys must not be empty.")
+        if not self.vault_key:
+            raise DatabaseConfigurationError("Vault encryption key must not be empty.")
 
     @classmethod
-    def from_passwords(
+    def from_vault_pin(
         cls,
-        admin_password: str,
         vault_pin: str,
         salts_path: Path = KEY_SALTS_PATH,
     ) -> "DatabaseCredentials":
-        if not admin_password or not vault_pin:
-            raise DatabaseConfigurationError("An admin password and vault PIN are required.")
+        if not vault_pin:
+            raise DatabaseConfigurationError("A vault PIN is required.")
 
         salts = _load_or_create_salts(Path(salts_path))
-        return cls(
-            fanus_key=_derive_key(admin_password, salts["fanus"]),
-            vault_key=_derive_key(vault_pin, salts["vault"]),
-        )
+        return cls(vault_key=_derive_key(vault_pin, salts["vault"]))
 
 
 class DatabaseManager:
@@ -154,7 +149,7 @@ class DatabaseManager:
         )
 
     @staticmethod
-    def _open_and_verify(database, path: Path) -> None:
+    def _open_and_verify(database: SqliteDatabase, path: Path) -> None:
         try:
             database.connect(reuse_if_open=True)
             database.execute_sql("SELECT count(*) FROM sqlite_master").fetchone()
@@ -250,7 +245,7 @@ def _load_or_create_salts(path: Path) -> dict:
     if path.exists():
         try:
             encoded_salts = json.loads(path.read_text(encoding="utf-8"))
-            salts = {name: bytes.fromhex(encoded_salts[name]) for name in ("fanus", "vault")}
+            salts = {"vault": bytes.fromhex(encoded_salts["vault"])}
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             raise DatabaseConfigurationError("Database salt metadata is invalid.") from exc
         if any(len(value) < 16 for value in salts.values()):
@@ -258,7 +253,7 @@ def _load_or_create_salts(path: Path) -> dict:
         return salts
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    salts = {"fanus": secrets.token_bytes(32), "vault": secrets.token_bytes(32)}
+    salts = {"vault": secrets.token_bytes(32)}
     try:
         path.write_text(
             json.dumps({name: value.hex() for name, value in salts.items()}), encoding="utf-8"
