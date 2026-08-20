@@ -1,6 +1,7 @@
 import base64
 import hmac
 import json
+import logging
 import os
 import sys
 from dataclasses import asdict, dataclass, field
@@ -9,6 +10,8 @@ from pathlib import Path
 from typing import Any, Dict
 
 HMAC_SECRET = b"SECRET_HERE"
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -83,7 +86,7 @@ class ConfigManager:
                 data: Dict[str, Any] = json.load(f)
 
                 if not cls.verify_integrity(data):
-                    print("Signature mismatch")  # TODO: Switch to logger
+                    logger.warning("Signature mismatch")
                     default_config = AppConfig()
                     cls._backup_corrupt_file(config_path)
                     cls.save(default_config)
@@ -95,8 +98,8 @@ class ConfigManager:
                     signature=data.get("signature", ""),
                     is_configured=data.get("is_configured", False)
                 )
-        except Exception as e:
-            print(f"Failed to read config.json: {e}")
+        except Exception:
+            logger.exception("Failed to read config.json")
 
             default_config = AppConfig()
             cls._backup_corrupt_file(config_path)
@@ -121,8 +124,8 @@ class ConfigManager:
 
             os.replace(temp_path, config_path)
             return True
-        except Exception as e:
-            print(f"Error writing to config.json: {e}")
+        except Exception:
+            logger.exception("Error writing to config.json")
             if temp_path.exists():
                 try:
                     temp_path.unlink()
@@ -141,5 +144,5 @@ class ConfigManager:
             bak_path = config_path.with_suffix('.json.bak')
             if config_path.exists():
                 os.replace(config_path, bak_path)
-        except Exception as e:
-            print(f"Could not backup file: {e}")
+        except Exception:
+            logger.exception("Could not backup file")

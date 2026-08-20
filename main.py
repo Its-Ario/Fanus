@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from PyQt5.QtCore import Qt
@@ -5,6 +6,7 @@ from PyQt5.QtGui import QFont, QFontDatabase
 from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 
 from src.core.config import ConfigManager
+from src.core.logger import setup_logging
 from src.storage.db import DatabaseError, configure_database_manager
 from src.storage.models import User
 from src.styles.theme import MODERN_STYLE
@@ -12,8 +14,12 @@ from src.views.main_window import MainWindow
 from src.views.pages.first_run_wizard import FirstRunWizard
 from src.views.pages.login_dialog import LoginDialog
 
+logger = logging.getLogger(__name__)
+
 
 def main():
+    setup_logging()
+
     app = QApplication(sys.argv)
 
     font_id = QFontDatabase.addApplicationFont("assets/fonts/Vazir.ttf")
@@ -22,7 +28,7 @@ def main():
         if families:
             app.setFont(QFont(families[0], 10))
     else:
-        print("Warning: Could not load Vazir font. Using system default.")
+        logger.warning("Could not load Vazir font. Using system default.")
 
     app.setLayoutDirection(Qt.RightToLeft)
 
@@ -33,9 +39,9 @@ def main():
     if not config.is_configured:
         wizard = FirstRunWizard()
         if wizard.exec_() != QDialog.Accepted:
-            print("❌ Initial setup was not completed.")
+            logger.info("Initial setup was not completed.")
             return
-        print("✅ Wizard completed successfully!")
+        logger.info("Wizard completed successfully!")
     else:
         try:
             manager = configure_database_manager()
