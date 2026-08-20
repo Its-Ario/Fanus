@@ -113,6 +113,7 @@ class SchoolProfile(Model):
     id = IntegerField(primary_key=True, default=1)
     school_name = CharField()
     academic_year = CharField()
+    type = CharField(choices=[("elementry", "دبستان", "middle", "دوره اول دبیرستان(راهنمایی)", "high", "دوره دوم دبیرستان")])
     updated_at = DateTimeField(default=datetime.now)
 
     class Meta:

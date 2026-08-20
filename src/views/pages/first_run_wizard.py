@@ -12,8 +12,10 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QPushButton,
     QSizeGrip,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -43,8 +45,8 @@ class FirstRunWizard(QDialog):
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setModal(True)
-        self.resize(760, 590)
-        self.setMinimumSize(680, 540)
+        self.resize(800, 700)
+        self.setMinimumSize(760, 650)
         self.setStyleSheet(APP_STYLE)
         self._step = 0
 
@@ -117,6 +119,8 @@ class FirstRunWizard(QDialog):
     def _page_shell(self, title, subtitle):
         card = Card(padding=26)
         card.body_layout.setSpacing(14)
+        card.body_layout.setSizeConstraint(QLayout.SetMinimumSize)
+        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         title_label = QLabel(title)
         title_label.setStyleSheet(
             f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};"
@@ -135,6 +139,41 @@ class FirstRunWizard(QDialog):
         self.academic_year = FormField("سال تحصیلی", "برای مثال: ۱۴۰۵–۱۴۰۶")
         card.body_layout.addWidget(self.school_name)
         card.body_layout.addWidget(self.academic_year)
+
+        type_label = QLabel("مقطع‌های تحصیلی مدرسه")
+        type_label.setStyleSheet(
+            f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+        )
+        card.body_layout.addWidget(type_label)
+
+        type_buttons_layout = QHBoxLayout()
+        type_buttons_layout.setSpacing(8)
+        self.school_type_buttons = {}
+        for key, text in (
+            ("elementry", "دبستان"),
+            ("middle", "دوره اول دبیرستان (راهنمایی)"),
+            ("high", "دوره دوم دبیرستان"),
+        ):
+            button = QPushButton(text)
+            button.setCheckable(True)
+            button.setCursor(Qt.PointingHandCursor)
+            button.setFixedHeight(38)
+            button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+            button.setStyleSheet(f"""
+                QPushButton {{ background: {Colors.SURFACE}; color: {Colors.TEXT_MUTED}; border: 1px solid {Colors.BORDER}; border-radius: 8px; font-size: 12px; font-weight: 600; padding: 0 10px; }}
+                QPushButton:hover {{ background: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MAIN}; }}
+                QPushButton:checked {{ background: {Colors.PRIMARY}18; color: {Colors.PRIMARY}; border: 1px solid {Colors.PRIMARY}; }}
+            """)
+            button.toggled.connect(self._clear_school_type_error)
+            self.school_type_buttons[key] = button
+            type_buttons_layout.addWidget(button)
+        card.body_layout.addLayout(type_buttons_layout)
+
+        self.school_type_error = QLabel()
+        self.school_type_error.setWordWrap(True)
+        self.school_type_error.setStyleSheet(f"font-size: 11px; color: {Colors.ERROR};")
+        self.school_type_error.setVisible(False)
+        card.body_layout.addWidget(self.school_type_error)
         card.body_layout.addStretch()
         return self._centered_page(card)
 
@@ -199,16 +238,24 @@ class FirstRunWizard(QDialog):
 
     @staticmethod
     def _centered_page(card):
+        """Keep each setup step as one complete, non-scrollable form."""
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addStretch()
-        layout.addWidget(card)
-        layout.addStretch()
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
+        layout.addWidget(card, alignment=Qt.AlignTop)
         return page
 
     def _selected_role(self):
         return next(key for key, button in self.role_buttons.items() if button.isChecked())
+
+    def _selected_school_types(self):
+        return [key for key, button in self.school_type_buttons.items() if button.isChecked()]
+
+    def _clear_school_type_error(self, *_):
+        if self._selected_school_types():
+            self.school_type_error.setVisible(False)
+            self._refresh_layout()
 
     def _refresh_security_page(self, *_):
         is_counselor = self._selected_role() == "counselor"
@@ -216,10 +263,22 @@ class FirstRunWizard(QDialog):
         self.vault_pin.setVisible(is_counselor)
         if is_counselor:
             self.vault_note.setText("پین گاوصندوق برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید.")
+        self._refresh_layout()
 
     def _toggle_password_fields(self, enabled):
         self.password.setVisible(enabled)
         self.password_confirmation.setVisible(enabled)
+        self._refresh_layout()
+
+    def _refresh_layout(self):
+        """Apply dynamic visibility and validation geometry without a window resize."""
+        for index in range(self.pages.count()):
+            page = self.pages.widget(index)
+            if page.layout():
+                page.layout().invalidate()
+                page.layout().activate()
+            page.updateGeometry()
+        self.pages.updateGeometry()
 
     def _update_step(self):
         self.pages.setCurrentIndex(self._step)
@@ -271,6 +330,11 @@ class FirstRunWizard(QDialog):
             if not validate_academic_year(self.academic_year.text()):
                 self.academic_year.set_error("سال تحصیلی معتبر نیست")
                 return False
+            if not self._selected_school_types():
+                self.school_type_error.setText("حداقل یک مقطع تحصیلی را انتخاب کنید.")
+                self.school_type_error.setVisible(True)
+                self._refresh_layout()
+                return False
         elif self._step == 1:
             if not (3 < len(self.username.text()) < 20):
                 self.username.set_error("طول نام کاربری باید بین ۳ تا ۲۰ حرف باشد")
@@ -301,11 +365,13 @@ class FirstRunWizard(QDialog):
                     id=1,
                     school_name=self.school_name.text(),
                     academic_year=self.academic_year.text(),
+                    type=",".join(self._selected_school_types()),
                 ).on_conflict(
                     conflict_target=[SchoolProfile.id],
                     update={
                         SchoolProfile.school_name: self.school_name.text(),
                         SchoolProfile.academic_year: self.academic_year.text(),
+                        SchoolProfile.type: ",".join(self._selected_school_types()),
                     },
                 ).execute()
                 User.create(

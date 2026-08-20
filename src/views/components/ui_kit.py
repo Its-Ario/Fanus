@@ -7,8 +7,10 @@ from PyQt5.QtWidgets import (
     QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QLineEdit,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -324,9 +326,11 @@ class FormField(QWidget):
         password: bool = False,
     ):
         super().__init__()
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
+        layout.setSizeConstraint(QLayout.SetMinimumSize)
 
         self.label = QLabel(label)
         self.label.setStyleSheet(
@@ -350,10 +354,12 @@ class FormField(QWidget):
             QLineEdit:focus {{ border: 1.5px solid {Colors.PRIMARY}; }}
         """)
 
-        self.message = QLabel(hint or "")
+        self.message = QLabel()
         self.message.setWordWrap(True)
         self.message.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
-        self.message.setVisible(bool(hint))
+        # Placeholders provide the default guidance. This area is reserved for
+        # validation feedback, keeping compact forms from growing at rest.
+        self.message.setVisible(False)
 
         layout.addWidget(self.label)
         layout.addWidget(self.input)
@@ -376,6 +382,7 @@ class FormField(QWidget):
                 color: {Colors.TEXT_MAIN};
             }}
         """)
+        self._refresh_geometry()
 
     def clear_error(self):
         self.message.setText("")
@@ -391,6 +398,19 @@ class FormField(QWidget):
             }}
             QLineEdit:focus {{ border: 1.5px solid {Colors.PRIMARY}; }}
         """)
+        self._refresh_geometry()
+
+    def _refresh_geometry(self):
+        """Propagate changed helper text size through parent layouts immediately."""
+        self.layout().invalidate()
+        self.updateGeometry()
+
+        parent = self.parentWidget()
+        while parent:
+            if parent.layout():
+                parent.layout().invalidate()
+            parent.updateGeometry()
+            parent = parent.parentWidget()
 
 
 class ProgressBar(QWidget):
