@@ -93,7 +93,7 @@ class BaseModel(Model):
 
     def save(self, *args, **kwargs):
         self.updated_at = datetime.now()
-        return super().save(**args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class VaultBaseModel(Model):

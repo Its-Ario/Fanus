@@ -28,11 +28,10 @@ def main():
     config = ConfigManager.load()
     if not config.is_configured:
         wizard = FirstRunWizard()
-        if wizard.exec_() == QDialog.Accepted:
-            print("✅ Wizard completed successfully!")
-        else:
-            print("❌ Wizard canceled.")
-        # TODO: Add first run wizard
+        if wizard.exec_() != QDialog.Accepted:
+            print("❌ Initial setup was not completed.")
+            return
+        print("✅ Wizard completed successfully!")
 
 
     window = MainWindow()

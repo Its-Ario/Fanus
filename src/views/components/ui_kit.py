@@ -313,6 +313,86 @@ class SearchInput(QLineEdit):
         """)
 
 
+class FormField(QWidget):
+    """A labelled text field shared by focused forms such as setup and settings."""
+
+    def __init__(
+        self,
+        label: str,
+        placeholder: str = "",
+        hint: str | None = None,
+        password: bool = False,
+    ):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
+        self.label = QLabel(label)
+        self.label.setStyleSheet(
+            f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+        )
+
+        self.input = QLineEdit()
+        self.input.setPlaceholderText(placeholder)
+        self.input.setFixedHeight(38)
+        if password:
+            self.input.setEchoMode(QLineEdit.Password)
+        self.input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 13px;
+                color: {Colors.TEXT_MAIN};
+            }}
+            QLineEdit:focus {{ border: 1.5px solid {Colors.PRIMARY}; }}
+        """)
+
+        self.message = QLabel(hint or "")
+        self.message.setWordWrap(True)
+        self.message.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
+        self.message.setVisible(bool(hint))
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.input)
+        layout.addWidget(self.message)
+
+    def text(self) -> str:
+        return self.input.text().strip()
+
+    def set_error(self, message: str):
+        self.message.setText(message)
+        self.message.setStyleSheet(f"font-size: 11px; color: {Colors.ERROR};")
+        self.message.setVisible(True)
+        self.input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {Colors.SURFACE};
+                border: 1.5px solid {Colors.ERROR};
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 13px;
+                color: {Colors.TEXT_MAIN};
+            }}
+        """)
+
+    def clear_error(self):
+        self.message.setText("")
+        self.message.setVisible(False)
+        self.input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+                padding: 0 12px;
+                font-size: 13px;
+                color: {Colors.TEXT_MAIN};
+            }}
+            QLineEdit:focus {{ border: 1.5px solid {Colors.PRIMARY}; }}
+        """)
+
+
 class ProgressBar(QWidget):
     """Custom-painted RTL progress bar. Fills from RIGHT to LEFT."""
 

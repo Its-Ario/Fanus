@@ -108,17 +108,19 @@ class ConfigManager:
         """Saves config using atomic writing"""
 
         config_path = cls.get_config_path()
-        temp_path = config_path.with_suffix(".tmp")
+        temp_path = config_path.with_name(f"{config_path.name}.{os.getpid()}.tmp")
         try:
             config_dict = config.to_dict()
             config_dict["signature"] = cls.compute_signature(config_dict)
 
-            # ATMOIC WRITING
+            # ATOMIC WRITING
             with open(temp_path, "w", encoding="utf-8") as f:
                 json.dump(config_dict, f, ensure_ascii=False, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
 
-                os.replace(temp_path, config_path)
-                return True
+            os.replace(temp_path, config_path)
+            return True
         except Exception as e:
             print(f"Error writing to config.json: {e}")
             if temp_path.exists():
@@ -127,6 +129,12 @@ class ConfigManager:
                 except Exception:
                     pass
             return False
+
+    @classmethod
+    def mark_configured(cls) -> bool:
+        config = cls.load()
+        config.is_configured = True
+        return cls.save(config)
     @staticmethod
     def _backup_corrupt_file(config_path: Path) -> None:
         try:
