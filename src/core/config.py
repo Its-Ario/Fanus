@@ -3,7 +3,7 @@ import hmac
 import json
 import os
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Dict
@@ -16,7 +16,7 @@ class AppConfig:
     version: int = 1
     is_configured: bool = False
     operation_mode: str = "STANDALONE"  # Future proofing for LAN
-    hub: dict = {}  # Future proofing for LAN
+    hub: dict = field(default_factory=dict)  # Future proofing for LAN
     signature: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
@@ -75,7 +75,7 @@ class ConfigManager:
 
         if not config_path.exists():
             default_config = AppConfig()
-            cls.save()
+            cls.save(default_config)
             return default_config
 
         try:
@@ -86,7 +86,7 @@ class ConfigManager:
                     print("Signature mismatch")  # TODO: Switch to logger
                     default_config = AppConfig()
                     cls._backup_corrupt_file(config_path)
-                    cls.save()
+                    cls.save(default_config)
                     return default_config
                 return AppConfig(
                     version=data.get("version", 1),

@@ -2,11 +2,12 @@ import sys
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QFontDatabase
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog
 
 from src.core.config import ConfigManager
 from src.styles.theme import MODERN_STYLE
 from src.views.main_window import MainWindow
+from src.views.pages.first_run_wizard import FirstRunWizard
 
 
 def main():
@@ -26,7 +27,11 @@ def main():
 
     config = ConfigManager.load()
     if not config.is_configured:
-        print("First run")
+        wizard = FirstRunWizard()
+        if wizard.exec_() == QDialog.Accepted:
+            print("✅ Wizard completed successfully!")
+        else:
+            print("❌ Wizard canceled.")
         # TODO: Add first run wizard
 
 
