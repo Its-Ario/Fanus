@@ -46,6 +46,7 @@ class PrimaryButton(QPushButton):
             }}
             QPushButton:hover {{ background-color: {Colors.PRIMARY_HOVER}; }}
             QPushButton:pressed {{ background-color: {Colors.PRIMARY_ACTIVE}; }}
+            QPushButton:focus {{ border: 2px solid {Colors.TEXT_MAIN}; }}
         """)
 
 
@@ -66,6 +67,7 @@ class SecondaryButton(QPushButton):
                 padding: 0 16px;
             }}
             QPushButton:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QPushButton:focus {{ border: 2px solid {Colors.PRIMARY}; }}
         """)
 
 
@@ -324,6 +326,7 @@ class FormField(QWidget):
         placeholder: str = "",
         hint: str | None = None,
         password: bool = False,
+        revealable: bool = False,
     ):
         super().__init__()
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
@@ -338,6 +341,8 @@ class FormField(QWidget):
         )
 
         self.input = QLineEdit()
+        self.label.setBuddy(self.input)
+        self.input.textEdited.connect(self.clear_error)
         self.input.setPlaceholderText(placeholder)
         self.input.setFixedHeight(38)
         if password:
@@ -362,8 +367,31 @@ class FormField(QWidget):
         self.message.setVisible(False)
 
         layout.addWidget(self.label)
-        layout.addWidget(self.input)
+        if password and revealable:
+            input_row = QHBoxLayout()
+            input_row.setContentsMargins(0, 0, 0, 0)
+            input_row.setSpacing(6)
+            self.reveal_button = QPushButton("نمایش")
+            self.reveal_button.setCheckable(True)
+            self.reveal_button.setCursor(Qt.PointingHandCursor)
+            self.reveal_button.setFixedHeight(38)
+            self.reveal_button.setStyleSheet(f"""
+                QPushButton {{ background-color: {Colors.SURFACE}; color: {Colors.TEXT_MUTED}; border: 1px solid {Colors.BORDER}; border-radius: 8px; padding: 0 10px; font-size: 11px; font-weight: 600; }}
+                QPushButton:hover, QPushButton:checked {{ background-color: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MAIN}; }}
+                QPushButton:focus {{ border: 2px solid {Colors.PRIMARY}; }}
+            """)
+            self.reveal_button.toggled.connect(self._toggle_password_visibility)
+            input_row.addWidget(self.input, stretch=1)
+            input_row.addWidget(self.reveal_button)
+            layout.addLayout(input_row)
+        else:
+            self.reveal_button = None
+            layout.addWidget(self.input)
         layout.addWidget(self.message)
+
+    def _toggle_password_visibility(self, visible: bool):
+        self.input.setEchoMode(QLineEdit.Normal if visible else QLineEdit.Password)
+        self.reveal_button.setText("پنهان" if visible else "نمایش")
 
     def text(self) -> str:
         return self.input.text().strip()
@@ -384,7 +412,7 @@ class FormField(QWidget):
         """)
         self._refresh_geometry()
 
-    def clear_error(self):
+    def clear_error(self, *_):
         self.message.setText("")
         self.message.setVisible(False)
         self.input.setStyleSheet(f"""

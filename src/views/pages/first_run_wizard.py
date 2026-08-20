@@ -88,6 +88,15 @@ class FirstRunWizard(QDialog):
         self.pages.addWidget(self._security_page())
         body_layout.addWidget(self.pages, stretch=1)
 
+        self.setup_alert = QLabel()
+        self.setup_alert.setObjectName("SetupAlert")
+        self.setup_alert.setWordWrap(True)
+        self.setup_alert.setStyleSheet(
+            f"background-color: {Colors.ERROR_BG}; color: {Colors.ERROR}; border: 1px solid {Colors.ERROR}; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;"
+        )
+        self.setup_alert.setVisible(False)
+        body_layout.addWidget(self.setup_alert)
+
         actions = QHBoxLayout()
         actions.setSpacing(10)
         self.cancel_button = SecondaryButton("انصراف")
@@ -146,6 +155,10 @@ class FirstRunWizard(QDialog):
         )
         card.body_layout.addWidget(type_label)
 
+        type_hint = QLabel("یک یا چند مورد را انتخاب کنید")
+        type_hint.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
+        card.body_layout.addWidget(type_hint)
+
         type_buttons_layout = QHBoxLayout()
         type_buttons_layout.setSpacing(8)
         self.school_type_buttons = {}
@@ -154,15 +167,16 @@ class FirstRunWizard(QDialog):
             ("middle", "دوره اول دبیرستان (راهنمایی)"),
             ("high", "دوره دوم دبیرستان"),
         ):
-            button = QPushButton(text)
-            button.setCheckable(True)
+            button = QCheckBox(text)
             button.setCursor(Qt.PointingHandCursor)
             button.setFixedHeight(38)
             button.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
             button.setStyleSheet(f"""
-                QPushButton {{ background: {Colors.SURFACE}; color: {Colors.TEXT_MUTED}; border: 1px solid {Colors.BORDER}; border-radius: 8px; font-size: 12px; font-weight: 600; padding: 0 10px; }}
-                QPushButton:hover {{ background: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MAIN}; }}
-                QPushButton:checked {{ background: {Colors.PRIMARY}18; color: {Colors.PRIMARY}; border: 1px solid {Colors.PRIMARY}; }}
+                QCheckBox {{ background: {Colors.SURFACE}; color: {Colors.TEXT_MUTED}; border: 1px solid {Colors.BORDER}; border-radius: 8px; font-size: 12px; font-weight: 600; padding: 0 10px; }}
+                QCheckBox:hover {{ background: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MAIN}; }}
+                QCheckBox:checked {{ background: {Colors.PRIMARY}18; color: {Colors.PRIMARY}; border: 1px solid {Colors.PRIMARY}; }}
+                QCheckBox:focus {{ border: 2px solid {Colors.PRIMARY}; }}
+                QCheckBox::indicator {{ width: 14px; height: 14px; }}
             """)
             button.toggled.connect(self._clear_school_type_error)
             self.school_type_buttons[key] = button
@@ -208,19 +222,36 @@ class FirstRunWizard(QDialog):
         self.role_buttons["counselor"].setChecked(True)
         self.role_group.buttonClicked.connect(self._refresh_security_page)
         card.body_layout.addLayout(roles)
+
+        self.role_description = QLabel()
+        self.role_description.setWordWrap(True)
+        self.role_description.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
+        card.body_layout.addWidget(self.role_description)
+        self._refresh_role_description()
         card.body_layout.addStretch()
         return self._centered_page(card)
 
     def _security_page(self):
         card = self._page_shell("امنیت حساب", "برای ورود، می‌توانید از رمز عبور استفاده کنید یا آن را فعلاً خالی بگذارید.")
+        self.review_summary = QLabel()
+        self.review_summary.setWordWrap(True)
+        self.review_summary.setStyleSheet(
+            f"background-color: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MUTED}; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600;"
+        )
+        card.body_layout.addWidget(self.review_summary)
         self.password_enabled = QCheckBox("برای این حساب رمز ورود تعیین می‌کنم")
         self.password_enabled.setCursor(Qt.PointingHandCursor)
         self.password_enabled.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};")
         self.password_enabled.toggled.connect(self._toggle_password_fields)
         card.body_layout.addWidget(self.password_enabled)
 
-        self.password = FormField("رمز عبور", "حداقل ۸ نویسه", password=True)
-        self.password_confirmation = FormField("تکرار رمز عبور", "رمز عبور را دوباره وارد کنید", password=True)
+        password_help = QLabel("رمز ورود اختیاری است و از پین یادداشت‌های محرمانه جداست.")
+        password_help.setWordWrap(True)
+        password_help.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
+        card.body_layout.addWidget(password_help)
+
+        self.password = FormField("رمز عبور", "حداقل ۸ نویسه", password=True, revealable=True)
+        self.password_confirmation = FormField("تکرار رمز عبور", "رمز عبور را دوباره وارد کنید", password=True, revealable=True)
         card.body_layout.addWidget(self.password)
         card.body_layout.addWidget(self.password_confirmation)
 
@@ -229,9 +260,17 @@ class FirstRunWizard(QDialog):
         self.vault_note.setStyleSheet(
             f"background-color: {Colors.AI_BG}; color: {Colors.AI_ACCENT}; border: 1px solid {Colors.AI_BORDER}; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;"
         )
-        self.vault_pin = FormField("پین گاوصندوق", "یک پین جداگانه برای یادداشت‌های محرمانه", password=True)
+        self.vault_pin = FormField("پین یادداشت‌های محرمانه", "یک پین جداگانه برای یادداشت‌های محرمانه", password=True, revealable=True)
+        self.vault_acknowledgement = QCheckBox(
+            "می‌دانم پین فراموش‌شده قابل بازیابی نیست."
+        )
+        self.vault_acknowledgement.setCursor(Qt.PointingHandCursor)
+        self.vault_acknowledgement.setStyleSheet(
+            f"font-size: 11px; color: {Colors.TEXT_MAIN}; font-weight: 600;"
+        )
         card.body_layout.addWidget(self.vault_note)
         card.body_layout.addWidget(self.vault_pin)
+        card.body_layout.addWidget(self.vault_acknowledgement)
         card.body_layout.addStretch()
         self._toggle_password_fields(False)
         return self._centered_page(card)
@@ -249,6 +288,28 @@ class FirstRunWizard(QDialog):
     def _selected_role(self):
         return next(key for key, button in self.role_buttons.items() if button.isChecked())
 
+    def _refresh_role_description(self):
+        descriptions = {
+            "counselor": "مشاور: برای کار با یادداشت‌های محرمانه از یک پین اختصاصی استفاده می‌کند.",
+            "assistant": "معاون: نقش اجرایی برای پیگیری امور مدرسه.",
+            "principal": "مدیر مدرسه: نقش مدیریتی برای ادارهٔ مدرسه.",
+        }
+        self.role_description.setText(descriptions[self._selected_role()])
+
+    def _refresh_review_summary(self):
+        type_labels = {
+            "elementry": "دبستان",
+            "middle": "دوره اول",
+            "high": "دوره دوم",
+        }
+        selected_types = "، ".join(
+            type_labels[key] for key in self._selected_school_types()
+        )
+        self.review_summary.setText(
+            f"مرور اطلاعات: {self.school_name.text()} · {selected_types} · "
+            f"{self.full_name.text()} ({self.role_buttons[self._selected_role()].text()})"
+        )
+
     def _selected_school_types(self):
         return [key for key, button in self.school_type_buttons.items() if button.isChecked()]
 
@@ -258,11 +319,13 @@ class FirstRunWizard(QDialog):
             self._refresh_layout()
 
     def _refresh_security_page(self, *_):
+        self._refresh_role_description()
         is_counselor = self._selected_role() == "counselor"
         self.vault_note.setVisible(is_counselor)
         self.vault_pin.setVisible(is_counselor)
+        self.vault_acknowledgement.setVisible(is_counselor)
         if is_counselor:
-            self.vault_note.setText("پین گاوصندوق برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید.")
+            self.vault_note.setText("پین یادداشت‌های محرمانه برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید.")
         self._refresh_layout()
 
     def _toggle_password_fields(self, enabled):
@@ -287,9 +350,11 @@ class FirstRunWizard(QDialog):
         self.back_button.setVisible(self._step > 0)
         self.next_button.setText("اتمام راه‌اندازی" if self._step == 2 else "ادامه")
         if self._step == 2:
+            self._refresh_review_summary()
             self._refresh_security_page()
 
     def _next(self):
+        self.setup_alert.setVisible(False)
         if not self._validate_current_step():
             return
         if self._step < 2:
@@ -313,22 +378,28 @@ class FirstRunWizard(QDialog):
             if self.password_enabled.isChecked():
                 fields = ((self.password, "رمز عبور را وارد کنید."), (self.password_confirmation, "تکرار رمز عبور را وارد کنید."))
             if self._selected_role() == "counselor":
-                fields += ((self.vault_pin, "پین گاوصندوق برای مشاور الزامی است."),)
+                fields += ((self.vault_pin, "پین یادداشت‌های محرمانه برای مشاور الزامی است."),)
 
         valid = True
+        first_invalid = None
         for field, error in fields:
             field.clear_error()
             if not field.text():
                 field.set_error(error)
                 valid = False
+                first_invalid = first_invalid or field
         if not valid:
+            first_invalid.input.setFocus()
             return False
         if self._step == 0:
             if not (2 < len(self.school_name.text()) < 50):
                 self.school_name.set_error("نام مدرسه باید بین ۲ تا ۵۰ حرف باشد")
                 return False
             if not validate_academic_year(self.academic_year.text()):
-                self.academic_year.set_error("سال تحصیلی معتبر نیست")
+                self.academic_year.set_error(
+                    "سال تحصیلی را به‌شکل «۱۴۰۵-۱۴۰۶» وارد کنید؛ سال دوم باید دقیقاً یک سال بعد باشد."
+                )
+                self.academic_year.input.setFocus()
                 return False
             if not self._selected_school_types():
                 self.school_type_error.setText("حداقل یک مقطع تحصیلی را انتخاب کنید.")
@@ -341,14 +412,22 @@ class FirstRunWizard(QDialog):
                 return False
             if not validate_username(self.username.text()):
                 self.username.set_error("نام کاربری معتبر نیست، لطفا از حروف و اعداد انگلیسی استفاده کنید.")
+                self.username.input.setFocus()
                 return False
         elif self._step == 2 and self.password_enabled.isChecked():
             if len(self.password.text()) < 8:
                 self.password.set_error("رمز عبور باید دست‌کم ۸ نویسه باشد.")
+                self.password.input.setFocus()
                 return False
             if self.password.text() != self.password_confirmation.text():
                 self.password_confirmation.set_error("دو رمز عبور یکسان نیستند.")
+                self.password_confirmation.input.setFocus()
                 return False
+        if self._step == 2 and self._selected_role() == "counselor" and not self.vault_acknowledgement.isChecked():
+            self.vault_acknowledgement.setFocus()
+            self.setup_alert.setText("پیش از اتمام راه‌اندازی، پیام مربوط به بازیابی‌ناپذیری پین را تأیید کنید.")
+            self.setup_alert.setVisible(True)
+            return False
         return True
 
     def _complete_setup(self):
@@ -397,11 +476,15 @@ class FirstRunWizard(QDialog):
         )
 
     def _show_error(self, message):
-        self.vault_note.setText(message)
-        self.vault_note.setStyleSheet(
-            f"background-color: {Colors.ERROR_BG}; color: {Colors.ERROR}; border: 1px solid {Colors.ERROR}; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;"
-        )
-        self.vault_note.setVisible(True)
+        self.setup_alert.setText(message)
+        self.setup_alert.setVisible(True)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            self._next()
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     @staticmethod
     def _friendly_error(exc):
