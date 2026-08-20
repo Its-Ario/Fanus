@@ -131,7 +131,7 @@ class FirstRunWizard(QDialog):
 
     def _school_page(self):
         card = self._page_shell("مدرسه‌تان را معرفی کنید", "این اطلاعات در سربرگ‌ها و گزارش‌ها استفاده می‌شود.")
-        self.school_name = FormField("نام مدرسه", "برای مثال: دبیرستان فرهنگ")
+        self.school_name = FormField("نام مدرسه", "برای مثال: علامه حلی ۳")
         self.academic_year = FormField("سال تحصیلی", "برای مثال: ۱۴۰۵–۱۴۰۶")
         card.body_layout.addWidget(self.school_name)
         card.body_layout.addWidget(self.academic_year)
@@ -139,8 +139,8 @@ class FirstRunWizard(QDialog):
         return self._centered_page(card)
 
     def _user_page(self):
-        card = self._page_shell("اولین کاربر را بسازید", "این حساب به همهٔ بخش‌های مدیریتی فانوس دسترسی خواهد داشت.")
-        self.full_name = FormField("نام و نام خانوادگی", "برای مثال: نرگس احمدی")
+        card = self._page_shell("اولین کاربر را بسازید", "بعدا قادر به ساخت کاربر های دیگر خواهید بود")
+        self.full_name = FormField("نام و نام خانوادگی", "برای مثال: علی احمدی")
         self.username = FormField("نام کاربری", "برای ورود به برنامه")
         card.body_layout.addWidget(self.full_name)
         card.body_layout.addWidget(self.username)
