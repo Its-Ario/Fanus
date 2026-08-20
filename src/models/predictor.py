@@ -10,7 +10,7 @@ class RiskPredictor:
         absences: int,
         gpa: float,
         past_failures: int = 0,
-        support_level: int = 2
+        support_level: int = 2,
     ) -> Tuple[str, float]:
         """
         Runs instant (< 1ms) inference using exported m2cgen code.
@@ -22,7 +22,7 @@ class RiskPredictor:
             float(absences),
             float(gpa),
             float(past_failures),
-            float(support_level)
+            float(support_level),
         ]
 
         raw_score = float(model_inference.score(features))

@@ -123,15 +123,15 @@ class SchoolProfile(Model):
         profile, _ = cls.get_or_create(id=1)
         return profile
 
+
 class User(BaseModel):
     username = CharField(unique=True, index=True, max_length=50)
-    password_hash = CharField(max_length=255)
+    password_hash = CharField(max_length=255, null=True)
     full_name = CharField(max_length=100)
-    role = CharField(choices=[
-        ('counselor', 'مشاور'),
-        ('assistant', 'معاون'),
-        ('principal', 'مدیر مدرسه')
-    ], default='counselor')
+    role = CharField(
+        choices=[("counselor", "مشاور"), ("assistant", "معاون"), ("principal", "مدیر مدرسه")],
+        default="counselor",
+    )
     avatar_color = CharField(default="#0D9488")
     can_manage_users = BooleanField(default=False)
 

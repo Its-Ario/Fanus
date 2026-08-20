@@ -181,10 +181,14 @@ class DatabaseManager:
             self._verify_schema(public_database, PUBLIC_MODELS)
             self._verify_schema(private_database, VAULT_MODELS)
         except ImportError as exc:
-            raise DatabaseConfigurationError("peewee-migrate is required for schema management.") from exc
+            raise DatabaseConfigurationError(
+                "peewee-migrate is required for schema management."
+            ) from exc
         except Exception as exc:
             logger.exception("Database migration failed")
-            raise DatabaseMigrationError("The encrypted database schema could not be updated safely.") from exc
+            raise DatabaseMigrationError(
+                "The encrypted database schema could not be updated safely."
+            ) from exc
 
     @staticmethod
     def _verify_schema(database, models) -> None:

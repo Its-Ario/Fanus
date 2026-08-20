@@ -37,7 +37,7 @@ def benchmark_combination(df, max_depth, n_estimators, learning_rate):
             max_depth=max_depth,
             learning_rate=learning_rate,
             base_score=0.5,
-            random_state=42
+            random_state=42,
         )
         model.fit(X_train, y_train)
 
@@ -53,7 +53,7 @@ def benchmark_combination(df, max_depth, n_estimators, learning_rate):
         max_depth=max_depth,
         learning_rate=learning_rate,
         base_score=0.5,
-        random_state=42
+        random_state=42,
     )
     full_model.fit(X, y)
 
@@ -65,6 +65,7 @@ def benchmark_combination(df, max_depth, n_estimators, learning_rate):
     file_size_kb = temp_file.stat().st_size / 1024.0
 
     import temp_model  # type: ignore
+
     sample_input = [3.5, 2.0, 16.5, 0.0, 3.0]
 
     start_time = time.perf_counter_ns()
@@ -84,7 +85,7 @@ def benchmark_combination(df, max_depth, n_estimators, learning_rate):
         "MAE": round(avg_mae, 4),
         "RMSE": round(avg_rmse, 4),
         "File_Size_KB": round(file_size_kb, 1),
-        "Latency_us": round(avg_latency_us, 2)
+        "Latency_us": round(avg_latency_us, 2),
     }
 
 
@@ -92,7 +93,7 @@ def main():
     print("Loading dataset...")
     df = load_and_harmonize_datasets()
 
-    depths = [2, 3, 4 ,5]
+    depths = [2, 3, 4, 5]
     estimators = [15, 25, 40, 50, 60, 100]
     learning_rates = [0.25, 0.3, 0.35]
 
@@ -102,7 +103,9 @@ def main():
     for d, n, lr in itertools.product(depths, estimators, learning_rates):
         res = benchmark_combination(df, d, n, lr)
         results.append(res)
-        print(f"Depth: {d} | Trees: {n:2d} | LR: {lr:.2f}, MAE: {res['MAE']} | Size: {res['File_Size_KB']:5.1f} KB | Latency: {res['Latency_us']} µs")
+        print(
+            f"Depth: {d} | Trees: {n:2d} | LR: {lr:.2f}, MAE: {res['MAE']} | Size: {res['File_Size_KB']:5.1f} KB | Latency: {res['Latency_us']} µs"
+        )
 
     res_df = pd.DataFrame(results).sort_values(by="MAE")
     print("\n================ TOP 5 ================")
