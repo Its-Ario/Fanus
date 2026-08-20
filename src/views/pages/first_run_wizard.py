@@ -132,9 +132,7 @@ class FirstRunWizard(QDialog):
         card.body_layout.setSizeConstraint(QLayout.SetMinimumSize)
         card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         title_label = QLabel(title)
-        title_label.setStyleSheet(
-            f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};"
-        )
+        title_label.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
         subtitle_label = QLabel(subtitle)
         subtitle_label.setWordWrap(True)
         subtitle_label.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
@@ -144,16 +142,16 @@ class FirstRunWizard(QDialog):
         return card
 
     def _school_page(self):
-        card = self._page_shell("مدرسه‌تان را معرفی کنید", "این اطلاعات در سربرگ‌ها و گزارش‌ها استفاده می‌شود.")
+        card = self._page_shell(
+            "مدرسه‌تان را معرفی کنید", "این اطلاعات در سربرگ‌ها و گزارش‌ها استفاده می‌شود."
+        )
         self.school_name = FormField("نام مدرسه", "برای مثال: علامه حلی ۳")
         self.academic_year = FormField("سال تحصیلی", "برای مثال: ۱۴۰۵–۱۴۰۶")
         card.body_layout.addWidget(self.school_name)
         card.body_layout.addWidget(self.academic_year)
 
         type_label = QLabel("مقطع‌های تحصیلی مدرسه")
-        type_label.setStyleSheet(
-            f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
-        )
+        type_label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
         card.body_layout.addWidget(type_label)
 
         type_hint = QLabel("یک یا چند مورد را انتخاب کنید")
@@ -193,7 +191,9 @@ class FirstRunWizard(QDialog):
         return self._centered_page(card)
 
     def _user_page(self):
-        card = self._page_shell("اولین کاربر را بسازید", "بعدا قادر به ساخت کاربر های دیگر خواهید بود")
+        card = self._page_shell(
+            "اولین کاربر را بسازید", "بعدا قادر به ساخت کاربر های دیگر خواهید بود"
+        )
         self.full_name = FormField("نام و نام خانوادگی", "برای مثال: علی احمدی")
         self.username = FormField("نام کاربری", "برای ورود به برنامه")
         card.body_layout.addWidget(self.full_name)
@@ -207,7 +207,11 @@ class FirstRunWizard(QDialog):
         self.role_group = QButtonGroup(self)
         self.role_group.setExclusive(True)
         self.role_buttons = {}
-        for key, text in (("counselor", "مشاور"), ("assistant", "معاون"), ("principal", "مدیر مدرسه")):
+        for key, text in (
+            ("counselor", "مشاور"),
+            ("assistant", "معاون"),
+            ("principal", "مدیر مدرسه"),
+        ):
             button = QPushButton(text)
             button.setCheckable(True)
             button.setCursor(Qt.PointingHandCursor)
@@ -233,7 +237,9 @@ class FirstRunWizard(QDialog):
         return self._centered_page(card)
 
     def _security_page(self):
-        card = self._page_shell("امنیت حساب", "برای ورود، می‌توانید از رمز عبور استفاده کنید یا آن را فعلاً خالی بگذارید.")
+        card = self._page_shell(
+            "امنیت حساب", "برای ورود، می‌توانید از رمز عبور استفاده کنید یا آن را فعلاً خالی بگذارید."
+        )
         self.review_summary = QLabel()
         self.review_summary.setWordWrap(True)
         self.review_summary.setStyleSheet(
@@ -242,7 +248,9 @@ class FirstRunWizard(QDialog):
         card.body_layout.addWidget(self.review_summary)
         self.password_enabled = QCheckBox("برای این حساب رمز ورود تعیین می‌کنم")
         self.password_enabled.setCursor(Qt.PointingHandCursor)
-        self.password_enabled.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};")
+        self.password_enabled.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+        )
         self.password_enabled.toggled.connect(self._toggle_password_fields)
         card.body_layout.addWidget(self.password_enabled)
 
@@ -252,7 +260,9 @@ class FirstRunWizard(QDialog):
         card.body_layout.addWidget(password_help)
 
         self.password = FormField("رمز عبور", "حداقل ۸ نویسه", password=True, revealable=True)
-        self.password_confirmation = FormField("تکرار رمز عبور", "رمز عبور را دوباره وارد کنید", password=True, revealable=True)
+        self.password_confirmation = FormField(
+            "تکرار رمز عبور", "رمز عبور را دوباره وارد کنید", password=True, revealable=True
+        )
         card.body_layout.addWidget(self.password)
         card.body_layout.addWidget(self.password_confirmation)
 
@@ -261,10 +271,13 @@ class FirstRunWizard(QDialog):
         self.vault_note.setStyleSheet(
             f"background-color: {Colors.AI_BG}; color: {Colors.AI_ACCENT}; border: 1px solid {Colors.AI_BORDER}; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;"
         )
-        self.vault_pin = FormField("پین یادداشت‌های محرمانه", "یک پین جداگانه برای یادداشت‌های محرمانه", password=True, revealable=True)
-        self.vault_acknowledgement = QCheckBox(
-            "می‌دانم پین فراموش‌شده قابل بازیابی نیست."
+        self.vault_pin = FormField(
+            "پین یادداشت‌های محرمانه",
+            "یک پین جداگانه برای یادداشت‌های محرمانه",
+            password=True,
+            revealable=True,
         )
+        self.vault_acknowledgement = QCheckBox("می‌دانم پین فراموش‌شده قابل بازیابی نیست.")
         self.vault_acknowledgement.setCursor(Qt.PointingHandCursor)
         self.vault_acknowledgement.setStyleSheet(
             f"font-size: 11px; color: {Colors.TEXT_MAIN}; font-weight: 600;"
@@ -303,9 +316,7 @@ class FirstRunWizard(QDialog):
             "middle": "دوره اول",
             "high": "دوره دوم",
         }
-        selected_types = "، ".join(
-            type_labels[key] for key in self._selected_school_types()
-        )
+        selected_types = "، ".join(type_labels[key] for key in self._selected_school_types())
         self.review_summary.setText(
             f"مرور اطلاعات: {self.school_name.text()} · {selected_types} · "
             f"{self.full_name.text()} ({self.role_buttons[self._selected_role()].text()})"
@@ -326,7 +337,9 @@ class FirstRunWizard(QDialog):
         self.vault_pin.setVisible(is_counselor)
         self.vault_acknowledgement.setVisible(is_counselor)
         if is_counselor:
-            self.vault_note.setText("پین یادداشت‌های محرمانه برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید.")
+            self.vault_note.setText(
+                "پین یادداشت‌های محرمانه برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید."
+            )
         self._refresh_layout()
 
     def _toggle_password_fields(self, enabled):
@@ -372,12 +385,21 @@ class FirstRunWizard(QDialog):
     def _validate_current_step(self):
         fields = []
         if self._step == 0:
-            fields = ((self.school_name, "نام مدرسه را وارد کنید."), (self.academic_year, "سال تحصیلی را وارد کنید."))
+            fields = (
+                (self.school_name, "نام مدرسه را وارد کنید."),
+                (self.academic_year, "سال تحصیلی را وارد کنید."),
+            )
         elif self._step == 1:
-            fields = ((self.full_name, "نام و نام خانوادگی را وارد کنید."), (self.username, "نام کاربری را وارد کنید."))
+            fields = (
+                (self.full_name, "نام و نام خانوادگی را وارد کنید."),
+                (self.username, "نام کاربری را وارد کنید."),
+            )
         else:
             if self.password_enabled.isChecked():
-                fields = ((self.password, "رمز عبور را وارد کنید."), (self.password_confirmation, "تکرار رمز عبور را وارد کنید."))
+                fields = (
+                    (self.password, "رمز عبور را وارد کنید."),
+                    (self.password_confirmation, "تکرار رمز عبور را وارد کنید."),
+                )
             if self._selected_role() == "counselor":
                 fields += ((self.vault_pin, "پین یادداشت‌های محرمانه برای مشاور الزامی است."),)
 
@@ -412,7 +434,9 @@ class FirstRunWizard(QDialog):
                 self.username.set_error("طول نام کاربری باید بین ۳ تا ۲۰ حرف باشد")
                 return False
             if not validate_username(self.username.text()):
-                self.username.set_error("نام کاربری معتبر نیست، لطفا از حروف و اعداد انگلیسی استفاده کنید.")
+                self.username.set_error(
+                    "نام کاربری معتبر نیست، لطفا از حروف و اعداد انگلیسی استفاده کنید."
+                )
                 self.username.input.setFocus()
                 return False
         elif self._step == 2 and self.password_enabled.isChecked():
@@ -424,9 +448,15 @@ class FirstRunWizard(QDialog):
                 self.password_confirmation.set_error("دو رمز عبور یکسان نیستند.")
                 self.password_confirmation.input.setFocus()
                 return False
-        if self._step == 2 and self._selected_role() == "counselor" and not self.vault_acknowledgement.isChecked():
+        if (
+            self._step == 2
+            and self._selected_role() == "counselor"
+            and not self.vault_acknowledgement.isChecked()
+        ):
             self.vault_acknowledgement.setFocus()
-            self.setup_alert.setText("پیش از اتمام راه‌اندازی، پیام مربوط به بازیابی‌ناپذیری پین را تأیید کنید.")
+            self.setup_alert.setText(
+                "پیش از اتمام راه‌اندازی، پیام مربوط به بازیابی‌ناپذیری پین را تأیید کنید."
+            )
             self.setup_alert.setVisible(True)
             return False
         return True
@@ -435,7 +465,11 @@ class FirstRunWizard(QDialog):
         role = self._selected_role()
         # The vault database always needs a key. Non-counselor accounts never use it,
         # so their first-run key is random and only lives for this application session.
-        vault_pin = self.vault_pin.text() if role == "counselor" else base64.b64encode(os.urandom(32)).decode("ascii")
+        vault_pin = (
+            self.vault_pin.text()
+            if role == "counselor"
+            else base64.b64encode(os.urandom(32)).decode("ascii")
+        )
         try:
             credentials = DatabaseCredentials.from_vault_pin(vault_pin)
             manager = configure_database_manager(credentials)
@@ -456,7 +490,9 @@ class FirstRunWizard(QDialog):
                 ).execute()
                 User.create(
                     username=self.username.text(),
-                    password_hash=hash_password(self.password.text()) if self.password_enabled.isChecked() else None,
+                    password_hash=hash_password(self.password.text())
+                    if self.password_enabled.isChecked()
+                    else None,
                     full_name=self.full_name.text(),
                     role=role,
                     avatar_color=generate_profile_color(self.username.text()),

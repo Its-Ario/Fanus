@@ -4,6 +4,7 @@ import re
 def validate_username(username: str) -> bool:
     return bool(re.fullmatch(r"[A-Za-z0-9]{3,20}", username))
 
+
 def validate_academic_year(value: str) -> bool:
     if not re.fullmatch(r"[1۱][0-9۰-۹]{3}-[1۱][0-9۰-۹]{3}", value):
         return False

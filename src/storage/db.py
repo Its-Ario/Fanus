@@ -135,7 +135,9 @@ class DatabaseManager:
         except Exception as exc:
             self._close_database(db)
             logger.exception("Unexpected public database initialization failure")
-            raise DatabaseConnectionError("Could not initialize the application data store.") from exc
+            raise DatabaseConnectionError(
+                "Could not initialize the application data store."
+            ) from exc
 
         self._public_initialized = True
         logger.info("Fanus public database initialized")
@@ -161,7 +163,9 @@ class DatabaseManager:
             self._close_database(vault_db)
             set_vault_cipher_key(None)
             logger.exception("Unexpected vault initialization failure")
-            raise DatabaseConnectionError("Could not initialize the confidential data store.") from exc
+            raise DatabaseConnectionError(
+                "Could not initialize the confidential data store."
+            ) from exc
 
         self._credentials = credentials
         self._vault_initialized = True
@@ -251,7 +255,9 @@ class DatabaseManager:
         if vault and not self._vault_initialized:
             raise DatabaseConfigurationError("The confidential vault must be unlocked first.")
         if not vault and not self._public_initialized:
-            raise DatabaseConfigurationError("DatabaseManager.initialize_public() must be called first.")
+            raise DatabaseConfigurationError(
+                "DatabaseManager.initialize_public() must be called first."
+            )
         database = vault_db if vault else db
         try:
             with database.atomic():
@@ -281,7 +287,9 @@ class DatabaseManager:
 _manager: Optional[DatabaseManager] = None
 
 
-def configure_database_manager(credentials: Optional[DatabaseCredentials] = None) -> DatabaseManager:
+def configure_database_manager(
+    credentials: Optional[DatabaseCredentials] = None,
+) -> DatabaseManager:
     """Configure the application-wide manager exactly once per process."""
     global _manager
     if _manager is not None and _manager.initialized:

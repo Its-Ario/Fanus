@@ -46,11 +46,7 @@ def main():
         try:
             manager = configure_database_manager()
             manager.initialize_public()
-            users = list(
-                User.select()
-                .where(User.is_active)
-                .order_by(User.full_name)
-            )
+            users = list(User.select().where(User.is_active).order_by(User.full_name))
         except DatabaseError:
             QMessageBox.critical(
                 None,

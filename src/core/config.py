@@ -96,7 +96,7 @@ class ConfigManager:
                     operation_mode=data.get("operation_mode", "STANDALONE"),
                     hub=data.get("hub", {}),
                     signature=data.get("signature", ""),
-                    is_configured=data.get("is_configured", False)
+                    is_configured=data.get("is_configured", False),
                 )
         except Exception:
             logger.exception("Failed to read config.json")
@@ -138,10 +138,11 @@ class ConfigManager:
         config = cls.load()
         config.is_configured = True
         return cls.save(config)
+
     @staticmethod
     def _backup_corrupt_file(config_path: Path) -> None:
         try:
-            bak_path = config_path.with_suffix('.json.bak')
+            bak_path = config_path.with_suffix(".json.bak")
             if config_path.exists():
                 os.replace(config_path, bak_path)
         except Exception:

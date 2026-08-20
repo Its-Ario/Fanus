@@ -11,9 +11,7 @@ PASSWORD_ITERATIONS = 600_000
 
 def hash_password(password: str) -> str:
     salt = os.urandom(16)
-    digest = hashlib.pbkdf2_hmac(
-        "sha256", password.encode("utf-8"), salt, PASSWORD_ITERATIONS
-    )
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PASSWORD_ITERATIONS)
     return "{}${}${}${}".format(
         PASSWORD_ALGORITHM,
         PASSWORD_ITERATIONS,
@@ -35,9 +33,7 @@ def verify_password(password: str, encoded_hash: str | None) -> bool:
             return False
         salt = base64.b64decode(salt_value, validate=True)
         expected = base64.b64decode(expected_digest, validate=True)
-        actual = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt, iteration_count
-        )
+        actual = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iteration_count)
     except (TypeError, ValueError, UnicodeEncodeError):
         return False
 

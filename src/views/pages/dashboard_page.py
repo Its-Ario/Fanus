@@ -57,9 +57,9 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
     week_start = _week_start(today)
 
     active_student_count = Student.select().where(Student.is_active).count()
-    high_risk_student_count = Student.select().where(
-        Student.is_active, Student.risk_level == RiskLevel.HIGH
-    ).count()
+    high_risk_student_count = (
+        Student.select().where(Student.is_active, Student.risk_level == RiskLevel.HIGH).count()
+    )
     active_plan_count = (
         StudyPlan.select()
         .join(Student)
@@ -97,9 +97,7 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
         AcademicGrade.select(
             AcademicGrade.subject_name,
             (
-                fn.SUM(AcademicGrade.score)
-                * 100.0
-                / fn.NULLIF(fn.SUM(AcademicGrade.max_score), 0)
+                fn.SUM(AcademicGrade.score) * 100.0 / fn.NULLIF(fn.SUM(AcademicGrade.max_score), 0)
             ).alias("percentage"),
         )
         .join(Student)
@@ -161,10 +159,17 @@ class DashboardPage(QWidget):
         stats_row = QHBoxLayout()
         stats_row.setSpacing(14)
         stats_row.addWidget(StatCard("کل دانش‌آموزان", data.active_student_count, "👥"))
-        stats_row.addWidget(StatCard("ریسک بالا", data.high_risk_student_count, "⚠️", accent_color=Colors.ERROR))
+        stats_row.addWidget(
+            StatCard("ریسک بالا", data.high_risk_student_count, "⚠️", accent_color=Colors.ERROR)
+        )
         stats_row.addWidget(StatCard("برنامه‌های فعال", data.active_plan_count, "📚"))
         stats_row.addWidget(
-            StatCard("نرخ تکمیل هفتگی", f"{data.weekly_completion_rate}٪", "✅", accent_color=Colors.SUCCESS)
+            StatCard(
+                "نرخ تکمیل هفتگی",
+                f"{data.weekly_completion_rate}٪",
+                "✅",
+                accent_color=Colors.SUCCESS,
+            )
         )
         layout.addLayout(stats_row)
 
@@ -231,13 +236,21 @@ class DashboardPage(QWidget):
             return card
 
         for subject in subjects:
-            color = Colors.SUCCESS if subject.percentage >= 70 else Colors.WARNING if subject.percentage >= 50 else Colors.ERROR
+            color = (
+                Colors.SUCCESS
+                if subject.percentage >= 70
+                else Colors.WARNING
+                if subject.percentage >= 50
+                else Colors.ERROR
+            )
             row = QVBoxLayout()
             row.setSpacing(4)
             label_row = QHBoxLayout()
             name_label = QLabel(subject.name)
             name_label.setAlignment(Qt.AlignRight)
-            name_label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
+            name_label.setStyleSheet(
+                f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
+            )
             percentage_label = QLabel(to_persian_digits(f"{subject.percentage}٪"))
             percentage_label.setStyleSheet(f"font-size: 12px; font-weight: 700; color: {color};")
             label_row.addWidget(name_label)

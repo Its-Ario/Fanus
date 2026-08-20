@@ -336,9 +336,7 @@ class FormField(QWidget):
         layout.setSizeConstraint(QLayout.SetMinimumSize)
 
         self.label = QLabel(label)
-        self.label.setStyleSheet(
-            f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
-        )
+        self.label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
 
         self.input = QLineEdit()
         self.label.setBuddy(self.input)

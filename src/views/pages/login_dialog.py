@@ -161,7 +161,9 @@ class LoginDialog(QDialog):
         return page, card
 
     def _account_page(self):
-        page, card = self._page_shell("انتخاب حساب", "برای ادامه، یکی از حساب‌های فعال را انتخاب کنید.")
+        page, card = self._page_shell(
+            "انتخاب حساب", "برای ادامه، یکی از حساب‌های فعال را انتخاب کنید."
+        )
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -185,7 +187,9 @@ class LoginDialog(QDialog):
             f"background-color: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MAIN}; "
             "border-radius: 8px; padding: 9px 11px; font-size: 12px; font-weight: 700;"
         )
-        self.password_field = FormField("رمز عبور", "رمز عبور را وارد کنید", password=True, revealable=True)
+        self.password_field = FormField(
+            "رمز عبور", "رمز عبور را وارد کنید", password=True, revealable=True
+        )
         self.password_field.input.returnPressed.connect(self._submit_password)
         self.password_button = PrimaryButton("ورود")
         self.password_button.clicked.connect(self._submit_password)
