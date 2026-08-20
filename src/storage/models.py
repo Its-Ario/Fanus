@@ -109,12 +109,33 @@ class VaultBaseModel(Model):
         return super().save(**args, **kwargs)
 
 
-class Counselor(BaseModel):
+class SchoolProfile(Model):
+    id = IntegerField(primary_key=True, default=1)
+    school_name = CharField()
+    academic_year = CharField()
+    updated_at = DateTimeField(default=datetime.now)
+
+    class Meta:
+        database = db
+
+    @classmethod
+    def get_instance(cls):
+        profile, _ = cls.get_or_create(id=1)
+        return profile
+
+class User(BaseModel):
     username = CharField(unique=True, index=True, max_length=50)
     password_hash = CharField(max_length=255)
     full_name = CharField(max_length=100)
-    school_name = CharField(max_length=150)
+    role = CharField(choices=[
+        ('counselor', 'مشاور'),
+        ('assistant', 'معاون'),
+        ('principal', 'مدیر مدرسه')
+    ], default='counselor')
+    avatar_color = CharField(default="#0D9488")
+    can_manage_users = BooleanField(default=False)
 
+    is_active = BooleanField(default=True)
     last_login = DateTimeField(null=True)
 
     def __str__(self):
@@ -263,7 +284,8 @@ class AuditLog(BaseModel):
 
 
 PUBLIC_MODELS = [
-    Counselor,
+    SchoolProfile,
+    User,
     Classroom,
     Student,
     AcademicGrade,
