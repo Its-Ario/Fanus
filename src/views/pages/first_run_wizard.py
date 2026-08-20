@@ -24,6 +24,7 @@ from src.storage.db import DatabaseCredentials, configure_database_manager
 from src.storage.models import SchoolProfile, User
 from src.styles.app_style import APP_STYLE
 from src.styles.theme import Colors
+from src.utils.validators import validate_academic_year, validate_username
 from src.views.components.title_bar import TitleBar
 from src.views.components.ui_kit import (
     Card,
@@ -263,7 +264,21 @@ class FirstRunWizard(QDialog):
                 valid = False
         if not valid:
             return False
-        if self._step == 2 and self.password_enabled.isChecked():
+        if self._step == 0:
+            if not (2 < len(self.school_name.text()) < 50):
+                self.school_name.set_error("نام مدرسه باید بین ۲ تا ۵۰ حرف باشد")
+                return False
+            if not validate_academic_year(self.academic_year.text()):
+                self.academic_year.set_error("سال تحصیلی معتبر نیست")
+                return False
+        elif self._step == 1:
+            if not (3 < len(self.username.text()) < 20):
+                self.username.set_error("طول نام کاربری باید بین ۳ تا ۲۰ حرف باشد")
+                return False
+            if not validate_username(self.username.text()):
+                self.username.set_error("نام کاربری معتبر نیست، لطفا از حروف و اعداد انگلیسی استفاده کنید.")
+                return False
+        elif self._step == 2 and self.password_enabled.isChecked():
             if len(self.password.text()) < 8:
                 self.password.set_error("رمز عبور باید دست‌کم ۸ نویسه باشد.")
                 return False
