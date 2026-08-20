@@ -1,5 +1,42 @@
 from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, Qt, pyqtProperty
-from PyQt5.QtWidgets import QButtonGroup, QFrame, QPushButton, QVBoxLayout
+from PyQt5.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+
+from src.views.components.ui_kit import Avatar
+
+ROLE_LABELS = {
+    "counselor": "مشاور",
+    "assistant": "معاون",
+    "principal": "مدیر مدرسه",
+}
+
+
+class UserFooter(QFrame):
+    def __init__(self, user):
+        super().__init__()
+        self.setObjectName("UserFooter")
+        self.user = user
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(6, 10, 6, 4)
+        layout.setSpacing(10)
+
+        layout.addWidget(Avatar(user.full_name, size=36, color=user.avatar_color))
+
+        self.text_box = QVBoxLayout()
+        self.text_box.setSpacing(0)
+        self.name_label = QLabel(user.full_name)
+        self.name_label.setObjectName("UserName")
+        self.role_label = QLabel(ROLE_LABELS.get(user.role, user.role))
+        self.role_label.setObjectName("UserRole")
+        self.text_box.addWidget(self.name_label)
+        self.text_box.addWidget(self.role_label)
+        layout.addLayout(self.text_box, stretch=1)
+
+        self.setToolTip(f"{user.full_name} · {ROLE_LABELS.get(user.role, user.role)}")
+
+    def set_expanded(self, expanded: bool):
+        self.name_label.setVisible(expanded)
+        self.role_label.setVisible(expanded)
 
 
 class NavItem(QPushButton):
@@ -31,12 +68,13 @@ class Sidebar(QFrame):
     COLLAPSED_WIDTH = 64
     EXPANDED_WIDTH = 220
 
-    def __init__(self):
+    def __init__(self, user=None):
         super().__init__()
         self.setObjectName("Sidebar")
         self._expanded = True
         self._width = self.EXPANDED_WIDTH
         self.setFixedWidth(self._width)
+        self.user_footer = UserFooter(user) if user else None
 
         self.animation = QPropertyAnimation(self, b"sidebar_width")
         self.animation.setDuration(200)
@@ -72,6 +110,8 @@ class Sidebar(QFrame):
         self.layout_ref.addStretch()
         if self.nav_items:
             self.nav_items[0].setChecked(True)
+        if self.user_footer:
+            self.layout_ref.addWidget(self.user_footer)
 
     def toggle(self):
         self._expanded = not self._expanded
@@ -79,6 +119,8 @@ class Sidebar(QFrame):
 
         for item in self.nav_items:
             item.set_expanded(self._expanded)
+        if self.user_footer:
+            self.user_footer.set_expanded(self._expanded)
 
         self.animation.stop()
         self.animation.setStartValue(self.width())

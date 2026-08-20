@@ -78,6 +78,20 @@ QPushButton#ToggleBtn:hover {{
     background-color: {Colors.SURFACE_HOVER};
 }}
 
+QFrame#UserFooter {{
+    border-top: 1px solid {Colors.BORDER};
+    margin-top: 4px;
+}}
+QLabel#UserName {{
+    color: {Colors.TEXT_MAIN};
+    font-size: 12px;
+    font-weight: 700;
+}}
+QLabel#UserRole {{
+    color: {Colors.TEXT_MUTED};
+    font-size: 10px;
+}}
+
 /* ================= FOOTER / CREDITS BAR ================= */
 QFrame#Footer {{
     background-color: {Colors.BACKGROUND};

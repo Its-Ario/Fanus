@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
 
-        self.sidebar = Sidebar()
+        self.sidebar = Sidebar(user=current_user)
         self.pages = QStackedWidget()
         self.pages.setObjectName("Pages")
 
