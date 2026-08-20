@@ -1,6 +1,10 @@
 from src.styles.theme import Colors
 
 APP_STYLE = f"""
+QLabel {{
+    background-color: transparent;
+}}
+
 /* ================= ROOT WINDOW ================= */
 QWidget#CentralWrapper {{
     background-color: {Colors.SURFACE};
