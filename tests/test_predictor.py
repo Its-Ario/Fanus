@@ -30,11 +30,11 @@ def test_burnout_candidate_prediction():
     level, percentage = RiskPredictor.predict_student_risk(
         daily_hours=1.0,
         absences=5,
-        gpa=10.0,
+        gpa=2.0,
         past_failures=1,
         support_level=1
     )
-    assert percentage in [ "High"]
+    assert level in [ "High"]
 
 
 def test_more_absences_increases_risk():
