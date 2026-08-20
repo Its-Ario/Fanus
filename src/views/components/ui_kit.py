@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import (
 
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
+from src.utils.profile_color import generate_profile_color
 
 
 def apply_soft_shadow(widget, blur=18, y_offset=3, alpha=25):
@@ -192,14 +193,13 @@ class AIInsightCard(QFrame):
 
 
 class Avatar(QLabel):
-    def __init__(self, full_name: str, size: int = 40):
+    def __init__(self, full_name: str, size: int = 40, color: str | None = None):
         super().__init__()
         self.setFixedSize(size, size)
         parts = full_name.split()
         initials = "".join([p[0] for p in parts[:2]]) if len(parts) > 1 else full_name[:2]
 
-        palette = [Colors.PRIMARY, Colors.AI_ACCENT, "#DB2777", "#EA580C", "#0891B2"]
-        color = palette[hash(full_name) % len(palette)]
+        color = color or generate_profile_color(full_name)
 
         self.setText(initials)
         self.setAlignment(Qt.AlignCenter)

@@ -1,7 +1,6 @@
 """First-run setup dialog for establishing the first Fanus workspace."""
 
 import base64
-import hashlib
 import os
 
 from PyQt5.QtCore import Qt
@@ -21,11 +20,13 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from src.core.auth import hash_password
 from src.core.config import ConfigManager
 from src.storage.db import DatabaseCredentials, configure_database_manager
 from src.storage.models import SchoolProfile, User
 from src.styles.app_style import APP_STYLE
 from src.styles.theme import Colors
+from src.utils.profile_color import generate_profile_color
 from src.utils.validators import validate_academic_year, validate_username
 from src.views.components.title_bar import TitleBar
 from src.views.components.ui_kit import (
@@ -455,9 +456,10 @@ class FirstRunWizard(QDialog):
                 ).execute()
                 User.create(
                     username=self.username.text(),
-                    password_hash=self._password_hash(self.password.text()) if self.password_enabled.isChecked() else None,
+                    password_hash=hash_password(self.password.text()) if self.password_enabled.isChecked() else None,
                     full_name=self.full_name.text(),
                     role=role,
+                    avatar_color=generate_profile_color(self.username.text()),
                     can_manage_users=True,
                 )
             if not ConfigManager.mark_configured():
@@ -466,14 +468,6 @@ class FirstRunWizard(QDialog):
             self._show_error(self._friendly_error(exc))
             return
         self.accept()
-
-    @staticmethod
-    def _password_hash(password):
-        salt = os.urandom(16)
-        digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 600_000)
-        return "pbkdf2_sha256$600000${}${}".format(
-            base64.b64encode(salt).decode("ascii"), base64.b64encode(digest).decode("ascii")
-        )
 
     def _show_error(self, message):
         self.setup_alert.setText(message)

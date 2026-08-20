@@ -92,7 +92,7 @@ class DatabaseManager:
 
     def __init__(
         self,
-        credentials: DatabaseCredentials,
+        credentials: Optional[DatabaseCredentials] = None,
         fanus_path: Path = FANUS_DB_PATH,
         vault_path: Path = VAULT_DB_PATH,
         migrations_dir: Path = MIGRATIONS_DIR,
@@ -101,39 +101,71 @@ class DatabaseManager:
         self.fanus_path = Path(fanus_path)
         self.vault_path = Path(vault_path)
         self.migrations_dir = Path(migrations_dir)
-        self._initialized = False
+        self._public_initialized = False
+        self._vault_initialized = False
 
     @property
     def initialized(self) -> bool:
-        return self._initialized
+        return self._public_initialized
+
+    @property
+    def vault_initialized(self) -> bool:
+        return self._vault_initialized
 
     def initialize(self) -> None:
-        if self._initialized:
+        self.initialize_public()
+        if self._credentials is not None:
+            self.unlock_vault(self._credentials)
+
+    def initialize_public(self) -> None:
+        """Open and migrate only the public application database."""
+        if self._public_initialized:
             return
 
         self.fanus_path.parent.mkdir(parents=True, exist_ok=True)
-        self.vault_path.parent.mkdir(parents=True, exist_ok=True)
-
         public_database = self._new_sqlite_database(self.fanus_path)
-        private_database = self._new_sqlite_database(self.vault_path)
         db.initialize(public_database)
-        vault_db.initialize(private_database)
-        set_vault_cipher_key(self._credentials.vault_key)
 
         try:
             self._open_and_verify(public_database, self.fanus_path)
-            self._open_and_verify(private_database, self.vault_path)
-            self._migrate(public_database, private_database)
+            self._migrate_public(public_database)
         except DatabaseError:
-            self.close()
+            self._close_database(db)
             raise
         except Exception as exc:
-            self.close()
-            logger.exception("Unexpected database initialization failure")
-            raise DatabaseConnectionError("Could not initialize the data stores.") from exc
+            self._close_database(db)
+            logger.exception("Unexpected public database initialization failure")
+            raise DatabaseConnectionError("Could not initialize the application data store.") from exc
 
-        self._initialized = True
-        logger.info("Fanus databases initialized")
+        self._public_initialized = True
+        logger.info("Fanus public database initialized")
+
+    def unlock_vault(self, credentials: DatabaseCredentials) -> None:
+        """Open and migrate the encrypted vault after its PIN is provided."""
+        if self._vault_initialized:
+            return
+
+        self.vault_path.parent.mkdir(parents=True, exist_ok=True)
+        private_database = self._new_sqlite_database(self.vault_path)
+        vault_db.initialize(private_database)
+        set_vault_cipher_key(credentials.vault_key)
+
+        try:
+            self._open_and_verify(private_database, self.vault_path)
+            self._migrate_vault(private_database)
+        except DatabaseError:
+            self._close_database(vault_db)
+            set_vault_cipher_key(None)
+            raise
+        except Exception as exc:
+            self._close_database(vault_db)
+            set_vault_cipher_key(None)
+            logger.exception("Unexpected vault initialization failure")
+            raise DatabaseConnectionError("Could not initialize the confidential data store.") from exc
+
+        self._credentials = credentials
+        self._vault_initialized = True
+        logger.info("Fanus confidential vault unlocked")
 
     @staticmethod
     def _new_sqlite_database(path: Path):
@@ -159,26 +191,41 @@ class DatabaseManager:
                 "Could not open the database. Restore a valid backup."
             ) from exc
 
-    def _migrate(self, public_database, private_database) -> None:
+    def _migrate_public(self, public_database) -> None:
         try:
             from peewee_migrate import Router
 
-            from src.storage.models import PUBLIC_MODELS, VAULT_MODELS
+            from src.storage.models import PUBLIC_MODELS
 
             public_is_new = not public_database.get_tables()
-            vault_is_new = not private_database.get_tables()
             public_migrations = self.migrations_dir / "fanus"
-            vault_migrations = self.migrations_dir / "vault"
             public_migrations.mkdir(parents=True, exist_ok=True)
-            vault_migrations.mkdir(parents=True, exist_ok=True)
             Router(public_database, migrate_dir=str(public_migrations)).run()
-            Router(private_database, migrate_dir=str(vault_migrations)).run()
-            # Bootstrap only
             if public_is_new:
                 public_database.create_tables(PUBLIC_MODELS, safe=False)
+            self._verify_schema(public_database, PUBLIC_MODELS)
+        except ImportError as exc:
+            raise DatabaseConfigurationError(
+                "peewee-migrate is required for schema management."
+            ) from exc
+        except Exception as exc:
+            logger.exception("Public database migration failed")
+            raise DatabaseMigrationError(
+                "The application database schema could not be updated safely."
+            ) from exc
+
+    def _migrate_vault(self, private_database) -> None:
+        try:
+            from peewee_migrate import Router
+
+            from src.storage.models import VAULT_MODELS
+
+            vault_is_new = not private_database.get_tables()
+            vault_migrations = self.migrations_dir / "vault"
+            vault_migrations.mkdir(parents=True, exist_ok=True)
+            Router(private_database, migrate_dir=str(vault_migrations)).run()
             if vault_is_new:
                 private_database.create_tables(VAULT_MODELS, safe=False)
-            self._verify_schema(public_database, PUBLIC_MODELS)
             self._verify_schema(private_database, VAULT_MODELS)
         except ImportError as exc:
             raise DatabaseConfigurationError(
@@ -201,8 +248,10 @@ class DatabaseManager:
 
     @contextmanager
     def transaction(self, vault: bool = False) -> Generator[None, None, None]:
-        if not self._initialized:
-            raise DatabaseConfigurationError("DatabaseManager.initialize() must be called first.")
+        if vault and not self._vault_initialized:
+            raise DatabaseConfigurationError("The confidential vault must be unlocked first.")
+        if not vault and not self._public_initialized:
+            raise DatabaseConfigurationError("DatabaseManager.initialize_public() must be called first.")
         database = vault_db if vault else db
         try:
             with database.atomic():
@@ -212,20 +261,27 @@ class DatabaseManager:
             raise
 
     def close(self) -> None:
-        for database in (db, vault_db):
-            try:
-                if not database.is_closed():
-                    database.close()
-            except Exception:
-                logger.exception("Could not close database connection cleanly")
+        if self._public_initialized:
+            self._close_database(db)
+        if self._vault_initialized:
+            self._close_database(vault_db)
         set_vault_cipher_key(None)
-        self._initialized = False
+        self._public_initialized = False
+        self._vault_initialized = False
+
+    @staticmethod
+    def _close_database(database) -> None:
+        try:
+            if not database.is_closed():
+                database.close()
+        except Exception:
+            logger.exception("Could not close database connection cleanly")
 
 
 _manager: Optional[DatabaseManager] = None
 
 
-def configure_database_manager(credentials: DatabaseCredentials) -> DatabaseManager:
+def configure_database_manager(credentials: Optional[DatabaseCredentials] = None) -> DatabaseManager:
     """Configure the application-wide manager exactly once per process."""
     global _manager
     if _manager is not None and _manager.initialized:
