@@ -1,6 +1,7 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSignalBlocker, Qt
 from PyQt5.QtWidgets import (
     QButtonGroup,
+    QDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -11,6 +12,7 @@ from PyQt5.QtWidgets import (
 )
 
 from src.styles.theme import Colors
+from src.views.components.ui_kit import PrimaryButton, SecondaryButton
 from src.views.pages.settings.classes_panel import ClassesPanel
 from src.views.pages.settings.school_panel import SchoolPanel
 from src.views.pages.settings.security_panel import SecurityPanel
@@ -47,6 +49,42 @@ QPushButton#SegItem:checked {{
     color: {Colors.PRIMARY};
 }}
 """
+
+
+class UnsavedChangesDialog(QDialog):
+    """Ask for an explicit discard decision without platform-default actions."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("تغییرات ذخیره‌نشده")
+        self.setMinimumWidth(390)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(10)
+
+        title = QLabel("تغییرات ذخیره‌نشده دارید")
+        title.setAlignment(Qt.AlignRight)
+        title.setStyleSheet(f"font-size: 16px; font-weight: 800; color: {Colors.TEXT_MAIN};")
+        layout.addWidget(title)
+
+        detail = QLabel("آیا می‌خواهید بدون ذخیره از این صفحه خارج شوید؟")
+        detail.setAlignment(Qt.AlignRight)
+        detail.setWordWrap(True)
+        detail.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
+        layout.addWidget(detail)
+
+        layout.addSpacing(6)
+        actions = QHBoxLayout()
+        actions.setSpacing(10)
+        cancel = SecondaryButton("بازگشت")
+        discard = PrimaryButton("دور ریختن تغییرات")
+        cancel.clicked.connect(self.reject)
+        discard.clicked.connect(self.accept)
+        actions.addWidget(cancel)
+        actions.addStretch()
+        actions.addWidget(discard)
+        layout.addLayout(actions)
 
 
 class SettingsPage(QWidget):
@@ -101,9 +139,21 @@ class SettingsPage(QWidget):
         self._change(0)
 
     def _change(self, index):
-        if index != 0 and self.school._dirty:
-            self.school.reload()
+        if self.stack.currentIndex() == 0 and index != 0 and self.school._dirty:
+            if not self.confirm_navigation_away():
+                with QSignalBlocker(self.seg_group):
+                    self.seg_group.button(0).setChecked(True)
+                return
         self.stack.setCurrentIndex(index)
+
+    def confirm_navigation_away(self) -> bool:
+        """Confirm discarding Tab 1 edits before any page-level navigation."""
+        if not self.school._dirty:
+            return True
+        if UnsavedChangesDialog(self).exec_() != QDialog.Accepted:
+            return False
+        self.school.reload()
+        return True
 
     def showEvent(self, event):
         super().showEvent(event)

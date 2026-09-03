@@ -71,15 +71,32 @@ class MainWindow(QMainWindow):
     def _setup_navigation(self):
         dashboard_page = DashboardPage()
         students_page = StudentsPage(current_user=self.current_user)
-        settings_page = SettingsPage(current_user=self.current_user)
+        self.settings_page = SettingsPage(current_user=self.current_user)
         self.pages.addWidget(dashboard_page)
         self.pages.addWidget(students_page)
-        self.pages.addWidget(settings_page)
+        self.pages.addWidget(self.settings_page)
 
-        self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self.pages.setCurrentIndex(0))
-        self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: self.pages.setCurrentIndex(1))
+        self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
+        self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: self._navigate_to(1))
         self.sidebar.add_nav_item("📅", "برنامه‌ها", lambda: print("TODO"))
         self.sidebar.add_nav_item("📊", "آمار", lambda: print("TODO"))
-        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self.pages.setCurrentIndex(2))
+        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(2))
 
         self.sidebar.finalize()
+
+    def _navigate_to(self, index: int) -> None:
+        settings_index = self.pages.indexOf(self.settings_page)
+        if (
+            self.pages.currentWidget() is self.settings_page
+            and index != settings_index
+            and not self.settings_page.confirm_navigation_away()
+        ):
+            self.sidebar.nav_items[settings_index].setChecked(True)
+            return
+        self.pages.setCurrentIndex(index)
+
+    def closeEvent(self, event) -> None:
+        if self.settings_page.confirm_navigation_away():
+            event.accept()
+        else:
+            event.ignore()
