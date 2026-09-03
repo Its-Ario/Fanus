@@ -23,7 +23,6 @@ from src.views.components.ui_kit import (
     AIInsightCard,
     Card,
     Divider,
-    PrimaryButton,
     ProgressBar,
     SecondaryButton,
     SectionHeader,
@@ -153,7 +152,6 @@ class DashboardPage(QWidget):
         title_box.addWidget(page_subtitle)
         header_row.addLayout(title_box)
         header_row.addStretch()
-        header_row.addWidget(PrimaryButton("دانش‌آموز جدید", icon="➕"))
         layout.addLayout(header_row)
 
         stats_row = QHBoxLayout()
@@ -270,6 +268,5 @@ class DashboardPage(QWidget):
         card.body_layout.addWidget(title)
         card.body_layout.addWidget(Divider())
         card.body_layout.addWidget(SecondaryButton("ساخت برنامه مطالعاتی", icon="📅"))
-        card.body_layout.addWidget(SecondaryButton("افزودن دانش‌آموز", icon="👤"))
         card.body_layout.addWidget(SecondaryButton("خروجی گزارش هفتگی", icon="📄"))
         return card

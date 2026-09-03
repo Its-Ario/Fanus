@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import ceil
 
+from peewee import IntegrityError
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFrame,
@@ -23,6 +25,7 @@ from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
     EmptyState,
+    FormField,
     PrimaryButton,
     SearchInput,
     SecondaryButton,
@@ -148,6 +151,84 @@ class StudentDetailsDialog(QDialog):
         layout.addWidget(buttons)
 
 
+class NewStudentDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("دانش‌آموز جدید")
+        self.setMinimumWidth(390)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(12)
+
+        self.first_name = FormField("نام", "برای مثال: سارا")
+        self.last_name = FormField("نام خانوادگی", "برای مثال: احمدی")
+        self.national_id = FormField("کد ملی", "۱۰ رقم")
+        self.classroom = QComboBox()
+        self.classroom.setFixedHeight(38)
+        self.classroom.setStyleSheet(
+            f"QComboBox {{ background: {Colors.SURFACE}; border: 1px solid {Colors.BORDER}; "
+            f"border-radius: 8px; padding: 0 12px; color: {Colors.TEXT_MAIN}; }}"
+        )
+        self._classrooms = tuple(Classroom.select().order_by(Classroom.grade_level, Classroom.name))
+        for room in self._classrooms:
+            self.classroom.addItem(room.name, room)
+
+        class_label = QLabel("کلاس")
+        class_label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
+        self.error = QLabel()
+        self.error.setWordWrap(True)
+        self.error.setStyleSheet(f"font-size: 11px; color: {Colors.ERROR};")
+        self.error.hide()
+
+        layout.addWidget(self.first_name)
+        layout.addWidget(self.last_name)
+        layout.addWidget(self.national_id)
+        layout.addWidget(class_label)
+        layout.addWidget(self.classroom)
+        layout.addWidget(self.error)
+
+        actions = QHBoxLayout()
+        cancel = SecondaryButton("انصراف")
+        cancel.clicked.connect(self.reject)
+        save = PrimaryButton("ثبت دانش‌آموز")
+        save.clicked.connect(self._save)
+        actions.addWidget(cancel)
+        actions.addStretch()
+        actions.addWidget(save)
+        layout.addLayout(actions)
+
+    @staticmethod
+    def _normalize_digits(value: str) -> str:
+        return value.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
+
+    def _show_error(self, message: str):
+        self.error.setText(message)
+        self.error.show()
+
+    def _save(self):
+        first_name, last_name = self.first_name.text(), self.last_name.text()
+        national_id = self._normalize_digits(self.national_id.text())
+        classroom = self.classroom.currentData()
+        if not first_name or not last_name or not classroom:
+            self._show_error("نام، نام خانوادگی و کلاس را وارد کنید.")
+            return
+        if len(national_id) != 10 or not national_id.isdigit():
+            self._show_error("کد ملی باید دقیقا ۱۰ رقم باشد.")
+            return
+        try:
+            Student.create(
+                first_name=first_name,
+                last_name=last_name,
+                national_id=national_id,
+                classroom=classroom,
+                major=classroom.major,
+            )
+        except IntegrityError:
+            self._show_error("دانش‌آموزی با این کد ملی قبلا ثبت شده است.")
+            return
+        self.accept()
+
+
 class StudentsPage(QWidget):
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
@@ -177,7 +258,7 @@ class StudentsPage(QWidget):
         header.addLayout(titles)
         header.addStretch()
         add_button = PrimaryButton("دانش‌آموز جدید", icon="+")
-        add_button.clicked.connect(lambda: print("TODO"))
+        add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
         layout.addLayout(header)
 
@@ -234,7 +315,7 @@ class StudentsPage(QWidget):
         state_layout = QVBoxLayout(self.state_frame)
         state_layout.setContentsMargins(0, 0, 0, 0)
         self.loading_state = EmptyState("…", "در حال بارگذاری دانش‌آموزان", "چند لحظه صبر کنید.")
-        self.empty_state = EmptyState("", "هنوز دانش‌آموز فعالی ثبت نشده است", "برای شروع، اولین دانش‌آموز را ثبت کنید.", "دانش‌آموز جدید", lambda: print("TODO"))
+        self.empty_state = EmptyState("", "هنوز دانش‌آموز فعالی ثبت نشده است", "برای شروع، اولین دانش‌آموز را ثبت کنید.", "دانش‌آموز جدید", self._open_new_student)
         self.no_results_state = EmptyState("", "دانش‌آموزی پیدا نشد", "عبارت جستجو را بررسی کنید یا جستجو را پاک کنید.", "پاک کردن جستجو", self._clear_search)
         self.error_state = EmptyState("!", "فهرست دانش‌آموزان بارگذاری نشد", "اتصال پایگاه داده را بررسی کنید و دوباره تلاش کنید.", "تلاش دوباره", self.reload)
         self._states = (self.loading_state, self.empty_state, self.no_results_state, self.error_state)
@@ -314,8 +395,8 @@ class StudentsPage(QWidget):
             self._show_state(self.empty_state)
 
     def _update_pagination(self):
-        self.previous_button.setEnabled(self._page > 0)
-        self.next_button.setEnabled(self._page + 1 < self.page_count)
+        self.previous_button.setHidden(not self._page > 0)
+        self.next_button.setHidden(not self._page + 1 < self.page_count)
         self.page_label.setText(f"صفحه {to_persian_digits(self._page + 1)} از {to_persian_digits(self.page_count)}")
         self.result_label.setText(f"{to_persian_digits(self._total)} دانش‌آموز فعال")
 
@@ -329,3 +410,12 @@ class StudentsPage(QWidget):
         student = index.data(Qt.UserRole)
         if student:
             StudentDetailsDialog(student, self).exec_()
+
+    def _open_new_student(self):
+        if NewStudentDialog(self).exec_() == QDialog.Accepted:
+            self._page = 0
+            self._query = ""
+            self.search_input.blockSignals(True)
+            self.search_input.clear()
+            self.search_input.blockSignals(False)
+            self.reload()
