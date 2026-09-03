@@ -45,13 +45,13 @@ class PrimaryButton(QPushButton):
                 color: white;
                 font-weight: 600;
                 font-size: 13px;
-                border: none;
+                border: 2px solid transparent;
                 border-radius: 8px;
-                padding: 0 16px;
+                padding: 0 14px;
             }}
             QPushButton:hover {{ background-color: {Colors.PRIMARY_HOVER}; }}
             QPushButton:pressed {{ background-color: {Colors.PRIMARY_ACTIVE}; }}
-            QPushButton:focus {{ border: 2px solid {Colors.TEXT_MAIN}; }}
+            QPushButton:focus {{ border-color: {Colors.TEXT_MAIN}; }}
         """)
 
 

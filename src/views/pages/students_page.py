@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import (
     QAbstractItemView,
     QComboBox,
     QDialog,
-    QDialogButtonBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -145,9 +144,14 @@ class StudentDetailsDialog(QDialog):
             row = QLabel(f"<b>{label}:</b> {value}")
             row.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED}; padding: 4px 0;")
             layout.addWidget(row)
-        buttons = QDialogButtonBox(QDialogButtonBox.Close)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+
+        layout.addSpacing(6)
+        actions = QHBoxLayout()
+        close = PrimaryButton("بستن")
+        close.clicked.connect(self.accept)
+        actions.addStretch()
+        actions.addWidget(close)
+        layout.addLayout(actions)
 
 
 class NewStudentDialog(QDialog):
