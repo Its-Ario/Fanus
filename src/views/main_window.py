@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
 from src.styles.app_style import APP_STYLE
 from src.views.components.sidebar import Sidebar
 from src.views.components.title_bar import TitleBar
+from src.views.pages.analytics_page import AnalyticsPage
 from src.views.pages.dashboard_page import DashboardPage
 from src.views.pages.settings import SettingsPage
 from src.views.pages.students_page import StudentsPage
@@ -71,16 +72,18 @@ class MainWindow(QMainWindow):
     def _setup_navigation(self):
         dashboard_page = DashboardPage()
         students_page = StudentsPage(current_user=self.current_user)
+        analytics_page = AnalyticsPage()
         self.settings_page = SettingsPage(current_user=self.current_user)
         self.pages.addWidget(dashboard_page)
         self.pages.addWidget(students_page)
+        self.pages.addWidget(analytics_page)
         self.pages.addWidget(self.settings_page)
 
         self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
         self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: self._navigate_to(1))
         self.sidebar.add_nav_item("📅", "برنامه‌ها", lambda: print("TODO"))
-        self.sidebar.add_nav_item("📊", "آمار", lambda: print("TODO"))
-        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(2))
+        self.sidebar.add_nav_item("📊", "آمار", lambda: self._navigate_to(2))
+        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(3))
 
         self.sidebar.finalize()
 
