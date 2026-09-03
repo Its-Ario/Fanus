@@ -301,7 +301,6 @@ class SearchInput(QLineEdit):
         super().__init__()
         self.setPlaceholderText(f"🔍  {placeholder}")
         self.setFixedHeight(38)
-        self.setAlignment(Qt.AlignRight)
         self.setStyleSheet(f"""
             QLineEdit {{
                 background-color: {Colors.SURFACE};
