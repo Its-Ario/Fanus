@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QLayout,
     QLineEdit,
+    QMainWindow,
     QPushButton,
     QSizePolicy,
     QTableView,
@@ -435,6 +436,8 @@ class FormField(QWidget):
 
         parent = self.parentWidget()
         while parent:
+            if isinstance(parent, QMainWindow):
+                break
             parent_layout = parent.layout
             if callable(parent_layout):
                 parent_layout = parent_layout()

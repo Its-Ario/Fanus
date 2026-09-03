@@ -1,4 +1,3 @@
-# tests/test_ui_components.py
 from src.views.components.ui_kit import AIInsightCard, RiskBadge, StatCard, StudentRow
 
 

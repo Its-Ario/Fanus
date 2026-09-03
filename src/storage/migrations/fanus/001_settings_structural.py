@@ -20,6 +20,8 @@ ORDINALS = {
 
 
 def migrate(migrator, database, fake=False, **kwargs):
+    if fake:
+        return
     if "classroom" not in database.get_tables():
         return
     columns = {column.name for column in database.get_columns("classroom")}
@@ -50,6 +52,8 @@ def migrate(migrator, database, fake=False, **kwargs):
 
 
 def rollback(migrator, database, fake=False, **kwargs):
+    if fake:
+        return
     # SQLite cannot safely drop the added column; restore previous labels/indexes only.
     database.execute_sql("DROP INDEX IF EXISTS classroom_grade_level_major_code_academic_year")
     database.execute_sql("DROP INDEX IF EXISTS auditlog_created_at")

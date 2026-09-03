@@ -41,7 +41,7 @@ class AcademicMajor:
     EXPERIMENTAL = "علوم تجربی"
     HUMANITIES = "علوم انسانی"
     VOCATIONAL = "فنی و حرفه‌ای"
-    GENERAL = "عمومی/معارف"
+    GENERAL = "عمومی"
 
     VALUES = (MATH, EXPERIMENTAL, HUMANITIES, VOCATIONAL, GENERAL)
 
