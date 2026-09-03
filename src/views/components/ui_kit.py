@@ -3,14 +3,17 @@ from __future__ import annotations
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (
+    QAbstractItemView,
     QFrame,
     QGraphicsDropShadowEffect,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLayout,
     QLineEdit,
     QPushButton,
     QSizePolicy,
+    QTableView,
     QVBoxLayout,
     QWidget,
 )
@@ -506,6 +509,86 @@ class Divider(QFrame):
         self.setFixedHeight(1)
         self.setStyleSheet(f"background-color: {Colors.BORDER}; border: none;")
         self.setContentsMargins(0, margin_v, 0, margin_v)
+
+
+class DataTable(QTableView):
+    """QTableView with the app's card styling: rounded border, quiet header,
+    row separators, teal row selection, slim scrollbars."""
+
+    def __init__(self):
+        super().__init__()
+        self.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setShowGrid(False)
+        self.setAlternatingRowColors(False)
+        self.setWordWrap(False)
+        self.setFrameShape(QFrame.NoFrame)
+        self.verticalHeader().setVisible(False)
+        self.verticalHeader().setDefaultSectionSize(42)
+        header = self.horizontalHeader()
+        header.setHighlightSections(False)
+        header.setStretchLastSection(True)
+        header.setDefaultAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        self.setStyleSheet(f"""
+            QTableView {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 10px;
+                outline: none;
+                gridline-color: transparent;
+                selection-background-color: {Colors.PRIMARY}22;
+                selection-color: {Colors.PRIMARY};
+            }}
+            QTableView::item {{
+                padding: 0 12px;
+                border-bottom: 1px solid {Colors.BORDER};
+                color: {Colors.TEXT_MAIN};
+                font-size: 13px;
+            }}
+            QTableView::item:hover {{
+                background-color: {Colors.SURFACE_HOVER};
+            }}
+            QTableView::item:selected {{
+                background-color: {Colors.PRIMARY}22;
+                color: {Colors.PRIMARY};
+            }}
+            QHeaderView {{ background-color: transparent; }}
+            QHeaderView::section {{
+                background-color: {Colors.BACKGROUND};
+                color: {Colors.TEXT_MUTED};
+                font-size: 12px;
+                font-weight: 700;
+                padding: 9px 12px;
+                border: none;
+                border-bottom: 1px solid {Colors.BORDER};
+            }}
+            QHeaderView::section:first {{ border-top-right-radius: 10px; }}
+            QHeaderView::section:last {{ border-top-left-radius: 10px; }}
+            QTableCornerButton::section {{
+                background-color: {Colors.BACKGROUND};
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: transparent; width: 10px; margin: 2px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: {Colors.BORDER}; border-radius: 5px; min-height: 28px;
+            }}
+            QScrollBar::handle:vertical:hover {{ background: {Colors.TEXT_DISABLED}; }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{ background: transparent; }}
+            QScrollBar:horizontal {{
+                background: transparent; height: 10px; margin: 2px;
+            }}
+            QScrollBar::handle:horizontal {{
+                background: {Colors.BORDER}; border-radius: 5px; min-width: 28px;
+            }}
+            QScrollBar::handle:horizontal:hover {{ background: {Colors.TEXT_DISABLED}; }}
+            QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ width: 0; }}
+            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{ background: transparent; }}
+        """)
 
 
 class Card(QFrame):

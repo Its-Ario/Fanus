@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 from datetime import date, datetime
 from uuid import uuid4
 
@@ -16,6 +19,8 @@ from peewee import (
 
 from src.storage.db import db, decrypt_vault_value, encrypt_vault_value, vault_db
 
+logger = logging.getLogger(__name__)
+
 
 class EncryptedTextField(TextField):
     """TextField encrypted with AES-256-GCM with vault key."""
@@ -33,10 +38,33 @@ class EncryptedTextField(TextField):
 
 class AcademicMajor:
     MATH = "ریاضی فیزیک"
-    EXPERIMENTAL = "تجربی"
+    EXPERIMENTAL = "علوم تجربی"
     HUMANITIES = "علوم انسانی"
-    VOCATIONAL = "فنی و حرفه ای"
-    GENERAL = "عمومی"
+    VOCATIONAL = "فنی و حرفه‌ای"
+    GENERAL = "عمومی/معارف"
+
+    VALUES = (MATH, EXPERIMENTAL, HUMANITIES, VOCATIONAL, GENERAL)
+
+
+GRADE_ORDINALS = {
+    1: "اول", 2: "دوم", 3: "سوم", 4: "چهارم", 5: "پنجم", 6: "ششم",
+    7: "هفتم", 8: "هشتم", 9: "نهم", 10: "دهم", 11: "یازدهم", 12: "دوازدهم",
+}
+
+
+def parse_levels(raw: str) -> list[str]:
+    valid = ("elementry", "middle", "high")
+    seen = [value.strip() for value in (raw or "").split(",")]
+    levels = [value for index, value in enumerate(seen) if value in valid and value not in seen[:index]]
+    if not levels:
+        logger.warning("SchoolProfile.type is empty or unrecognized; falling back to high school.")
+        return ["high"]
+    return levels
+
+
+def grade_options(raw_levels: str) -> list[int]:
+    ranges = {"elementry": range(1, 7), "middle": range(7, 10), "high": range(10, 13)}
+    return sorted({grade for level in parse_levels(raw_levels) for grade in ranges[level]})
 
 
 class StudyPeriod:
@@ -156,10 +184,24 @@ class User(BaseModel):
 
 class Classroom(BaseModel):
     name = CharField(max_length=50, index=True)
+    code = CharField(max_length=30, default="")
     grade_level = IntegerField(default=10)
 
     major = CharField(max_length=50, default=AcademicMajor.GENERAL)
     academic_year = CharField(max_length=20, default="1405-1406")
+
+    class Meta:
+        indexes = ((("grade_level", "major", "code", "academic_year"), True),)
+
+    def compose_name(self) -> str:
+        ordinal = GRADE_ORDINALS.get(self.grade_level, str(self.grade_level))
+        if self.major == AcademicMajor.GENERAL:
+            return f"{ordinal} - {self.code}"
+        return f"{ordinal} {self.major} - {self.code}"
+
+    def save(self, *args, **kwargs):
+        self.name = self.compose_name()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} - {self.academic_year}"
@@ -293,6 +335,9 @@ class AuditLog(BaseModel):
     target_entity = CharField(max_length=50)
     target_id = UUIDField(null=True)
     details = TextField(null=True)
+
+    class Meta:
+        indexes = ((("created_at",), False),)
 
 
 PUBLIC_MODELS = [

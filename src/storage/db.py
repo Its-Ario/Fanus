@@ -453,6 +453,46 @@ class DatabaseManager:
         self._vault_generation += 1
         self.state_anchor.store(self._vault_generation, self._vault_state_commitment())
 
+    def rotate_vault_pin(self, old_pin: str, new_pin: str) -> None:
+        """Re-encrypt every vault record under ``new_pin`` after verifying ``old_pin``.
+
+        This deliberately owns the key switching order.  The caller records its public
+        audit event only after this method returns, because the two databases cannot
+        share a transaction.
+        """
+        if not self._vault_initialized:
+            raise DatabaseConfigurationError("The confidential vault must be unlocked first.")
+        old_credentials = DatabaseCredentials.from_vault_pin(old_pin)
+        new_credentials = DatabaseCredentials.from_vault_pin(new_pin)
+        old_key_hex = old_credentials.vault_key
+        if self._credentials is not None and not hmac.compare_digest(
+            old_key_hex, self._credentials.vault_key
+        ):
+            raise VaultIntegrityError("The supplied vault PIN is invalid.")
+        set_vault_cipher_key(old_key_hex)
+        try:
+            anchor = self.state_anchor.load()
+            if anchor is None:
+                if self.state_anchor.available:
+                    raise VaultIntegrityError("The local vault integrity anchor is missing.")
+            else:
+                _, expected = anchor
+                if not hmac.compare_digest(self._vault_state_commitment(), expected):
+                    raise VaultIntegrityError("پین فعلی نادرست است یا گاوصندوق معتبر نیست.")
+
+            from src.storage.models import CounselorNote
+            notes = list(CounselorNote.select())
+            plaintext = [(note, note.content) for note in notes]
+            set_vault_cipher_key(new_credentials.vault_key)
+            with self.transaction(vault=True):
+                for note, content in plaintext:
+                    note.content = content
+                    note.save()
+            self._credentials = new_credentials
+        except Exception:
+            set_vault_cipher_key(old_key_hex)
+            raise
+
     def close(self) -> None:
         if self._public_initialized:
             self._close_database(db)

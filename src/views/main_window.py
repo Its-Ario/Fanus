@@ -14,6 +14,7 @@ from src.styles.app_style import APP_STYLE
 from src.views.components.sidebar import Sidebar
 from src.views.components.title_bar import TitleBar
 from src.views.pages.dashboard_page import DashboardPage
+from src.views.pages.settings import SettingsPage
 from src.views.pages.students_page import StudentsPage
 
 
@@ -70,13 +71,15 @@ class MainWindow(QMainWindow):
     def _setup_navigation(self):
         dashboard_page = DashboardPage()
         students_page = StudentsPage(current_user=self.current_user)
+        settings_page = SettingsPage(current_user=self.current_user)
         self.pages.addWidget(dashboard_page)
         self.pages.addWidget(students_page)
+        self.pages.addWidget(settings_page)
 
         self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self.pages.setCurrentIndex(0))
         self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: self.pages.setCurrentIndex(1))
         self.sidebar.add_nav_item("📅", "برنامه‌ها", lambda: print("TODO"))
         self.sidebar.add_nav_item("📊", "آمار", lambda: print("TODO"))
-        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: print("TODO"))
+        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self.pages.setCurrentIndex(2))
 
         self.sidebar.finalize()
