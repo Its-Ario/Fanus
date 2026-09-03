@@ -435,8 +435,11 @@ class FormField(QWidget):
 
         parent = self.parentWidget()
         while parent:
-            if parent.layout():
-                parent.layout().invalidate()
+            parent_layout = parent.layout
+            if callable(parent_layout):
+                parent_layout = parent_layout()
+            if parent_layout:
+                parent_layout.invalidate()
             parent.updateGeometry()
             parent = parent.parentWidget()
 
@@ -512,11 +515,9 @@ class Divider(QFrame):
 
 
 class DataTable(QTableView):
-    """QTableView with the app's card styling: rounded border, quiet header,
-    row separators, teal row selection, slim scrollbars."""
-
     def __init__(self):
         super().__init__()
+        self.setLayoutDirection(Qt.RightToLeft)
         self.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
         self.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -527,6 +528,7 @@ class DataTable(QTableView):
         self.verticalHeader().setVisible(False)
         self.verticalHeader().setDefaultSectionSize(42)
         header = self.horizontalHeader()
+        header.setLayoutDirection(Qt.RightToLeft)
         header.setHighlightSections(False)
         header.setStretchLastSection(True)
         header.setDefaultAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -564,8 +566,6 @@ class DataTable(QTableView):
                 border: none;
                 border-bottom: 1px solid {Colors.BORDER};
             }}
-            QHeaderView::section:first {{ border-top-right-radius: 10px; }}
-            QHeaderView::section:last {{ border-top-left-radius: 10px; }}
             QTableCornerButton::section {{
                 background-color: {Colors.BACKGROUND};
                 border: none;

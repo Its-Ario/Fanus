@@ -158,13 +158,24 @@ class WindowsDpapiAnchor:
         if protect:
             operation = crypt32.CryptProtectData
             ok = operation(
-                ctypes.byref(input_blob), None, ctypes.byref(entropy_blob), None, None, 1, ctypes.byref(output_blob)
+                ctypes.byref(input_blob),
+                None,
+                ctypes.byref(entropy_blob),
+                None,
+                None,
+                1,
+                ctypes.byref(output_blob),
             )
         else:
             operation = crypt32.CryptUnprotectData
             description = wintypes.LPWSTR()
             ok = operation(
-                ctypes.byref(input_blob), ctypes.byref(description), ctypes.byref(entropy_blob), None, None, 1,
+                ctypes.byref(input_blob),
+                ctypes.byref(description),
+                ctypes.byref(entropy_blob),
+                None,
+                None,
+                1,
                 ctypes.byref(output_blob),
             )
         if not ok:
@@ -481,6 +492,7 @@ class DatabaseManager:
                     raise VaultIntegrityError("پین فعلی نادرست است یا گاوصندوق معتبر نیست.")
 
             from src.storage.models import CounselorNote
+
             notes = list(CounselorNote.select())
             plaintext = [(note, note.content) for note in notes]
             set_vault_cipher_key(new_credentials.vault_key)

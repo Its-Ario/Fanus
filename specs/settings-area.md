@@ -132,7 +132,7 @@ if it's `None` the app isn't set up and Settings shouldn't be reachable anyway.
 
 ```python
 def parse_levels(raw: str) -> list[str]:
-    valid = ("elementry", "middle", "high")   # note: repo misspells "elementary"
+    valid = ("elementry", "middle", "high")  # note: repo misspells "elementary"
     seen = [t.strip() for t in (raw or "").split(",")]
     return [t for i, t in enumerate(seen) if t in valid and t not in seen[:i]]
 ```

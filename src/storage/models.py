@@ -47,15 +47,27 @@ class AcademicMajor:
 
 
 GRADE_ORDINALS = {
-    1: "اول", 2: "دوم", 3: "سوم", 4: "چهارم", 5: "پنجم", 6: "ششم",
-    7: "هفتم", 8: "هشتم", 9: "نهم", 10: "دهم", 11: "یازدهم", 12: "دوازدهم",
+    1: "اول",
+    2: "دوم",
+    3: "سوم",
+    4: "چهارم",
+    5: "پنجم",
+    6: "ششم",
+    7: "هفتم",
+    8: "هشتم",
+    9: "نهم",
+    10: "دهم",
+    11: "یازدهم",
+    12: "دوازدهم",
 }
 
 
 def parse_levels(raw: str) -> list[str]:
     valid = ("elementry", "middle", "high")
     seen = [value.strip() for value in (raw or "").split(",")]
-    levels = [value for index, value in enumerate(seen) if value in valid and value not in seen[:index]]
+    levels = [
+        value for index, value in enumerate(seen) if value in valid and value not in seen[:index]
+    ]
     if not levels:
         logger.warning("SchoolProfile.type is empty or unrecognized; falling back to high school.")
         return ["high"]

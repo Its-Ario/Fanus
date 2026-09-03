@@ -16,7 +16,12 @@ from src.views.pages.settings.school_panel import SchoolPanel
 from src.views.pages.settings.security_panel import SecurityPanel
 from src.views.pages.settings.users_panel import UsersPanel
 
-TABS = ("عمومی و اطلاعات مدرسه", "مدیریت کلاس‌ها و پایه‌ها", "مدیریت کاربران و دسترسی‌ها", "امنیت و گاوصندوق")
+TABS = (
+    "عمومی و اطلاعات مدرسه",
+    "مدیریت کلاس‌ها و پایه‌ها",
+    "مدیریت کاربران و دسترسی‌ها",
+    "امنیت و گاوصندوق",
+)
 
 SEGMENTED_STYLE = f"""
 QFrame#SegmentedBar {{

@@ -53,8 +53,7 @@ def load_students_page(query: str = "", page: int = 0, page_size: int = PAGE_SIZ
 
     total = query_builder.count()
     students = tuple(
-        query_builder.order_by(Student.last_name, Student.first_name)
-        .paginate(page + 1, page_size)
+        query_builder.order_by(Student.last_name, Student.first_name).paginate(page + 1, page_size)
     )
     return StudentPage(students=students, total=total)
 
@@ -280,7 +279,9 @@ class StudentsPage(QWidget):
         banner_layout = QHBoxLayout(self.error_banner)
         banner_layout.setContentsMargins(12, 7, 12, 7)
         self.error_banner_label = QLabel("فهرست به‌روز نشد؛ اطلاعات قبلی نمایش داده می‌شود.")
-        self.error_banner_label.setStyleSheet(f"font-size: 12px; color: {Colors.ERROR}; font-weight: 600;")
+        self.error_banner_label.setStyleSheet(
+            f"font-size: 12px; color: {Colors.ERROR}; font-weight: 600;"
+        )
         retry_banner_button = SecondaryButton("تلاش دوباره")
         retry_banner_button.setFixedHeight(30)
         retry_banner_button.clicked.connect(self.reload)
@@ -315,10 +316,33 @@ class StudentsPage(QWidget):
         state_layout = QVBoxLayout(self.state_frame)
         state_layout.setContentsMargins(0, 0, 0, 0)
         self.loading_state = EmptyState("…", "در حال بارگذاری دانش‌آموزان", "چند لحظه صبر کنید.")
-        self.empty_state = EmptyState("", "هنوز دانش‌آموز فعالی ثبت نشده است", "برای شروع، اولین دانش‌آموز را ثبت کنید.", "دانش‌آموز جدید", self._open_new_student)
-        self.no_results_state = EmptyState("", "دانش‌آموزی پیدا نشد", "عبارت جستجو را بررسی کنید یا جستجو را پاک کنید.", "پاک کردن جستجو", self._clear_search)
-        self.error_state = EmptyState("!", "فهرست دانش‌آموزان بارگذاری نشد", "اتصال پایگاه داده را بررسی کنید و دوباره تلاش کنید.", "تلاش دوباره", self.reload)
-        self._states = (self.loading_state, self.empty_state, self.no_results_state, self.error_state)
+        self.empty_state = EmptyState(
+            "",
+            "هنوز دانش‌آموز فعالی ثبت نشده است",
+            "برای شروع، اولین دانش‌آموز را ثبت کنید.",
+            "دانش‌آموز جدید",
+            self._open_new_student,
+        )
+        self.no_results_state = EmptyState(
+            "",
+            "دانش‌آموزی پیدا نشد",
+            "عبارت جستجو را بررسی کنید یا جستجو را پاک کنید.",
+            "پاک کردن جستجو",
+            self._clear_search,
+        )
+        self.error_state = EmptyState(
+            "!",
+            "فهرست دانش‌آموزان بارگذاری نشد",
+            "اتصال پایگاه داده را بررسی کنید و دوباره تلاش کنید.",
+            "تلاش دوباره",
+            self.reload,
+        )
+        self._states = (
+            self.loading_state,
+            self.empty_state,
+            self.no_results_state,
+            self.error_state,
+        )
         for state in self._states:
             state.hide()
             state_layout.addWidget(state)
@@ -397,7 +421,9 @@ class StudentsPage(QWidget):
     def _update_pagination(self):
         self.previous_button.setHidden(not self._page > 0)
         self.next_button.setHidden(not self._page + 1 < self.page_count)
-        self.page_label.setText(f"صفحه {to_persian_digits(self._page + 1)} از {to_persian_digits(self.page_count)}")
+        self.page_label.setText(
+            f"صفحه {to_persian_digits(self._page + 1)} از {to_persian_digits(self.page_count)}"
+        )
         self.result_label.setText(f"{to_persian_digits(self._total)} دانش‌آموز فعال")
 
     def _clear_search(self):

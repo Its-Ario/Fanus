@@ -1,4 +1,3 @@
-"""Authorization-backed mutations used exclusively by the Settings area."""
 from __future__ import annotations
 
 from src.core.auth import hash_password, verify_password
@@ -18,7 +17,9 @@ class SettingsValidationError(ValueError):
 
 def _actor(actor, counselor=False):
     fresh = User.get_by_id(actor.id)
-    if not fresh.is_active or (fresh.role != "counselor" if counselor else not fresh.can_manage_users):
+    if not fresh.is_active or (
+        fresh.role != "counselor" if counselor else not fresh.can_manage_users
+    ):
         raise SettingsPermissionError("دسترسی لازم برای این عملیات را ندارید.")
     return fresh
 
@@ -36,12 +37,21 @@ def update_school(actor, school_name):
     school_name = school_name.strip()
     if not 2 < len(school_name) < 50:
         raise SettingsValidationError("نام مدرسه باید بین ۳ تا ۴۹ نویسه باشد.")
+
     def write(_):
         profile = SchoolProfile.get_by_id(1)
         profile.school_name = school_name
         profile.save()
         return profile
-    return _transaction(actor, "school.update", "SchoolProfile", None, lambda: f"نام مدرسه به «{school_name}» تغییر کرد", write)
+
+    return _transaction(
+        actor,
+        "school.update",
+        "SchoolProfile",
+        None,
+        lambda: f"نام مدرسه به «{school_name}» تغییر کرد",
+        write,
+    )
 
 
 def save_classroom(actor, room=None, *, grade_level, major, code, academic_year):
@@ -53,21 +63,36 @@ def save_classroom(actor, room=None, *, grade_level, major, code, academic_year)
     if major not in AcademicMajor.VALUES:
         raise SettingsValidationError("رشته تحصیلی نامعتبر است.")
     creating = room is None
+
     def write(_):
         nonlocal room
         if room is not None:
             room = Classroom.get_by_id(room.id)
             if Student.select().where((Student.classroom == room) & Student.is_active).exists():
                 if room.grade_level != grade_level or room.major != major:
-                    raise SettingsValidationError("پایه و رشتهٔ کلاس دارای دانش‌آموز فعال قابل تغییر نیست.")
+                    raise SettingsValidationError(
+                        "پایه و رشتهٔ کلاس دارای دانش‌آموز فعال قابل تغییر نیست."
+                    )
         else:
             room = Classroom()
-        room.grade_level, room.major, room.code, room.academic_year = grade_level, major, code, academic_year
-        room.save()
+        room.grade_level, room.major, room.code, room.academic_year = (
+            grade_level,
+            major,
+            code,
+            academic_year,
+        )
+        room.save(force_insert=creating)
         return room
+
     action = "class.create" if creating else "class.update"
-    return _transaction(actor, action, "Classroom", room.id if room else None,
-                        lambda: f"کلاس «{room.name}» {'ایجاد' if creating else 'ویرایش'} شد", write)
+    return _transaction(
+        actor,
+        action,
+        "Classroom",
+        room.id if room else None,
+        lambda: f"کلاس «{room.name}» {'ایجاد' if creating else 'ویرایش'} شد",
+        write,
+    )
 
 
 def delete_classroom(actor, room):
@@ -79,37 +104,70 @@ def delete_classroom(actor, room):
         name, identifier = current.name, current.id
         current.delete_instance()
         return name, identifier
-    return _transaction(actor, "class.delete", "Classroom", room.id, lambda: f"کلاس «{room.name}» حذف شد", write)
+
+    return _transaction(
+        actor, "class.delete", "Classroom", room.id, lambda: f"کلاس «{room.name}» حذف شد", write
+    )
 
 
-def save_user(actor, user=None, *, full_name, username=None, role=None, can_manage_users=None, password=None):
+def save_user(
+    actor, user=None, *, full_name, username=None, role=None, can_manage_users=None, password=None
+):
     full_name = full_name.strip()
     if not full_name:
         raise SettingsValidationError("نام و نام خانوادگی را وارد کنید.")
     creating = user is None
+
     def write(fresh):
         nonlocal user
         if creating:
             if not username or not validate_username(username):
                 raise SettingsValidationError("نام کاربری نامعتبر است.")
-            user = User(username=username.lower(), full_name=full_name, role=role or "assistant", can_manage_users=bool(can_manage_users), password_hash=hash_password(password) if password else None)
+            user = User(
+                username=username.lower(),
+                full_name=full_name,
+                role=role or "assistant",
+                can_manage_users=bool(can_manage_users),
+                password_hash=hash_password(password) if password else None,
+            )
             user.save()
             return user
         user = User.get_by_id(user.id)
         is_self = user.id == fresh.id
         user.full_name = full_name
         if not is_self:
-            if role is not None: user.role = role
+            if role is not None:
+                user.role = role
             if can_manage_users is not None:
-                if user.can_manage_users and not can_manage_users and User.select().where(User.can_manage_users & User.is_active).count() <= 1:
+                if (
+                    user.can_manage_users
+                    and not can_manage_users
+                    and User.select().where(User.can_manage_users & User.is_active).count() <= 1
+                ):
                     raise SettingsValidationError("حداقل یک مدیر فعال باید باقی بماند.")
                 user.can_manage_users = can_manage_users
             if password:
                 user.password_hash = hash_password(password)
         user.save()
         return user
-    action = "user.create" if creating else ("user.password_reset" if password else ("user.role_change" if role is not None and role != user.role else "user.update"))
-    return _transaction(actor, action, "User", user.id if user else None, lambda: f"کاربر «{full_name}» ذخیره شد", write)
+
+    action = (
+        "user.create"
+        if creating
+        else (
+            "user.password_reset"
+            if password
+            else ("user.role_change" if role is not None and role != user.role else "user.update")
+        )
+    )
+    return _transaction(
+        actor,
+        action,
+        "User",
+        user.id if user else None,
+        lambda: f"کاربر «{full_name}» ذخیره شد",
+        write,
+    )
 
 
 def set_user_active(actor, user, is_active):
@@ -117,23 +175,38 @@ def set_user_active(actor, user, is_active):
         target = User.get_by_id(user.id)
         if target.id == fresh.id and not is_active:
             raise SettingsValidationError("نمی‌توانید حساب خودتان را غیرفعال کنید.")
-        if target.can_manage_users and target.is_active and not is_active and User.select().where(User.can_manage_users & User.is_active).count() <= 1:
+        if (
+            target.can_manage_users
+            and target.is_active
+            and not is_active
+            and User.select().where(User.can_manage_users & User.is_active).count() <= 1
+        ):
             raise SettingsValidationError("حداقل یک مدیر فعال باید باقی بماند.")
         target.is_active = is_active
         target.save()
         return target
-    return _transaction(actor, "user.activate" if is_active else "user.deactivate", "User", user.id, lambda: f"کاربر «{user.full_name}» {'فعال' if is_active else 'غیرفعال'} شد", write)
+
+    return _transaction(
+        actor,
+        "user.activate" if is_active else "user.deactivate",
+        "User",
+        user.id,
+        lambda: f"کاربر «{user.full_name}» {'فعال' if is_active else 'غیرفعال'} شد",
+        write,
+    )
 
 
 def change_own_password(actor, current_password, new_password):
     if len(new_password) < 8:
         raise SettingsValidationError("رمز عبور باید دست‌کم ۸ نویسه باشد.")
+
     def write(fresh):
         if fresh.password_hash and not verify_password(current_password, fresh.password_hash):
             raise SettingsValidationError("رمز عبور فعلی صحیح نیست.")
         fresh.password_hash = hash_password(new_password)
         fresh.save()
         return fresh
+
     return _transaction(actor, "password.self_change", "User", actor.id, None, write)
 
 
