@@ -1,4 +1,5 @@
 import sqlite3
+from uuid import uuid4
 
 from src.storage.db import (
     DatabaseCredentials,
@@ -61,3 +62,23 @@ def test_vault_value_round_trips_and_is_not_stored_as_plaintext(tmp_path):
         assert decrypt_vault_value(encrypted) == secret
     finally:
         set_vault_cipher_key(None)
+
+
+def test_vault_state_commitment_changes_after_a_vault_mutation(tmp_path):
+    from src.storage.models import CounselorNote
+
+    credentials = DatabaseCredentials.from_vault_pin("test passphrase", tmp_path / "salts.json")
+    manager = DatabaseManager(
+        credentials,
+        fanus_path=tmp_path / "fanus.db",
+        vault_path=tmp_path / "vault.db",
+        migrations_dir=tmp_path / "migrations",
+    )
+    try:
+        manager.initialize()
+        before = manager._vault_state_commitment()
+        with manager.transaction(vault=True):
+            CounselorNote.create(student_id=uuid4(), content="confidential test note")
+        assert manager._vault_state_commitment() != before
+    finally:
+        manager.close()

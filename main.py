@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 
 from src.core.config import ConfigManager
 from src.core.logger import setup_logging
-from src.storage.db import DatabaseError, configure_database_manager
+from src.storage.db import DatabaseError, configure_database_manager, get_database_manager
 from src.storage.models import User
 from src.styles.theme import MODERN_STYLE
 from src.views.main_window import MainWindow
@@ -71,6 +71,7 @@ def main():
     window = MainWindow(current_user=current_user)
     window.show()
 
+    app.aboutToQuit.connect(get_database_manager().close)
     sys.exit(app.exec_())
 
 

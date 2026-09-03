@@ -272,8 +272,8 @@ class FirstRunWizard(QDialog):
             f"background-color: {Colors.AI_BG}; color: {Colors.AI_ACCENT}; border: 1px solid {Colors.AI_BORDER}; border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600;"
         )
         self.vault_pin = FormField(
-            "پین یادداشت‌های محرمانه",
-            "یک پین جداگانه برای یادداشت‌های محرمانه",
+            "عبارت عبور یادداشت های محرمانه",
+            "حداقل ۱۲ کاراکتر و متفاوت از رمز ورود",
             password=True,
             revealable=True,
         )
@@ -401,7 +401,7 @@ class FirstRunWizard(QDialog):
                     (self.password_confirmation, "تکرار رمز عبور را وارد کنید."),
                 )
             if self._selected_role() == "counselor":
-                fields += ((self.vault_pin, "پین یادداشت‌های محرمانه برای مشاور الزامی است."),)
+                fields += ((self.vault_pin, "عبارت عبور یادداشت‌های محرمانه برای مشاور الزامی است."),)
 
         valid = True
         first_invalid = None
@@ -448,6 +448,10 @@ class FirstRunWizard(QDialog):
                 self.password_confirmation.set_error("دو رمز عبور یکسان نیستند.")
                 self.password_confirmation.input.setFocus()
                 return False
+        if self._step == 2 and self._selected_role() == "counselor" and len(self.vault_pin.text()) < 12:
+            self.vault_pin.set_error("عبارت عبور یادداشت‌های محرمانه باید دست‌کم ۱۲ نویسه باشد.")
+            self.vault_pin.input.setFocus()
+            return False
         if (
             self._step == 2
             and self._selected_role() == "counselor"

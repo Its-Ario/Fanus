@@ -1,14 +1,19 @@
 import base64
 import hashlib
+import hmac
 import json
 import logging
+import os
 import secrets
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Generator, Optional, Tuple
 
+from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from peewee import DatabaseProxy, SqliteDatabase
 
 logger = logging.getLogger(__name__)
@@ -24,12 +29,24 @@ db = DatabaseProxy()
 vault_db = DatabaseProxy()
 
 _vault_cipher_key: Optional[bytes] = None
+_vault_state_key: Optional[bytes] = None
 
 
 def set_vault_cipher_key(key_hex: Optional[str]) -> None:
-    """Set (or clear with None) the AES-256-GCM key used for vault field encryption."""
-    global _vault_cipher_key
-    _vault_cipher_key = bytes.fromhex(key_hex) if key_hex else None
+    """Set (or clear) subkeys from the vault key."""
+    global _vault_cipher_key, _vault_state_key
+    if not key_hex:
+        _vault_cipher_key = None
+        _vault_state_key = None
+        return
+    master_key = bytes.fromhex(key_hex)
+    _vault_cipher_key = _derive_subkey(master_key, b"fanus/vault/data/v1")
+    _vault_state_key = _derive_subkey(master_key, b"fanus/vault/state/v1")
+
+
+def _derive_subkey(master_key: bytes, context: bytes) -> bytes:
+    """Keep encryption and integrity keys cryptographically independent."""
+    return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=context).derive(master_key)
 
 
 def encrypt_vault_value(plaintext: str) -> str:
@@ -64,6 +81,100 @@ class DatabaseMigrationError(DatabaseError):
     """Raised when the on-disk schema cannot be brought to the new version."""
 
 
+class VaultIntegrityError(DatabaseError):
+    """Raised when the vault does not match its Windows-protected state anchor."""
+
+
+class WindowsDpapiAnchor:
+    _ENTROPY = b"Fanus vault state anchor v1"
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+
+    @property
+    def available(self) -> bool:
+        return sys.platform == "win32"
+
+    def load(self) -> Optional[Tuple[int, str]]:
+        if not self.available or not self.path.exists():
+            return None
+        try:
+            raw = self._unprotect(self.path.read_bytes())
+            value = json.loads(raw.decode("utf-8"))
+            generation = value["generation"]
+            commitment = value["commitment"]
+            if not isinstance(generation, int) or generation < 0 or not isinstance(commitment, str):
+                raise ValueError("invalid anchor structure")
+            return generation, commitment
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            raise VaultIntegrityError("The local vault integrity anchor is invalid.") from exc
+
+    def store(self, generation: int, commitment: str) -> None:
+        if not self.available:
+            return
+        payload = json.dumps(
+            {"generation": generation, "commitment": commitment},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        protected = self._protect(payload)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.path.with_name(f"{self.path.name}.{os.getpid()}.tmp")
+        try:
+            temporary.write_bytes(protected)
+            os.replace(temporary, self.path)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+
+    @classmethod
+    def _protect(cls, plaintext: bytes) -> bytes:
+        return cls._crypt(plaintext, protect=True)
+
+    @classmethod
+    def _unprotect(cls, ciphertext: bytes) -> bytes:
+        return cls._crypt(ciphertext, protect=False)
+
+    @classmethod
+    def _crypt(cls, value: bytes, protect: bool) -> bytes:
+        if sys.platform != "win32":
+            raise VaultIntegrityError("Windows DPAPI is unavailable on this platform.")
+
+        import ctypes
+        from ctypes import wintypes
+
+        class DataBlob(ctypes.Structure):
+            _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_byte))]
+
+        value_buffer = ctypes.create_string_buffer(value)
+        entropy_buffer = ctypes.create_string_buffer(cls._ENTROPY)
+        input_blob = DataBlob(len(value), ctypes.cast(value_buffer, ctypes.POINTER(ctypes.c_byte)))
+        entropy_blob = DataBlob(
+            len(cls._ENTROPY), ctypes.cast(entropy_buffer, ctypes.POINTER(ctypes.c_byte))
+        )
+        output_blob = DataBlob()
+        crypt32 = ctypes.WinDLL("Crypt32.dll", use_last_error=True)
+        kernel32 = ctypes.WinDLL("Kernel32.dll", use_last_error=True)
+        if protect:
+            operation = crypt32.CryptProtectData
+            ok = operation(
+                ctypes.byref(input_blob), None, ctypes.byref(entropy_blob), None, None, 1, ctypes.byref(output_blob)
+            )
+        else:
+            operation = crypt32.CryptUnprotectData
+            description = wintypes.LPWSTR()
+            ok = operation(
+                ctypes.byref(input_blob), ctypes.byref(description), ctypes.byref(entropy_blob), None, None, 1,
+                ctypes.byref(output_blob),
+            )
+        if not ok:
+            raise VaultIntegrityError(f"Windows DPAPI failed (error {ctypes.get_last_error()}).")
+        try:
+            return ctypes.string_at(output_blob.pbData, output_blob.cbData)
+        finally:
+            kernel32.LocalFree(output_blob.pbData)
+
+
 @dataclass(frozen=True)
 class DatabaseCredentials:
     """Key material for encrypted vault fields."""
@@ -96,13 +207,22 @@ class DatabaseManager:
         fanus_path: Path = FANUS_DB_PATH,
         vault_path: Path = VAULT_DB_PATH,
         migrations_dir: Path = MIGRATIONS_DIR,
+        state_anchor_path: Optional[Path] = None,
     ) -> None:
         self._credentials = credentials
         self.fanus_path = Path(fanus_path)
         self.vault_path = Path(vault_path)
         self.migrations_dir = Path(migrations_dir)
+        default_anchor = (
+            _default_vault_anchor_path(self.vault_path)
+            if sys.platform == "win32"
+            else self.vault_path.with_name(".vault_anchor")
+        )
+        self.state_anchor = WindowsDpapiAnchor(state_anchor_path or default_anchor)
         self._public_initialized = False
         self._vault_initialized = False
+        self._vault_generation = 0
+        self._vault_file_existed = False
 
     @property
     def initialized(self) -> bool:
@@ -148,6 +268,7 @@ class DatabaseManager:
             return
 
         self.vault_path.parent.mkdir(parents=True, exist_ok=True)
+        self._vault_file_existed = self.vault_path.exists()
         private_database = self._new_sqlite_database(self.vault_path)
         vault_db.initialize(private_database)
         set_vault_cipher_key(credentials.vault_key)
@@ -155,6 +276,7 @@ class DatabaseManager:
         try:
             self._open_and_verify(private_database, self.vault_path)
             self._migrate_vault(private_database)
+            self._verify_or_initialize_vault_anchor()
         except DatabaseError:
             self._close_database(vault_db)
             set_vault_cipher_key(None)
@@ -170,6 +292,62 @@ class DatabaseManager:
         self._credentials = credentials
         self._vault_initialized = True
         logger.info("Fanus confidential vault unlocked")
+
+    def _verify_or_initialize_vault_anchor(self) -> None:
+        """Fail closed when a Windows-protected anchor disagrees with vault state."""
+        commitment = self._vault_state_commitment()
+        anchor = self.state_anchor.load()
+        if anchor is None:
+            if self.state_anchor.available and self._vault_file_existed:
+                raise VaultIntegrityError(
+                    "The local vault integrity anchor is missing. Restore it with a valid backup."
+                )
+
+            self.state_anchor.store(0, commitment)
+            self._vault_generation = 0
+            if self.state_anchor.available:
+                logger.info("Created Windows-protected vault integrity anchor")
+            else:
+                logger.warning("Windows DPAPI unavailable; vault rollback detection is disabled")
+            return
+        generation, expected_commitment = anchor
+        if not hmac.compare_digest(commitment, expected_commitment):
+            raise VaultIntegrityError(
+                "The confidential vault has changed outside the application. Restore a valid backup."
+            )
+        self._vault_generation = generation
+
+    def _vault_state_commitment(self) -> str:
+        if _vault_state_key is None:
+            raise DatabaseConfigurationError("Vault encryption key is not set.")
+        digest = hmac.new(_vault_state_key, b"fanus/vault-state/v1\x00", hashlib.sha256)
+        for model in sorted(self._vault_models(), key=lambda item: item._meta.table_name):
+            table_name = model._meta.table_name.replace('"', '""')
+            cursor = vault_db.execute_sql(f'SELECT * FROM "{table_name}" ORDER BY id')
+            column_names = [item[0] for item in cursor.description]
+            for row in cursor.fetchall():
+                digest.update(model._meta.table_name.encode("utf-8"))
+                for column, value in zip(column_names, row):
+                    self._commit_state_value(digest, column)
+                    self._commit_state_value(digest, value)
+        return digest.hexdigest()
+
+    @staticmethod
+    def _vault_models():
+        from src.storage.models import VAULT_MODELS
+
+        return VAULT_MODELS
+
+    @staticmethod
+    def _commit_state_value(digest, value) -> None:
+        if value is None:
+            encoded = b"N"
+        elif isinstance(value, bytes):
+            encoded = b"B" + value
+        else:
+            encoded = b"T" + str(value).encode("utf-8")
+        digest.update(len(encoded).to_bytes(8, "big"))
+        digest.update(encoded)
 
     @staticmethod
     def _new_sqlite_database(path: Path):
@@ -262,9 +440,18 @@ class DatabaseManager:
         try:
             with database.atomic():
                 yield
+            if vault:
+                self._commit_vault_state()
         except Exception:
             logger.exception("Database transaction rolled back")
             raise
+
+    def _commit_vault_state(self) -> None:
+        """Advance the locally protected state after a committed vault mutation."""
+        if not self.state_anchor.available:
+            return
+        self._vault_generation += 1
+        self.state_anchor.store(self._vault_generation, self._vault_state_commitment())
 
     def close(self) -> None:
         if self._public_initialized:
@@ -273,6 +460,13 @@ class DatabaseManager:
             self._close_database(vault_db)
         set_vault_cipher_key(None)
         self._public_initialized = False
+        self._vault_initialized = False
+
+    def lock_vault(self) -> None:
+        """Close the confidential database and discard derived keys from this process."""
+        if self._vault_initialized:
+            self._close_database(vault_db)
+        set_vault_cipher_key(None)
         self._vault_initialized = False
 
     @staticmethod
@@ -302,6 +496,14 @@ def get_database_manager() -> DatabaseManager:
     if _manager is None:
         raise DatabaseConfigurationError("DatabaseManager has not been configured.")
     return _manager
+
+
+def _default_vault_anchor_path(vault_path: Path) -> Path:
+    """Keep the DPAPI-protected anchor outside portable database files."""
+    from src.core.config import ConfigManager
+
+    vault_id = hashlib.sha256(str(Path(vault_path).resolve()).encode("utf-8")).hexdigest()
+    return ConfigManager.get_app_dir() / "vault-anchors" / vault_id / ".vault_anchor"
 
 
 def _derive_key(password: str, salt: bytes) -> str:
