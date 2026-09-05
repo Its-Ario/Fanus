@@ -7,7 +7,6 @@ from peewee import fn
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import (
     QButtonGroup,
-    QComboBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -40,6 +39,7 @@ from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
     Card,
+    Dropdown,
     EmptyState,
     FormField,
     PrimaryButton,
@@ -352,12 +352,12 @@ class PlanTab(QWidget):
             label.setStyleSheet(f"font-size:15px; font-weight:800; color:{Colors.TEXT_MAIN};")
             self.layout.addWidget(label)
         form = QHBoxLayout()
-        self.day = QComboBox()
+        self.day = Dropdown()
         for key, name in DayOfWeek.PERSIAN_NAMES.items():
             self.day.addItem(name, key)
         self.start = FormField("شروع", "16:00")
         self.end = FormField("پایان", "17:30")
-        self.subject = QComboBox()
+        self.subject = Dropdown()
         subjects = subject_options(
             self.panel.student.classroom.grade_level,
             self.panel.student.classroom.major,
@@ -368,7 +368,7 @@ class PlanTab(QWidget):
         else:
             self.subject.setEditable(True)
             self.subject.setPlaceholderText("مثلاً ریاضی")
-        self.kind = QComboBox()
+        self.kind = Dropdown()
         self.kind.addItems(("مطالعه", "تمرین", "مرور"))
         add = PrimaryButton("افزودن جلسه", icon="+")
         add.clicked.connect(self._add_row)

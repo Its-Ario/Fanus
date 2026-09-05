@@ -330,3 +330,6 @@ def generate_plan(student: Student, params: PlanParams) -> PlanResult:
 
 def optimize_plan(plan: StudyPlan) -> PlanResult:
     return generate_plan(plan.student, get_student_params(plan.student, keep_locked=True))
+
+def plan_to_pdf(plan: StudyPlan) -> bytes:
+    raise NotImplementedError("PDF engine is not enabled yet")

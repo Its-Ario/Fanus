@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
     QAbstractItemView,
+    QComboBox,
     QFrame,
     QGraphicsDropShadowEffect,
     QHBoxLayout,
     QHeaderView,
     QLabel,
     QLayout,
+    QListView,
     QLineEdit,
     QMainWindow,
     QPushButton,
@@ -318,6 +320,77 @@ class SearchInput(QLineEdit):
                 border: 1.5px solid {Colors.PRIMARY};
             }}
         """)
+
+
+class Dropdown(QComboBox):
+    """Shared RTL-aware dropdown with a styled popup and a drawn disclosure chevron."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setLayoutDirection(Qt.RightToLeft)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFixedHeight(38)
+        self.setView(QListView())
+        self.view().setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        self.view().setTextElideMode(Qt.ElideRight)
+        self.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+                color: {Colors.TEXT_MAIN};
+                font-size: 13px;
+                padding: 0 12px 0 36px;
+            }}
+            QComboBox:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QComboBox:focus, QComboBox:on {{ border: 2px solid {Colors.PRIMARY}; }}
+            QComboBox:disabled {{ background-color: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_DISABLED}; }}
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top left;
+                width: 32px;
+                border: none;
+            }}
+            QComboBox::down-arrow {{ image: none; }}
+            QComboBox QAbstractItemView {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+                color: {Colors.TEXT_MAIN};
+                font-size: 13px;
+                outline: none;
+                padding: 4px;
+                selection-background-color: {Colors.PRIMARY}18;
+                selection-color: {Colors.PRIMARY};
+            }}
+            QComboBox QAbstractItemView::item {{
+                min-height: 30px;
+                padding: 0 10px;
+                border-radius: 5px;
+            }}
+            QComboBox QAbstractItemView::item:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QComboBox QAbstractItemView::item:selected {{
+                background-color: {Colors.PRIMARY}18;
+                color: {Colors.PRIMARY};
+                font-weight: 600;
+            }}
+            QComboBox QLineEdit {{
+                background: transparent;
+                border: none;
+                color: {Colors.TEXT_MAIN};
+                padding: 0;
+            }}
+        """)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(QPen(QColor(Colors.TEXT_MUTED), 1.6))
+        x = 17 if self.layoutDirection() == Qt.RightToLeft else self.width() - 17
+        y = self.height() // 2 - 1
+        painter.drawLine(x - 4, y - 2, x, y + 2)
+        painter.drawLine(x, y + 2, x + 4, y - 2)
 
 
 class FormField(QWidget):

@@ -6,7 +6,6 @@ from typing import Dict, Optional, Tuple
 
 from peewee import JOIN, Case, fn
 from PyQt5.QtWidgets import (
-    QComboBox,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -32,7 +31,7 @@ from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.bar_chart import BarChartWidget
 from src.views.components.line_chart import LineChartWidget
-from src.views.components.ui_kit import Card, SectionHeader
+from src.views.components.ui_kit import Card, Dropdown, SectionHeader
 from src.views.pages.dashboard_page import _week_start
 
 RISK_LEVELS = (RiskLevel.HIGH, RiskLevel.MEDIUM, RiskLevel.LOW)
@@ -333,16 +332,10 @@ class AnalyticsPage(QWidget):
         layout.addStretch()
 
     @staticmethod
-    def _filter_combo(label: str) -> QComboBox:
-        combo = QComboBox()
+    def _filter_combo(label: str) -> Dropdown:
+        combo = Dropdown()
         combo.setMinimumWidth(185)
-        combo.setFixedHeight(38)
         combo.setToolTip(label)
-        combo.setStyleSheet(f"""
-            QComboBox {{ background: {Colors.SURFACE}; border: 1px solid {Colors.BORDER}; border-radius: 8px; padding: 0 12px; color: {Colors.TEXT_MAIN}; font-size: 13px; }}
-            QComboBox:focus {{ border: 1px solid {Colors.PRIMARY}; }}
-            QComboBox::drop-down {{ border: none; width: 26px; }}
-        """)
         return combo
 
     @staticmethod

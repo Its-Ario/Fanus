@@ -1,4 +1,19 @@
-from src.views.components.ui_kit import AIInsightCard, RiskBadge, StatCard, StudentRow
+from PyQt5.QtCore import Qt
+
+from src.views.components.ui_kit import AIInsightCard, Dropdown, RiskBadge, StatCard, StudentRow
+
+
+def test_dropdown_supports_selection_and_keyboard_navigation(qtbot):
+    dropdown = Dropdown()
+    dropdown.addItem("اول", 1)
+    dropdown.addItem("دوم", 2)
+    qtbot.addWidget(dropdown)
+    dropdown.show()
+
+    qtbot.keyClick(dropdown, Qt.Key_Down)
+
+    assert dropdown.currentData() == 2
+    assert "QAbstractItemView" in dropdown.styleSheet()
 
 
 def test_stat_card_instantiation_and_persian_digits(qtbot):

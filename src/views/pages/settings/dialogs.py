@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QCheckBox, QComboBox, QDialog, QHBoxLayout, QLabel, QVBoxLayout
+from PyQt5.QtWidgets import QCheckBox, QDialog, QHBoxLayout, QLabel, QVBoxLayout
 
 from src.storage.models import AcademicMajor, SchoolProfile, Student
 from src.storage.settings_ops import (
@@ -8,7 +8,7 @@ from src.storage.settings_ops import (
 )
 from src.utils.persian_utils import to_persian_digits
 from src.utils.validators import validate_username
-from src.views.components.ui_kit import FormField, PrimaryButton, SecondaryButton
+from src.views.components.ui_kit import Dropdown, FormField, PrimaryButton, SecondaryButton
 
 
 class _Dialog(QDialog):
@@ -48,8 +48,8 @@ class ClassDialog(_Dialog):
         profile = SchoolProfile.get_or_none(id=1)
         from src.storage.models import grade_options
 
-        self.grade = QComboBox()
-        self.major = QComboBox()
+        self.grade = Dropdown()
+        self.major = Dropdown()
         for value in grade_options(profile.type if profile else "high"):
             self.grade.addItem(to_persian_digits(value), value)
         for value in AcademicMajor.VALUES:
@@ -102,7 +102,7 @@ class UserDialog(_Dialog):
         self.actor, self.instance = actor, instance
         self.name = FormField("نام و نام خانوادگی")
         self.username = FormField("نام کاربری")
-        self.role = QComboBox()
+        self.role = Dropdown()
         [
             self.role.addItem(label, value)
             for value, label in (

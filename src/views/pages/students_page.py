@@ -8,7 +8,6 @@ from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer, p
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (
     QAbstractItemView,
-    QComboBox,
     QDialog,
     QFrame,
     QHBoxLayout,
@@ -24,6 +23,7 @@ from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
     EmptyState,
+    Dropdown,
     FormField,
     PrimaryButton,
     SearchInput,
@@ -134,12 +134,7 @@ class NewStudentDialog(QDialog):
         self.first_name = FormField("نام", "برای مثال: سارا")
         self.last_name = FormField("نام خانوادگی", "برای مثال: احمدی")
         self.national_id = FormField("کد ملی", "۱۰ رقم")
-        self.classroom = QComboBox()
-        self.classroom.setFixedHeight(38)
-        self.classroom.setStyleSheet(
-            f"QComboBox {{ background: {Colors.SURFACE}; border: 1px solid {Colors.BORDER}; "
-            f"border-radius: 8px; padding: 0 12px; color: {Colors.TEXT_MAIN}; }}"
-        )
+        self.classroom = Dropdown()
         self._classrooms = tuple(Classroom.select().order_by(Classroom.grade_level, Classroom.name))
         for room in self._classrooms:
             self.classroom.addItem(room.name, room)

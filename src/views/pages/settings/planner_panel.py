@@ -1,5 +1,4 @@
 from PyQt5.QtWidgets import (
-    QComboBox,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -12,7 +11,7 @@ from src.planner import catalog
 from src.storage.models import PlannerSettings
 from src.storage.settings_ops import update_planner_settings
 from src.styles.theme import Colors
-from src.views.components.ui_kit import Card, PrimaryButton, SecondaryButton
+from src.views.components.ui_kit import Card, Dropdown, PrimaryButton, SecondaryButton
 
 _WEIGHT_FIELDS = (
     ("s1", "هم‌راستایی با ساعات اوج تمرکز"),
@@ -45,7 +44,7 @@ class PlannerPanel(QWidget):
         form = QFormLayout()
         form.setSpacing(10)
 
-        self.block = QComboBox()
+        self.block = Dropdown()
         for minutes in (90, 75):
             self.block.addItem(f"{minutes} دقیقه", minutes)
         form.addRow("طول هر بلوک مطالعه", self.block)
