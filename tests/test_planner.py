@@ -38,7 +38,7 @@ def test_budget_never_exceeds_grid_capacity():
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
     weaknesses = {s: 1.5 for s in subjects}
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
-    slots = grid.candidate_slots(windows, 90, SCHOOL_DAYS, daily_hours=[5.0] * 7)
+    slots = grid.possible_slots(windows, 90, SCHOOL_DAYS, daily_hours=[5.0] * 7)
     n_required = sum(1 for s in subjects if coeffs[s] > 0)
 
     blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, len(slots))
@@ -65,7 +65,7 @@ def test_solver_output_passes_the_hard_constraint_checker():
     requests = budget.block_requests(blocks, 90, weaknesses)
 
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
-    slots = grid.candidate_slots(windows, 90, SCHOOL_DAYS)
+    slots = grid.possible_slots(windows, 90, SCHOOL_DAYS)
     placements, _, unplaced = solver.solve(
         requests, slots, SCHOOL_DAYS, catalog.DEFAULT_SOFT_WEIGHTS
     )
@@ -86,7 +86,7 @@ def test_solver_is_deterministic():
     weaknesses = {s: 1.5 for s in subjects}
     blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, 16)
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
-    slots = grid.candidate_slots(windows, 90, SCHOOL_DAYS)
+    slots = grid.possible_slots(windows, 90, SCHOOL_DAYS)
 
     runs = [
         solver.solve(
@@ -107,7 +107,7 @@ def test_improvement_sweep_never_worsens_greedy(monkeypatch):
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
     weaknesses = {s: 2.0 for s in subjects}  # all weak -> dense s4 interplay
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
-    slots = grid.candidate_slots(windows, 90, SCHOOL_DAYS, daily_hours=[5.0] * 7)
+    slots = grid.possible_slots(windows, 90, SCHOOL_DAYS, daily_hours=[5.0] * 7)
     blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, len(slots))
 
     def make_requests():

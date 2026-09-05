@@ -24,18 +24,18 @@ MAX_BLOCKS_SCHOOL = 4
 MAX_BLOCKS_THURSDAY = 5
 MAX_BLOCKS_OFF = 6
 
-DISTINCT_BAND_SCHOOL = (2, 3)
-DISTINCT_BAND_OFF = (3, 4)
+DISTINCT_ALLOWED_SCHOOL = (2, 3)
+DISTINCT_ALLOWED_OFF = (3, 4)
 
-S4_WEAKNESS_TRIGGER = 2.0  # W_i at/above this counts as "critical weakness"
+S4_LIMIT = 2.0
 S4_MIN_GAP_HOURS = 48
 S4_MAX_GAP_HOURS = 72
 
-ABSTRACT_SLOTS = ("PEAK_1", "PEAK_2", "SECONDARY", "WIND_DOWN")
+SLOT_LABELS = ("PEAK_1", "PEAK_2", "SECONDARY", "FINAL")
 PREFERRED_SLOTS = {
     "calc": ("PEAK_1", "PEAK_2"),
     "descriptive": ("SECONDARY", "PEAK_2"),
-    "light": ("WIND_DOWN", "SECONDARY"),
+    "light": ("FINAL", "SECONDARY"),
 }
 
 DEFAULT_SOFT_WEIGHTS = {"s1": 40, "s2": 30, "s3": 20, "s4": 100, "s5": 10}
@@ -84,7 +84,7 @@ _FAMILY_MATCHERS = (
     ("هنر", "عمومی سبک"),
 )
 
-_ARCHETYPE_BY_FAMILY = {
+_TYPE_BY_FAMILY = {
     "ریاضی": "calc",
     "فیزیک": "calc",
     "شیمی": "calc",
@@ -157,8 +157,8 @@ def subject_family(name: str) -> str:
     return cleaned
 
 
-def archetype_for(name: str) -> str:
-    return _ARCHETYPE_BY_FAMILY.get(subject_family(name), "descriptive")
+def type_for(name: str) -> str:
+    return _TYPE_BY_FAMILY.get(subject_family(name), "descriptive")
 
 
 def coefficient_for(name: str, major: str = AcademicMajor.GENERAL) -> int:

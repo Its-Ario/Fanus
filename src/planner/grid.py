@@ -75,7 +75,7 @@ def free_windows(
     return windows
 
 
-def candidate_slots(
+def possible_slots(
     windows: Dict[int, List[Span]],
     block_minutes: int,
     school_days: Sequence[int],
@@ -87,19 +87,19 @@ def candidate_slots(
     for day in range(7):
         raw: List[Span] = []
         for start, end in sorted(windows.get(day, [])):
-            cursor = start
-            while cursor + block_minutes <= end:
-                raw.append((cursor, cursor + block_minutes))
-                cursor += block_minutes + break_minutes
+            i = start
+            while i + block_minutes <= end:
+                raw.append((i, i + block_minutes))
+                i += block_minutes + break_minutes
         raw.sort()
         if daily_hours is not None:
             budget_min = float(daily_hours[day]) * 60.0
-            cap = round(budget_min / block_minutes) if budget_min > 0 else 0
+            m = round(budget_min / block_minutes) if budget_min > 0 else 0
             if budget_min > 0:
-                cap = max(cap, 1)
-            raw = raw[:cap]
-        for ordinal, (start, end) in enumerate(raw):
-            label = catalog.ABSTRACT_SLOTS[min(ordinal, len(catalog.ABSTRACT_SLOTS) - 1)]
+                m = max(m, 1)
+            raw = raw[:m]
+        for i, (start, end) in enumerate(raw):
+            label = catalog.SLOT_LABELS[min(i, len(catalog.SLOT_LABELS) - 1)]
             slots.append(Slot(index, day, start, end, label, day not in school_days))
             index += 1
     return slots

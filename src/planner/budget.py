@@ -1,12 +1,3 @@
-"""P_i = C_i * W_i
-    R_i = P_i / sum(P)
-    B_i = round(capacity * R_i)   -- largest-remainder reconciled to fit capacity
-
-capacity is the number of whole blocks the grid can actually host this week
-(len(grid.candidate_slots(...))), so the budget never asks for more than the
-schedule can place.
-"""
-
 from __future__ import annotations
 
 from typing import Dict, Iterable, Sequence
@@ -28,23 +19,21 @@ def weekly_blocks(
     weaknesses: Dict[str, float],
     capacity: int,
 ) -> Dict[str, int]:
-    """Return {subject: whole block count} fitting ``capacity`` blocks. May exceed
-    it only when H5 (every C_i>0 subject gets >=1 block) forces it -- caller then
-    relaxes."""
     subjects = list(subjects)
     weights = priority_weights(subjects, coeffs, weaknesses)
     total_w = sum(weights.values())
     capacity = max(int(capacity), 0)
 
-    blocks = {s: 0 for s in subjects}
+    blocks = {sub: 0 for sub in subjects}
+    # larget remainder
     if total_w > 0 and capacity > 0:
         raw = {s: capacity * (weights[s] / total_w) for s in subjects}
         blocks = {s: int(v) for s, v in raw.items()}
         used = sum(blocks.values())
-        by_remainder = sorted(
+        sorted_sub = sorted(
             subjects, key=lambda s: (raw[s] - blocks[s], weights[s], s), reverse=True
         )
-        for s in by_remainder:
+        for s in sorted_sub:
             if used >= capacity:
                 break
             blocks[s] += 1
@@ -56,10 +45,10 @@ def weekly_blocks(
 
     used = sum(blocks.values())
     if used > capacity:
-        by_priority = sorted(subjects, key=lambda s: (weights[s], s))
+        sub_priority = sorted(subjects, key=lambda s: (weights[s], s))
         idx = 0
-        while used > capacity and idx < len(by_priority):
-            s = by_priority[idx]
+        while used > capacity and idx < len(sub_priority):
+            s = sub_priority[idx]
             if blocks[s] > 1:
                 blocks[s] -= 1
                 used -= 1
@@ -75,7 +64,7 @@ def low_priority_subjects(subjects: Sequence[str], coeffs: Dict[str, int]) -> "s
         return set()
     median = values[len(values) // 2]
     return {
-        s for s in subjects if coeffs.get(s, 0) <= median and catalog.archetype_for(s) != "calc"
+        s for s in subjects if coeffs.get(s, 0) <= median and catalog.type_for(s) != "calc"
     }
 
 
@@ -90,14 +79,14 @@ def block_requests(
     for subject, count in blocks.items():
         if count <= 0:
             continue
-        weak = weaknesses.get(subject, 1.0) >= catalog.S4_WEAKNESS_TRIGGER
-        archetype = catalog.archetype_for(subject)
+        weak = weaknesses.get(subject, 1.0) >= catalog.S4_LIMIT
+        type = catalog.type_for(subject)
         if subject in half_subjects:
             requests.append(
                 dict(
                     subject=subject,
                     minutes=catalog.HALF_BLOCK_MINUTES,
-                    archetype=archetype,
+                    type=type,
                     weak=weak,
                 )
             )
@@ -107,7 +96,7 @@ def block_requests(
                 dict(
                     subject=subject,
                     minutes=block_minutes,
-                    archetype=archetype,
+                    type=type,
                     weak=weak,
                 )
             )

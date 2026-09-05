@@ -24,7 +24,8 @@ def _adjacent(a: Slot, b: Slot) -> bool:
     return hi.start - lo.end <= catalog.MIN_BREAK_MINUTES
 
 
-def _feasible(req: dict, slot: Slot, assigned: Dict[int, dict], slots_by_day) -> bool:
+# Hard constraint
+def _is_good(req: dict, slot: Slot, assigned: Dict[int, dict], slots_by_day) -> bool:
     if slot.index in assigned:
         return False
     if req["minutes"] > slot.end - slot.start:
@@ -42,9 +43,10 @@ def _pair_gap_hours(day_a, start_a, day_b, start_b) -> float:
     return abs((day_a * 24 * 60 + start_a) - (day_b * 24 * 60 + start_b)) / 60.0
 
 
+# Soft constraints
 def score(assigned: Dict[int, dict], slots: Sequence[Slot], weights: Dict[str, int]) -> int:
-    slot_by_index = {s.index: s for s in slots}
-    placed = [(slot_by_index[i], req) for i, req in assigned.items()]
+    slot_idx = {s.index: s for s in slots}
+    placed = [(slot_idx[i], req) for i, req in assigned.items()]
     total = 0
 
     by_day: Dict[int, list] = {}
@@ -52,18 +54,18 @@ def score(assigned: Dict[int, dict], slots: Sequence[Slot], weights: Dict[str, i
         by_day.setdefault(slot.day, []).append((slot, req))
 
     for slot, req in placed:
-        if slot.label not in catalog.PREFERRED_SLOTS.get(req["archetype"], ()):
+        if slot.label not in catalog.PREFERRED_SLOTS.get(req["type"], ()):
             total += weights["s1"]
 
     for day, items in by_day.items():
         items.sort(key=lambda sr: sr[0].start)
         for (sa, ra), (sb, rb) in zip(items, items[1:]):
-            if _adjacent(sa, sb) and ra["archetype"] == rb["archetype"]:
+            if _adjacent(sa, sb) and ra["type"] == rb["type"]:
                 total += weights["s2"]
         is_off = items[0][0].is_off_day
-        lo, hi = catalog.DISTINCT_BAND_OFF if is_off else catalog.DISTINCT_BAND_SCHOOL
+        low, high = catalog.DISTINCT_ALLOWED_OFF if is_off else catalog.DISTINCT_ALLOWED_SCHOOL
         distinct = len({r["subject"] for _, r in items})
-        if distinct < lo or distinct > hi:
+        if distinct < low or distinct > high:
             total += weights["s3"]
 
     weak_positions: Dict[str, list] = {}
@@ -97,7 +99,7 @@ def solve(
     for r in requests:
         r["_school_days"] = tuple(school_days)
 
-    slot_by_index = {s.index: s for s in slots}
+    slot_idx = {s.index: s for s in slots}
     assigned: Dict[int, dict] = {}
     unplaced: List[dict] = []
 
@@ -105,7 +107,7 @@ def solve(
     for req in requests:
         best = None
         for slot in slots:
-            if not _feasible(req, slot, assigned, slots_by_day):
+            if not _is_good(req, slot, assigned, slots_by_day):
                 continue
             trial = dict(assigned)
             trial[slot.index] = req
@@ -127,7 +129,7 @@ def solve(
                 if slot.index == slot_index or slot.index in assigned:
                     continue
                 moved = {i: r for i, r in assigned.items() if i != slot_index}
-                if not _feasible(req, slot, moved, slots_by_day):
+                if not _is_good(req, slot, moved, slots_by_day):
                     continue
                 moved[slot.index] = req
                 if score(moved, slots, weights) < current:
@@ -143,19 +145,19 @@ def solve(
         indices = list(assigned)
         for a in range(len(indices)):
             ia = indices[a]
-            ra, sa = assigned[ia], slot_by_index[ia]
+            ra, sa = assigned[ia], slot_idx[ia]
             for b in range(a + 1, len(indices)):
                 ib = indices[b]
-                rb, sb = assigned[ib], slot_by_index[ib]
+                rb, sb = assigned[ib], slot_idx[ib]
                 if ra["subject"] == rb["subject"]:
                     continue
                 if rb["minutes"] > sa.end - sa.start or ra["minutes"] > sb.end - sb.start:
                     continue
                 rest = {i: r for i, r in assigned.items() if i not in (ia, ib)}
-                if not _feasible(rb, sa, rest, slots_by_day):
+                if not _is_good(rb, sa, rest, slots_by_day):
                     continue
                 rest[ia] = rb
-                if not _feasible(ra, sb, rest, slots_by_day):
+                if not _is_good(ra, sb, rest, slots_by_day):
                     continue
                 rest[ib] = ra
                 if score(rest, slots, weights) < current:
@@ -167,9 +169,9 @@ def solve(
 
     placements = []
     for i, req in sorted(
-        assigned.items(), key=lambda kv: (slot_by_index[kv[0]].day, slot_by_index[kv[0]].start)
+        assigned.items(), key=lambda kv: (slot_idx[kv[0]].day, slot_idx[kv[0]].start)
     ):
-        slot = slot_by_index[i]
+        slot = slot_idx[i]
         placements.append(
             dict(
                 day=slot.day,
@@ -177,7 +179,7 @@ def solve(
                 end=slot.start + req["minutes"],
                 subject=req["subject"],
                 minutes=req["minutes"],
-                archetype=req["archetype"],
+                type=req["type"],
             )
         )
     return placements, score(assigned, slots, weights), unplaced

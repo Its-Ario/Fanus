@@ -121,7 +121,7 @@ def _prune_general(
     median = values[len(values) // 2] if values else 0
     for subject in subjects:
         if (
-            catalog.archetype_for(subject) != "calc"
+            catalog.type_for(subject) != "calc"
             and coeffs.get(subject, 0) <= median
             and blocks.get(subject, 0) > 1
         ):
@@ -160,7 +160,7 @@ def _build_schedule(
 
     best: Optional[_Schedule] = None
     for label, block_minutes, half in attempts:
-        slots = grid.candidate_slots(
+        slots = grid.possible_slots(
             windows, block_minutes, params.school_days, daily_hours=params.daily_hours
         )
         blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, len(slots))
