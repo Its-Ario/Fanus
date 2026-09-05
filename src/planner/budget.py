@@ -63,9 +63,7 @@ def low_priority_subjects(subjects: Sequence[str], coeffs: Dict[str, int]) -> "s
     if not values:
         return set()
     median = values[len(values) // 2]
-    return {
-        s for s in subjects if coeffs.get(s, 0) <= median and catalog.type_for(s) != "calc"
-    }
+    return {s for s in subjects if coeffs.get(s, 0) <= median and catalog.type_for(s) != "calc"}
 
 
 def block_requests(
