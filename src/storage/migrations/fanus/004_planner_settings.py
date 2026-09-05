@@ -5,7 +5,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         'CREATE TABLE "plannersettings" ('
         '"id" INTEGER NOT NULL PRIMARY KEY, '
         '"block_minutes" INTEGER NOT NULL DEFAULT 90, '
-        '"weights_json" TEXT NOT NULL DEFAULT \'{}\', '
+        "\"weights_json\" TEXT NOT NULL DEFAULT '{}', "
         '"updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)'
     )
 

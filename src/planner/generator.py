@@ -51,6 +51,7 @@ class _Schedule:
     block_minutes: int
     unplaced: int = 0
 
+
 def planner_weights() -> Dict[str, int]:
     weights = dict(catalog.DEFAULT_SOFT_WEIGHTS)
     try:
@@ -138,7 +139,6 @@ def _build_schedule(
     subjects: Sequence[str],
     coeffs: Dict[str, int],
     weaknesses: Dict[str, float],
-    t_avail_hours: float,
     params: PlanParams,
     locked: Dict[int, List[Tuple[int, int]]],
 ) -> _Schedule:
@@ -154,25 +154,21 @@ def _build_schedule(
         ("compress", catalog.COMPRESSED_BLOCK_MINUTES, low),
     ]
 
+    windows = grid.free_windows(
+        params.school_days, params.school_hours, params.sleep_window, locked
+    )
+
     best: Optional[_Schedule] = None
     for label, block_minutes, half in attempts:
-        block_hours = block_minutes / 60.0
-        blocks = budget.weekly_blocks(
-            subjects, coeffs, weaknesses, t_avail_hours, block_hours
+        slots = grid.candidate_slots(
+            windows, block_minutes, params.school_days, daily_hours=params.daily_hours
         )
+        blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, len(slots))
         if label == "compress":
             blocks = _prune_general(blocks, subjects, coeffs)
 
         requests = budget.block_requests(blocks, block_minutes, weaknesses, half)
-        windows = grid.free_windows(
-            params.school_days, params.school_hours, params.sleep_window, locked
-        )
-        slots = grid.candidate_slots(
-            windows, block_minutes, params.school_days, daily_hours=params.daily_hours
-        )
-        placements, penalty, unplaced = solver.solve(
-            requests, slots, params.school_days, weights
-        )
+        placements, penalty, unplaced = solver.solve(requests, slots, params.school_days, weights)
 
         notes = [] if label == "full" else [_RELAX_NOTE[label]]
         if not unplaced:
@@ -182,8 +178,7 @@ def _build_schedule(
 
     deficit = best.unplaced * (best.block_minutes / 60.0)
     best.notes = [
-        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی. "
-        "برنامهٔ ناقص تولید شد."
+        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی. برنامهٔ ناقص تولید شد."
     ]
     return best
 
@@ -270,14 +265,18 @@ def _persist(
     StudySession.insert_many(rows).execute()
     return plan
 
-def params_for_student(student: Student, *, keep_locked: bool = False) -> PlanParams:
+
+def get_student_params(student: Student, *, keep_locked: bool = False) -> PlanParams:
     profile = SchoolProfile.get_instance()
     classroom = student.classroom
-    grade = getattr(classroom, "grade_level", 10)
-    major = student.major or getattr(classroom, "major", "")
+    grade = getattr(classroom, "grade_level", 11)
+    major = student.major
+
     block_minutes = planner_block_minutes()
     today = date.today()
+
     subjects = tuple((name, "مطالعه") for name in subject_options(grade, major))
+
     return PlanParams(
         start_date=today,
         end_date=today + timedelta(days=6),
@@ -298,38 +297,36 @@ def params_for_student(student: Student, *, keep_locked: bool = False) -> PlanPa
 
 
 def generate_plan(student: Student, params: PlanParams) -> PlanResult:
-    subjects = [s[0] for s in params.subjects] or list(
-        subject_options(params.grade_level, params.major)
+    subjects = list(
+        dict.fromkeys(
+            [sub[0] for sub in params.subjects]
+            or list(subject_options(params.grade_level, params.major))
+        )
     )
-    subjects = list(dict.fromkeys(subjects))
-    major = params.major or student.major
-    coeffs = {s: catalog.coefficient_for(s, major) for s in subjects}
-    weaknesses = _weakness_map(student, subjects, params.weakness_overrides)
-    t_avail = sum(params.daily_hours) or float(student.daily_active_hours) * 7
+    major = student.major
 
+    coeff = {s: catalog.coefficient_for(s, major) for s in subjects}
+    weakness = _weakness_map(student, subjects, params.weakness_overrides)
     locked = _locked_spans(student) if params.keep_locked else {}
-    schedule = _build_schedule(subjects, coeffs, weaknesses, t_avail, params, locked)
+    schedule = _build_schedule(subjects, coeff, weakness, params, locked)
 
     violations = validate.check_hard(
         schedule.placements,
         school_days=params.school_days,
         school_hours=params.school_hours,
-        required_subjects=[s for s in subjects if coeffs[s] > 0],
+        required_subjects=[sub for sub in subjects if coeff[sub] > 0],
         sleep_window=params.sleep_window,
         blocked_spans=locked,
         max_block_minutes=params.block_minutes,
     )
+
     warnings = list(schedule.notes)
     if violations:
-        warnings.append("هشدار اعتبارسنجی: " + "؛ ".join(violations))
+        warnings.append("هشدار: ", ";".join(violations))
 
     plan = _persist(student, params, schedule, locked)
     return PlanResult(plan=plan, warnings=tuple(warnings), errors=())
 
 
 def optimize_plan(plan: StudyPlan) -> PlanResult:
-    return generate_plan(plan.student, params_for_student(plan.student, keep_locked=True))
-
-
-def plan_to_pdf(plan: StudyPlan) -> bytes:
-    raise NotImplementedError("PDF engine is not enabled yet")
+    return generate_plan(plan.student, get_student_params(plan.student, keep_locked=True))

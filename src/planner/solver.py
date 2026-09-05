@@ -97,6 +97,7 @@ def solve(
     for r in requests:
         r["_school_days"] = tuple(school_days)
 
+    slot_by_index = {s.index: s for s in slots}
     assigned: Dict[int, dict] = {}
     unplaced: List[dict] = []
 
@@ -135,10 +136,39 @@ def solve(
                     break
             if improved:
                 break
+        if improved:
+            continue
 
-    slot_by_index = {s.index: s for s in slots}
+        # pairwise swap: exchange two placed blocks if it lowers the score
+        indices = list(assigned)
+        for a in range(len(indices)):
+            ia = indices[a]
+            ra, sa = assigned[ia], slot_by_index[ia]
+            for b in range(a + 1, len(indices)):
+                ib = indices[b]
+                rb, sb = assigned[ib], slot_by_index[ib]
+                if ra["subject"] == rb["subject"]:
+                    continue
+                if rb["minutes"] > sa.end - sa.start or ra["minutes"] > sb.end - sb.start:
+                    continue
+                rest = {i: r for i, r in assigned.items() if i not in (ia, ib)}
+                if not _feasible(rb, sa, rest, slots_by_day):
+                    continue
+                rest[ia] = rb
+                if not _feasible(ra, sb, rest, slots_by_day):
+                    continue
+                rest[ib] = ra
+                if score(rest, slots, weights) < current:
+                    assigned = rest
+                    improved = True
+                    break
+            if improved:
+                break
+
     placements = []
-    for i, req in sorted(assigned.items(), key=lambda kv: (slot_by_index[kv[0]].day, slot_by_index[kv[0]].start)):
+    for i, req in sorted(
+        assigned.items(), key=lambda kv: (slot_by_index[kv[0]].day, slot_by_index[kv[0]].start)
+    ):
         slot = slot_by_index[i]
         placements.append(
             dict(

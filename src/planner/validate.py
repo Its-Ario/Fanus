@@ -44,9 +44,7 @@ def check_hard(
 
         ceiling = _day_ceiling(day, school_days)
         if len(items) > ceiling:
-            errors.append(
-                f"H3: روز {day} دارای {len(items)} بلوک است (سقف مجاز {ceiling})."
-            )
+            errors.append(f"H3: روز {day} دارای {len(items)} بلوک است (سقف مجاز {ceiling}).")
 
         for i, p in enumerate(items):
             start, end = p["start"], p["end"]
@@ -62,9 +60,7 @@ def check_hard(
                 errors.append(f"H2: بلوک روز {day} با ساعات مدرسه هم‌پوشانی دارد.")
             if any(overlaps(start, end, *meal) for meal in meals):
                 errors.append(f"H2: بلوک روز {day} با وعدهٔ غذایی هم‌پوشانی دارد.")
-            if any(
-                overlaps(start, end, bs, be) for bs, be in blocked_spans.get(day, ())
-            ):
+            if any(overlaps(start, end, bs, be) for bs, be in blocked_spans.get(day, ())):
                 errors.append(f"H2: بلوک روز {day} با یک تعهد ثابت هم‌پوشانی دارد.")
 
             if i + 1 < len(items):

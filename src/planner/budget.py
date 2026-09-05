@@ -1,7 +1,10 @@
-""" P_i = C_i * W_i
+"""P_i = C_i * W_i
     R_i = P_i / sum(P)
-    H_i = T_avail * R_i
-    B_i = round(H_i / block_hours)
+    B_i = round(capacity * R_i)   -- largest-remainder reconciled to fit capacity
+
+capacity is the number of whole blocks the grid can actually host this week
+(len(grid.candidate_slots(...))), so the budget never asks for more than the
+schedule can place.
 """
 
 from __future__ import annotations
@@ -16,24 +19,22 @@ def priority_weights(
     coeffs: Dict[str, int],
     weaknesses: Dict[str, float],
 ) -> Dict[str, float]:
-    return {
-        s: max(coeffs.get(s, 0), 0) * max(weaknesses.get(s, 1.0), 0.0) for s in subjects
-    }
+    return {s: max(coeffs.get(s, 0), 0) * max(weaknesses.get(s, 1.0), 0.0) for s in subjects}
 
 
 def weekly_blocks(
     subjects: Sequence[str],
     coeffs: Dict[str, int],
     weaknesses: Dict[str, float],
-    t_avail_hours: float,
-    block_hours: float,
+    capacity: int,
 ) -> Dict[str, int]:
-    """Return {subject: whole block count}. May exceed the time budget only when
-    H5 (every C_i>0 subject gets >=1 block) forces it -- caller then relaxes."""
+    """Return {subject: whole block count} fitting ``capacity`` blocks. May exceed
+    it only when H5 (every C_i>0 subject gets >=1 block) forces it -- caller then
+    relaxes."""
     subjects = list(subjects)
     weights = priority_weights(subjects, coeffs, weaknesses)
     total_w = sum(weights.values())
-    capacity = int(t_avail_hours // block_hours) if block_hours > 0 else 0
+    capacity = max(int(capacity), 0)
 
     blocks = {s: 0 for s in subjects}
     if total_w > 0 and capacity > 0:
@@ -68,17 +69,13 @@ def weekly_blocks(
     return blocks
 
 
-def low_priority_subjects(
-    subjects: Sequence[str], coeffs: Dict[str, int]
-) -> "set[str]":
+def low_priority_subjects(subjects: Sequence[str], coeffs: Dict[str, int]) -> "set[str]":
     values = sorted(coeffs.get(s, 0) for s in subjects)
     if not values:
         return set()
     median = values[len(values) // 2]
     return {
-        s
-        for s in subjects
-        if coeffs.get(s, 0) <= median and catalog.archetype_for(s) != "calc"
+        s for s in subjects if coeffs.get(s, 0) <= median and catalog.archetype_for(s) != "calc"
     }
 
 
