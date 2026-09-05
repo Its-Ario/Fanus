@@ -33,6 +33,7 @@ from src.storage.models import (
     PlanStatus,
     StudyPlan,
     StudySession,
+    subject_options,
 )
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
@@ -329,7 +330,17 @@ class PlanTab(QWidget):
             self.day.addItem(name, key)
         self.start = FormField("شروع", "16:00")
         self.end = FormField("پایان", "17:30")
-        self.subject = FormField("درس", "مثلاً ریاضی")
+        self.subject = QComboBox()
+        subjects = subject_options(
+            self.panel.student.classroom.grade_level,
+            self.panel.student.classroom.major,
+        )
+        if subjects:
+            self.subject.addItem("انتخاب درس")
+            self.subject.addItems(subjects)
+        else:
+            self.subject.setEditable(True)
+            self.subject.setPlaceholderText("مثلاً ریاضی")
         self.kind = QComboBox()
         self.kind.addItems(("مطالعه", "تمرین", "مرور"))
         add = PrimaryButton("افزودن جلسه", icon="+")
@@ -362,17 +373,20 @@ class PlanTab(QWidget):
                 "day_of_week": self.day.currentData(),
                 "start_time": self.start.text(),
                 "end_time": self.end.text(),
-                "subject_name": self.subject.text(),
+                "subject_name": self.subject.currentText().strip(),
                 "session_type": self.kind.currentText(),
             }
             _duration_minutes(row["start_time"], row["end_time"])
-            if not row["subject_name"]:
+            if not row["subject_name"] or row["subject_name"] == "انتخاب درس":
                 raise ValueError("نام درس را وارد کنید.")
         except ValueError as exc:
-            self.subject.set_error(str(exc))
+            QMessageBox.warning(self, "درس", str(exc))
             return
         self.editor_rows.append(row)
-        self.subject.input.clear()
+        if self.subject.isEditable():
+            self.subject.setCurrentText("")
+        else:
+            self.subject.setCurrentIndex(0)
         self._render_editor_rows()
 
     def _render_editor_rows(self):
