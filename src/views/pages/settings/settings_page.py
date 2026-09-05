@@ -20,8 +20,8 @@ from src.views.pages.settings.users_panel import UsersPanel
 
 TABS = (
     "عمومی و اطلاعات مدرسه",
-    "مدیریت کلاس‌ها و پایه‌ها",
-    "مدیریت کاربران و دسترسی‌ها",
+    "مدیریت کلاس ها و پایه ها",
+    "مدیریت کاربران و دسترسی ها",
     "امنیت و گاوصندوق",
 )
 
@@ -56,19 +56,19 @@ class UnsavedChangesDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("تغییرات ذخیره‌نشده")
+        self.setWindowTitle("تغییرات ذخیره نشده")
         self.setMinimumWidth(390)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
         layout.setSpacing(10)
 
-        title = QLabel("تغییرات ذخیره‌نشده دارید")
+        title = QLabel("تغییرات ذخیره نشده دارید")
         title.setAlignment(Qt.AlignRight)
         title.setStyleSheet(f"font-size: 16px; font-weight: 800; color: {Colors.TEXT_MAIN};")
         layout.addWidget(title)
 
-        detail = QLabel("آیا می‌خواهید بدون ذخیره از این صفحه خارج شوید؟")
+        detail = QLabel("آیا می خواهید بدون ذخیره از این صفحه خارج شوید؟")
         detail.setAlignment(Qt.AlignRight)
         detail.setWordWrap(True)
         detail.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")

@@ -17,6 +17,7 @@ from src.views.pages.analytics_page import AnalyticsPage
 from src.views.pages.dashboard_page import DashboardPage
 from src.views.pages.settings import SettingsPage
 from src.views.pages.students_page import StudentsPage
+from src.views.pages.student_panel import StudentPanel
 
 
 class MainWindow(QMainWindow):
@@ -78,14 +79,22 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(students_page)
         self.pages.addWidget(analytics_page)
         self.pages.addWidget(self.settings_page)
+        self.student_panel = StudentPanel(current_user=self.current_user)
+        self.pages.addWidget(self.student_panel)
+
+        students_page.student_opened.connect(self._open_student_panel)
+        self.student_panel.back_requested.connect(lambda: self._navigate_to(1))
 
         self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
-        self.sidebar.add_nav_item("👥", "دانش‌آموزان", lambda: self._navigate_to(1))
-        self.sidebar.add_nav_item("📅", "برنامه‌ها", lambda: print("TODO"))
+        self.sidebar.add_nav_item("👥", "دانش آموزان", lambda: self._navigate_to(1))
         self.sidebar.add_nav_item("📊", "آمار", lambda: self._navigate_to(2))
         self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(3))
 
         self.sidebar.finalize()
+
+    def _open_student_panel(self, student) -> None:
+        self.student_panel.load(student)
+        self._navigate_to(self.pages.indexOf(self.student_panel))
 
     def _navigate_to(self, index: int) -> None:
         settings_index = self.pages.indexOf(self.settings_page)

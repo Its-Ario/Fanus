@@ -71,7 +71,7 @@ def save_classroom(actor, room=None, *, grade_level, major, code, academic_year)
             if Student.select().where((Student.classroom == room) & Student.is_active).exists():
                 if room.grade_level != grade_level or room.major != major:
                     raise SettingsValidationError(
-                        "پایه و رشتهٔ کلاس دارای دانش‌آموز فعال قابل تغییر نیست."
+                        "پایه و رشتهٔ کلاس دارای دانش آموز فعال قابل تغییر نیست."
                     )
         else:
             room = Classroom()
@@ -100,7 +100,7 @@ def delete_classroom(actor, room):
         current = Classroom.get_by_id(room.id)
         active = Student.select().where((Student.classroom == current) & Student.is_active).count()
         if active:
-            raise SettingsValidationError(f"این کلاس {active} دانش‌آموز فعال دارد.")
+            raise SettingsValidationError(f"این کلاس {active} دانش آموز فعال دارد.")
         name, identifier = current.name, current.id
         current.delete_instance()
         return name, identifier
@@ -174,7 +174,7 @@ def set_user_active(actor, user, is_active):
     def write(fresh):
         target = User.get_by_id(user.id)
         if target.id == fresh.id and not is_active:
-            raise SettingsValidationError("نمی‌توانید حساب خودتان را غیرفعال کنید.")
+            raise SettingsValidationError("نمی توانید حساب خودتان را غیرفعال کنید.")
         if (
             target.can_manage_users
             and target.is_active
@@ -198,7 +198,7 @@ def set_user_active(actor, user, is_active):
 
 def change_own_password(actor, current_password, new_password):
     if len(new_password) < 8:
-        raise SettingsValidationError("رمز عبور باید دست‌کم ۸ نویسه باشد.")
+        raise SettingsValidationError("رمز عبور باید دست کم ۸ نویسه باشد.")
 
     def write(fresh):
         if fresh.password_hash and not verify_password(current_password, fresh.password_hash):

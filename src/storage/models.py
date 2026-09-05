@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 class EncryptedTextField(TextField):
-    """TextField encrypted with AES-256-GCM with vault key."""
+    """TextField with AES-256GCM"""
 
     def db_value(self, value):
         if value is None:
@@ -40,7 +40,7 @@ class AcademicMajor:
     MATH = "ریاضی فیزیک"
     EXPERIMENTAL = "علوم تجربی"
     HUMANITIES = "علوم انسانی"
-    VOCATIONAL = "فنی و حرفه‌ای"
+    VOCATIONAL = "فنی و حرفه ای"
     GENERAL = "عمومی"
 
     VALUES = (MATH, EXPERIMENTAL, HUMANITIES, VOCATIONAL, GENERAL)
@@ -102,23 +102,21 @@ class PlanStatus:
 
 
 class DayOfWeek:
-    """Iranian calendar week order (Starts on Saturday)."""
-
     SATURDAY = 0  # شنبه
     SUNDAY = 1  # یکشنبه
     MONDAY = 2  # دوشنبه
-    TUESDAY = 3  # سه‌شنبه
+    TUESDAY = 3  # سه شنبه
     WEDNESDAY = 4  # چهارشنبه
-    THURSDAY = 5  # پنج‌شنبه
+    THURSDAY = 5  # پنج شنبه
     FRIDAY = 6  # جمعه
 
     PERSIAN_NAMES = {
         0: "شنبه",
         1: "یکشنبه",
         2: "دوشنبه",
-        3: "سه‌شنبه",
+        3: "سه شنبه",
         4: "چهارشنبه",
-        5: "پنج‌شنبه",
+        5: "پنج شنبه",
         6: "جمعه",
     }
 
@@ -309,7 +307,9 @@ class StudyPlan(BaseModel):
     class Meta:
         table_name = "study_plans"
 
-    def get_active_sessions(self): ...
+    def get_active_sessions(self):
+        """Return this plan's sessions in the order used by the weekly record."""
+        return self.sessions.order_by(StudySession.start_time, StudySession.end_time)
 
 
 class StudySession(BaseModel):

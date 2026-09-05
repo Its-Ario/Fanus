@@ -146,7 +146,7 @@ class DashboardPage(QWidget):
         title_box.setSpacing(2)
         page_title = QLabel("داشبورد")
         page_title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
-        page_subtitle = QLabel("خلاصه‌ای از وضعیت دانش‌آموزان و برنامه‌های مطالعاتی")
+        page_subtitle = QLabel("خلاصه ای از وضعیت دانش آموزان و برنامه های مطالعاتی")
         page_subtitle.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
         title_box.addWidget(page_title)
         title_box.addWidget(page_subtitle)
@@ -156,11 +156,11 @@ class DashboardPage(QWidget):
 
         stats_row = QHBoxLayout()
         stats_row.setSpacing(14)
-        stats_row.addWidget(StatCard("کل دانش‌آموزان", data.active_student_count, "👥"))
+        stats_row.addWidget(StatCard("کل دانش آموزان", data.active_student_count, "👥"))
         stats_row.addWidget(
             StatCard("ریسک بالا", data.high_risk_student_count, "⚠️", accent_color=Colors.ERROR)
         )
-        stats_row.addWidget(StatCard("برنامه‌های فعال", data.active_plan_count, "📚"))
+        stats_row.addWidget(StatCard("برنامه های فعال", data.active_plan_count, "📚"))
         stats_row.addWidget(
             StatCard(
                 "نرخ تکمیل هفتگی",
@@ -172,9 +172,9 @@ class DashboardPage(QWidget):
         layout.addLayout(stats_row)
 
         insight = (
-            f"{to_persian_digits(data.high_risk_student_count)} دانش‌آموز در وضعیت ریسک بالا هستند."
+            f"{to_persian_digits(data.high_risk_student_count)} دانش آموز در وضعیت ریسک بالا هستند."
             if data.high_risk_student_count
-            else "در حال حاضر دانش‌آموزی با وضعیت ریسک بالا ثبت نشده است."
+            else "در حال حاضر دانش آموزی با وضعیت ریسک بالا ثبت نشده است."
         )
         layout.addWidget(AIInsightCard(insight))
 
@@ -199,7 +199,7 @@ class DashboardPage(QWidget):
         card.body_layout.addWidget(SectionHeader("نیازمند توجه"))
 
         if not students:
-            label = QLabel("دانش‌آموزی با ریسک متوسط یا بالا ثبت نشده است.")
+            label = QLabel("دانش آموزی با ریسک متوسط یا بالا ثبت نشده است.")
             label.setWordWrap(True)
             label.setStyleSheet(f"padding: 16px 0; font-size: 12px; color: {Colors.TEXT_MUTED};")
             card.body_layout.addWidget(label)
@@ -227,7 +227,7 @@ class DashboardPage(QWidget):
         card.body_layout.addWidget(Divider())
 
         if not subjects:
-            label = QLabel("هنوز نمره‌ای برای نمایش ثبت نشده است.")
+            label = QLabel("هنوز نمره ای برای نمایش ثبت نشده است.")
             label.setWordWrap(True)
             label.setStyleSheet(f"font-size: 12px; color: {Colors.TEXT_MUTED};")
             card.body_layout.addWidget(label)

@@ -68,7 +68,7 @@ class ClassDialog(_Dialog):
                 self.grade.setEnabled(False)
                 self.major.setEnabled(False)
                 self.layout.addWidget(
-                    QLabel("پایه و رشتهٔ کلاس دارای دانش‌آموز فعال قابل تغییر نیست.")
+                    QLabel("پایه و رشتهٔ کلاس دارای دانش آموز فعال قابل تغییر نیست.")
                 )
         self.grade.currentIndexChanged.connect(self._sync_major)
         self._sync_major()
@@ -144,7 +144,7 @@ class UserDialog(_Dialog):
             self.fail("نام کاربری باید ۳ تا ۲۰ حرف یا عدد انگلیسی باشد.")
             return
         if self.password.text() and len(self.password.text()) < 8:
-            self.fail("رمز عبور باید دست‌کم ۸ نویسه باشد.")
+            self.fail("رمز عبور باید دست کم ۸ نویسه باشد.")
             return
         try:
             self.instance = save_user(
@@ -191,7 +191,7 @@ class VaultPinDialog(_Dialog):
         self.actor = actor
         self.old = FormField("پین فعلی", password=True, revealable=True)
         self.new = FormField("پین جدید", "حداقل ۱۲ نویسه", password=True, revealable=True)
-        self.ack = QCheckBox("می‌دانم پین فراموش‌شده قابل بازیابی نیست.")
+        self.ack = QCheckBox("می دانم پین فراموش شده قابل بازیابی نیست.")
         self.layout.addWidget(self.old)
         self.layout.addWidget(self.new)
         self.layout.addWidget(self.ack)
@@ -202,7 +202,7 @@ class VaultPinDialog(_Dialog):
 
     def _save(self):
         if len(self.new.text()) < 12 or not self.ack.isChecked():
-            self.fail("پین باید حداقل ۱۲ نویسه باشد و تأیید بازیابی‌ناپذیری لازم است.")
+            self.fail("پین باید حداقل ۱۲ نویسه باشد و تأیید بازیابی ناپذیری لازم است.")
             return
         from src.core.auth import verify_password
 

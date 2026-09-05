@@ -301,7 +301,7 @@ class EmptyState(QWidget):
 
 
 class SearchInput(QLineEdit):
-    def __init__(self, placeholder="جستجوی دانش‌آموزان..."):
+    def __init__(self, placeholder="جستجوی دانش آموزان..."):
         super().__init__()
         self.setPlaceholderText(f"🔍  {placeholder}")
         self.setFixedHeight(38)

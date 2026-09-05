@@ -14,8 +14,8 @@ ACTION_LABELS = {
     "user.create": "ایجاد کاربر",
     "user.update": "ویرایش کاربر",
     "user.role_change": "تغییر نقش",
-    "user.activate": "فعال‌سازی",
-    "user.deactivate": "غیرفعال‌سازی",
+    "user.activate": "فعال سازی",
+    "user.deactivate": "غیرفعال سازی",
     "user.password_reset": "بازنشانی رمز",
     "vault.pin_change": "تغییر پین گاوصندوق",
     "password.self_change": "تغییر رمز شخصی",
@@ -106,7 +106,7 @@ class SecurityPanel(QWidget):
             count = CounselorNote.select().count()
             button = PrimaryButton("تغییر پین گاوصندوق")
             button.clicked.connect(lambda: VaultPinDialog(self.actor, self).exec_())
-            self.vault.layout().addWidget(QLabel(f"یادداشت‌های فعال: {count}"))
+            self.vault.layout().addWidget(QLabel(f"یادداشت های فعال: {count}"))
             self.vault.layout().addWidget(button)
         except Exception as exc:
             self.pin.set_error(str(exc))

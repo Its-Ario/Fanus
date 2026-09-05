@@ -162,7 +162,7 @@ class LoginDialog(QDialog):
 
     def _account_page(self):
         page, card = self._page_shell(
-            "انتخاب حساب", "برای ادامه، یکی از حساب‌های فعال را انتخاب کنید."
+            "انتخاب حساب", "برای ادامه، یکی از حساب های فعال را انتخاب کنید."
         )
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)

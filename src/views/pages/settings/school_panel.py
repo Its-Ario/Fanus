@@ -49,7 +49,7 @@ class SchoolPanel(QWidget):
         labels = {"elementry": "دبستان", "middle": "دوره اول", "high": "دوره دوم"}
         levels = "، ".join(labels[value] for value in parse_levels(profile.type))
         self.summary.setText(
-            f"نام مدرسه: {profile.school_name}\nسال تحصیلی: {profile.academic_year}\nمقاطع: {levels}\nکلاس‌ها: {Classroom.select().count()} · دانش‌آموزان: {Student.select().where(Student.is_active).count()} · کاربران: {User.select().where(User.is_active).count()}"
+            f"نام مدرسه: {profile.school_name}\nسال تحصیلی: {profile.academic_year}\nمقاطع: {levels}\nکلاس ها: {Classroom.select().count()} · دانش آموزان: {Student.select().where(Student.is_active).count()} · کاربران: {User.select().where(User.is_active).count()}"
         )
         self.name.input.setText(profile.school_name)
         self._dirty = False

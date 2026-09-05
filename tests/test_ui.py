@@ -3,7 +3,7 @@ from src.views.components.ui_kit import AIInsightCard, RiskBadge, StatCard, Stud
 
 def test_stat_card_instantiation_and_persian_digits(qtbot):
     """Test StatCard converts numerical value to Persian digits on creation."""
-    card = StatCard(title="کل دانش‌آموزان", value=312, icon_emoji="👥")
+    card = StatCard(title="کل دانش آموزان", value=312, icon_emoji="👥")
     qtbot.addWidget(card)
 
     _labels = card.findChildren(type(card.findChild(type(None))))

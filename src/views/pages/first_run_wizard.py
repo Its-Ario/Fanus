@@ -65,7 +65,7 @@ class FirstRunWizard(QDialog):
         outer = QVBoxLayout(wrapper)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
-        outer.addWidget(TitleBar(self, title="راه‌اندازی فانوس"))
+        outer.addWidget(TitleBar(self, title="راه اندازی فانوس"))
 
         body = QWidget()
         body.setStyleSheet(f"background-color: {Colors.BACKGROUND};")
@@ -119,7 +119,7 @@ class FirstRunWizard(QDialog):
         footer.setFixedHeight(30)
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(14, 0, 10, 0)
-        footer_label = QLabel("تنظیم اولیه فقط یک‌بار انجام می‌شود")
+        footer_label = QLabel("تنظیم اولیه فقط یک بار انجام می شود")
         footer_label.setObjectName("FooterText")
         footer_layout.addWidget(footer_label)
         footer_layout.addStretch()
@@ -143,14 +143,14 @@ class FirstRunWizard(QDialog):
 
     def _school_page(self):
         card = self._page_shell(
-            "مدرسه‌تان را معرفی کنید", "این اطلاعات در سربرگ‌ها و گزارش‌ها استفاده می‌شود."
+            "مدرسه تان را معرفی کنید", "این اطلاعات در سربرگ ها و گزارش ها استفاده می شود."
         )
         self.school_name = FormField("نام مدرسه", "برای مثال: علامه حلی ۳")
         self.academic_year = FormField("سال تحصیلی", "برای مثال: ۱۴۰۵–۱۴۰۶")
         card.body_layout.addWidget(self.school_name)
         card.body_layout.addWidget(self.academic_year)
 
-        type_label = QLabel("مقطع‌های تحصیلی مدرسه")
+        type_label = QLabel("مقطع های تحصیلی مدرسه")
         type_label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};")
         card.body_layout.addWidget(type_label)
 
@@ -238,7 +238,8 @@ class FirstRunWizard(QDialog):
 
     def _security_page(self):
         card = self._page_shell(
-            "امنیت حساب", "برای ورود، می‌توانید از رمز عبور استفاده کنید یا آن را فعلاً خالی بگذارید."
+            "امنیت حساب",
+            "برای ورود، می توانید از رمز عبور استفاده کنید یا آن را فعلاً خالی بگذارید.",
         )
         self.review_summary = QLabel()
         self.review_summary.setWordWrap(True)
@@ -246,7 +247,7 @@ class FirstRunWizard(QDialog):
             f"background-color: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MUTED}; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: 600;"
         )
         card.body_layout.addWidget(self.review_summary)
-        self.password_enabled = QCheckBox("برای این حساب رمز ورود تعیین می‌کنم")
+        self.password_enabled = QCheckBox("برای این حساب رمز ورود تعیین می کنم")
         self.password_enabled.setCursor(Qt.PointingHandCursor)
         self.password_enabled.setStyleSheet(
             f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};"
@@ -254,7 +255,7 @@ class FirstRunWizard(QDialog):
         self.password_enabled.toggled.connect(self._toggle_password_fields)
         card.body_layout.addWidget(self.password_enabled)
 
-        password_help = QLabel("رمز ورود اختیاری است و از پین یادداشت‌های محرمانه جداست.")
+        password_help = QLabel("رمز ورود اختیاری است و از پین یادداشت های محرمانه جداست.")
         password_help.setWordWrap(True)
         password_help.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
         card.body_layout.addWidget(password_help)
@@ -277,7 +278,7 @@ class FirstRunWizard(QDialog):
             password=True,
             revealable=True,
         )
-        self.vault_acknowledgement = QCheckBox("می‌دانم پین فراموش‌شده قابل بازیابی نیست.")
+        self.vault_acknowledgement = QCheckBox("می دانم پین فراموش شده قابل بازیابی نیست.")
         self.vault_acknowledgement.setCursor(Qt.PointingHandCursor)
         self.vault_acknowledgement.setStyleSheet(
             f"font-size: 11px; color: {Colors.TEXT_MAIN}; font-weight: 600;"
@@ -304,7 +305,7 @@ class FirstRunWizard(QDialog):
 
     def _refresh_role_description(self):
         descriptions = {
-            "counselor": "مشاور: برای کار با یادداشت‌های محرمانه از یک پین اختصاصی استفاده می‌کند.",
+            "counselor": "مشاور: برای کار با یادداشت های محرمانه از یک پین اختصاصی استفاده می کند.",
             "assistant": "معاون: نقش اجرایی برای پیگیری امور مدرسه.",
             "principal": "مدیر مدرسه: نقش مدیریتی برای ادارهٔ مدرسه.",
         }
@@ -338,7 +339,7 @@ class FirstRunWizard(QDialog):
         self.vault_acknowledgement.setVisible(is_counselor)
         if is_counselor:
             self.vault_note.setText(
-                "پین یادداشت‌های محرمانه برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید."
+                "پین یادداشت های محرمانه برای مشاور الزامی است و با رمز ورود متفاوت است. آن را در جای امن نگه دارید."
             )
         self._refresh_layout()
 
@@ -362,7 +363,7 @@ class FirstRunWizard(QDialog):
         self.step_label.setText(f"مرحله {self._step + 1} از ۳")
         self.progress.set_value((self._step + 1) * 100 // 3)
         self.back_button.setVisible(self._step > 0)
-        self.next_button.setText("اتمام راه‌اندازی" if self._step == 2 else "ادامه")
+        self.next_button.setText("اتمام راه اندازی" if self._step == 2 else "ادامه")
         if self._step == 2:
             self._refresh_review_summary()
             self._refresh_security_page()
@@ -402,7 +403,7 @@ class FirstRunWizard(QDialog):
                 )
             if self._selected_role() == "counselor":
                 fields += (
-                    (self.vault_pin, "عبارت عبور یادداشت‌های محرمانه برای مشاور الزامی است."),
+                    (self.vault_pin, "عبارت عبور یادداشت های محرمانه برای مشاور الزامی است."),
                 )
 
         valid = True
@@ -422,7 +423,7 @@ class FirstRunWizard(QDialog):
                 return False
             if not validate_academic_year(self.academic_year.text()):
                 self.academic_year.set_error(
-                    "سال تحصیلی را به‌شکل «۱۴۰۵-۱۴۰۶» وارد کنید؛ سال دوم باید دقیقاً یک سال بعد باشد."
+                    "سال تحصیلی را به شکل «۱۴۰۵-۱۴۰۶» وارد کنید؛ سال دوم باید دقیقاً یک سال بعد باشد."
                 )
                 self.academic_year.input.setFocus()
                 return False
@@ -443,7 +444,7 @@ class FirstRunWizard(QDialog):
                 return False
         elif self._step == 2 and self.password_enabled.isChecked():
             if len(self.password.text()) < 8:
-                self.password.set_error("رمز عبور باید دست‌کم ۸ نویسه باشد.")
+                self.password.set_error("رمز عبور باید دست کم ۸ نویسه باشد.")
                 self.password.input.setFocus()
                 return False
             if self.password.text() != self.password_confirmation.text():
@@ -455,7 +456,7 @@ class FirstRunWizard(QDialog):
             and self._selected_role() == "counselor"
             and len(self.vault_pin.text()) < 12
         ):
-            self.vault_pin.set_error("عبارت عبور یادداشت‌های محرمانه باید دست‌کم ۱۲ نویسه باشد.")
+            self.vault_pin.set_error("عبارت عبور یادداشت های محرمانه باید دست کم ۱۲ نویسه باشد.")
             self.vault_pin.input.setFocus()
             return False
         if (
@@ -465,7 +466,7 @@ class FirstRunWizard(QDialog):
         ):
             self.vault_acknowledgement.setFocus()
             self.setup_alert.setText(
-                "پیش از اتمام راه‌اندازی، پیام مربوط به بازیابی‌ناپذیری پین را تأیید کنید."
+                "پیش از اتمام راه اندازی، پیام مربوط به بازیابی ناپذیری پین را تأیید کنید."
             )
             self.setup_alert.setVisible(True)
             return False
@@ -530,4 +531,4 @@ class FirstRunWizard(QDialog):
     def _friendly_error(exc):
         if "UNIQUE constraint failed: user.username" in str(exc):
             return "این نام کاربری قبلاً استفاده شده است. نام دیگری انتخاب کنید."
-        return "راه‌اندازی کامل نشد. لطفاً دوباره تلاش کنید."
+        return "راه اندازی کامل نشد. لطفاً دوباره تلاش کنید."

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from math import ceil
 
 from peewee import IntegrityError
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (
     QAbstractItemView,
@@ -58,7 +58,7 @@ def load_students_page(query: str = "", page: int = 0, page_size: int = PAGE_SIZ
 
 
 class StudentTableModel(QAbstractTableModel):
-    HEADERS = ("نام دانش‌آموز", "کد ملی", "کلاس", "رشته", "ریسک", "وضعیت")
+    HEADERS = ("نام دانش آموز", "کد ملی", "کلاس", "رشته", "ریسک", "وضعیت")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -122,42 +122,10 @@ class RiskBadgeDelegate(QStyledItemDelegate):
         painter.restore()
 
 
-class StudentDetailsDialog(QDialog):
-    def __init__(self, student: Student, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("اطلاعات دانش‌آموز")
-        self.setMinimumWidth(360)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 22, 24, 20)
-        layout.setSpacing(10)
-
-        title = QLabel(student.full_name)
-        title.setStyleSheet(f"font-size: 18px; font-weight: 800; color: {Colors.TEXT_MAIN};")
-        layout.addWidget(title)
-        for label, value in (
-            ("کد ملی", student.national_id),
-            ("کلاس", student.classroom.name),
-            ("رشته", student.major),
-            ("سطح ریسک", student.risk_level_persian),
-            ("وضعیت", "فعال" if student.is_active else "غیرفعال"),
-        ):
-            row = QLabel(f"<b>{label}:</b> {value}")
-            row.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED}; padding: 4px 0;")
-            layout.addWidget(row)
-
-        layout.addSpacing(6)
-        actions = QHBoxLayout()
-        close = PrimaryButton("بستن")
-        close.clicked.connect(self.accept)
-        actions.addStretch()
-        actions.addWidget(close)
-        layout.addLayout(actions)
-
-
 class NewStudentDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("دانش‌آموز جدید")
+        self.setWindowTitle("دانش آموز جدید")
         self.setMinimumWidth(390)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 22, 24, 20)
@@ -193,7 +161,7 @@ class NewStudentDialog(QDialog):
         actions = QHBoxLayout()
         cancel = SecondaryButton("انصراف")
         cancel.clicked.connect(self.reject)
-        save = PrimaryButton("ثبت دانش‌آموز")
+        save = PrimaryButton("ثبت دانش آموز")
         save.clicked.connect(self._save)
         actions.addWidget(cancel)
         actions.addStretch()
@@ -227,12 +195,14 @@ class NewStudentDialog(QDialog):
                 major=classroom.major,
             )
         except IntegrityError:
-            self._show_error("دانش‌آموزی با این کد ملی قبلا ثبت شده است.")
+            self._show_error("دانش آموزی با این کد ملی قبلا ثبت شده است.")
             return
         self.accept()
 
 
 class StudentsPage(QWidget):
+    student_opened = pyqtSignal(object)
+
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
         self.current_user = current_user
@@ -252,21 +222,21 @@ class StudentsPage(QWidget):
         header = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(2)
-        title = QLabel("دانش‌آموزان")
+        title = QLabel("دانش آموزان")
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
-        subtitle = QLabel("فهرست دانش‌آموزان فعال مدرسه")
+        subtitle = QLabel("فهرست دانش آموزان فعال مدرسه")
         subtitle.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
         titles.addWidget(title)
         titles.addWidget(subtitle)
         header.addLayout(titles)
         header.addStretch()
-        add_button = PrimaryButton("دانش‌آموز جدید", icon="+")
+        add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
         layout.addLayout(header)
 
         controls = QHBoxLayout()
-        self.result_label = QLabel("در حال آماده‌سازی فهرست")
+        self.result_label = QLabel("در حال آماده سازی فهرست")
         self.result_label.setStyleSheet(f"font-size: 12px; color: {Colors.TEXT_MUTED};")
         self.search_input = SearchInput("نام یا کد ملی را جستجو کنید")
         self.search_input.setMinimumWidth(300)
@@ -282,7 +252,7 @@ class StudentsPage(QWidget):
         )
         banner_layout = QHBoxLayout(self.error_banner)
         banner_layout.setContentsMargins(12, 7, 12, 7)
-        self.error_banner_label = QLabel("فهرست به‌روز نشد؛ اطلاعات قبلی نمایش داده می‌شود.")
+        self.error_banner_label = QLabel("فهرست به روز نشد؛ اطلاعات قبلی نمایش داده می شود.")
         self.error_banner_label.setStyleSheet(
             f"font-size: 12px; color: {Colors.ERROR}; font-weight: 600;"
         )
@@ -319,24 +289,24 @@ class StudentsPage(QWidget):
         self.state_frame = QFrame()
         state_layout = QVBoxLayout(self.state_frame)
         state_layout.setContentsMargins(0, 0, 0, 0)
-        self.loading_state = EmptyState("…", "در حال بارگذاری دانش‌آموزان", "چند لحظه صبر کنید.")
+        self.loading_state = EmptyState("…", "در حال بارگذاری دانش آموزان", "چند لحظه صبر کنید.")
         self.empty_state = EmptyState(
             "",
-            "هنوز دانش‌آموز فعالی ثبت نشده است",
-            "برای شروع، اولین دانش‌آموز را ثبت کنید.",
-            "دانش‌آموز جدید",
+            "هنوز دانش آموز فعالی ثبت نشده است",
+            "برای شروع، اولین دانش آموز را ثبت کنید.",
+            "دانش آموز جدید",
             self._open_new_student,
         )
         self.no_results_state = EmptyState(
             "",
-            "دانش‌آموزی پیدا نشد",
+            "دانش آموزی پیدا نشد",
             "عبارت جستجو را بررسی کنید یا جستجو را پاک کنید.",
             "پاک کردن جستجو",
             self._clear_search,
         )
         self.error_state = EmptyState(
             "!",
-            "فهرست دانش‌آموزان بارگذاری نشد",
+            "فهرست دانش آموزان بارگذاری نشد",
             "اتصال پایگاه داده را بررسی کنید و دوباره تلاش کنید.",
             "تلاش دوباره",
             self.reload,
@@ -428,7 +398,7 @@ class StudentsPage(QWidget):
         self.page_label.setText(
             f"صفحه {to_persian_digits(self._page + 1)} از {to_persian_digits(self.page_count)}"
         )
-        self.result_label.setText(f"{to_persian_digits(self._total)} دانش‌آموز فعال")
+        self.result_label.setText(f"{to_persian_digits(self._total)} دانش آموز فعال")
 
     def _clear_search(self):
         self.search_input.clear()
@@ -439,7 +409,7 @@ class StudentsPage(QWidget):
     def _open_selected_student(self, index):
         student = index.data(Qt.UserRole)
         if student:
-            StudentDetailsDialog(student, self).exec_()
+            self.student_opened.emit(student)
 
     def _open_new_student(self):
         if NewStudentDialog(self).exec_() == QDialog.Accepted:

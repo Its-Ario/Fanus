@@ -21,7 +21,7 @@ def test_student_page_searches_active_students_and_paginates(tmp_path):
         for number in range(PAGE_SIZE + 2):
             Student.create(
                 national_id=f"1000000{number:03d}",
-                first_name="سارا" if number == 0 else "دانش‌آموز",
+                first_name="سارا" if number == 0 else "دانش آموز",
                 last_name=f"نام{number:02d}",
                 classroom=classroom,
                 risk_level=RiskLevel.MEDIUM,
@@ -29,7 +29,7 @@ def test_student_page_searches_active_students_and_paginates(tmp_path):
         Student.create(
             national_id="9999999999",
             first_name="غیرفعال",
-            last_name="دانش‌آموز",
+            last_name="دانش آموز",
             classroom=classroom,
             is_active=False,
         )

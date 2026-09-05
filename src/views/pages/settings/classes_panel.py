@@ -8,7 +8,7 @@ from src.views.pages.settings.dialogs import ClassDialog
 
 
 class _ClassesModel(QAbstractTableModel):
-    HEADERS = ("نام کلاس", "پایه", "رشته", "تعداد دانش‌آموز")
+    HEADERS = ("نام کلاس", "پایه", "رشته", "تعداد دانش آموز")
 
     def __init__(self):
         super().__init__()
@@ -57,7 +57,7 @@ class ClassesPanel(QWidget):
         self.actor, self.editable = actor, editable
         layout = QVBoxLayout(self)
         header = QHBoxLayout()
-        header.addWidget(QLabel("مدیریت کلاس‌ها و پایه‌ها"))
+        header.addWidget(QLabel("مدیریت کلاس ها و پایه ها"))
         header.addStretch()
         self.edit = SecondaryButton("ویرایش")
         self.edit.clicked.connect(self._edit_selected)

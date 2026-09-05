@@ -60,7 +60,7 @@ class UsersPanel(QWidget):
         self.actor, self.editable = actor, editable
         layout = QVBoxLayout(self)
         header = QHBoxLayout()
-        header.addWidget(QLabel("مدیریت کاربران و دسترسی‌ها"))
+        header.addWidget(QLabel("مدیریت کاربران و دسترسی ها"))
         header.addStretch()
         self.edit = SecondaryButton("ویرایش")
         self.edit.clicked.connect(lambda: self._edit(self.table.currentIndex()))

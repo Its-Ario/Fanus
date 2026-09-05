@@ -327,7 +327,7 @@ class AnalyticsPage(QWidget):
         )
         grid.addWidget(self._panel("پنل ۳: میانگین غیبت بر حسب بازه معدل", self.gpa_chart), 1, 0)
         grid.addWidget(
-            self._panel("پنل ۴: ساعت برنامه‌ریزی‌شده هفتگی به تفکیک درس", self.workload_chart), 1, 1
+            self._panel("پنل ۴: ساعت برنامه ریزی شده هفتگی به تفکیک درس", self.workload_chart), 1, 1
         )
         layout.addLayout(grid)
         layout.addStretch()
@@ -384,7 +384,7 @@ class AnalyticsPage(QWidget):
             risk_detail = None
         elif data.panel1.student_count < 10:
             risk_overlay = "داده کافی موجود نیست"
-            risk_detail = "حداقل ۱۰ دانش‌آموز برای محاسبه لازم است"
+            risk_detail = "حداقل ۱۰ دانش آموز برای محاسبه لازم است"
         else:
             risk_overlay = None
             risk_detail = None

@@ -89,7 +89,7 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
         Student.create(
             national_id="1000000003",
             first_name="غیرفعال",
-            last_name="دانش‌آموز",
+            last_name="دانش آموز",
             classroom=classroom,
             risk_level=RiskLevel.HIGH,
             is_active=False,
@@ -102,7 +102,7 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
         )
         StudyPlan.create(
             student=medium_risk,
-            title="پیش‌نویس",
+            title="پیش نویس",
             end_date=today + timedelta(days=7),
             status=PlanStatus.DRAFT,
         )
