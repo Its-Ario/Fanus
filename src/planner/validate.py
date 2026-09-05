@@ -55,27 +55,27 @@ def check_hard(
                 )
 
             if start < wake_start or end > wake_end:
-                errors.append(f"H2: بلوک روز {day} داخل بازهٔ خواب قرار دارد.")
+                errors.append(f"H2: بلوک روز {day} داخل بازه خواب قرار دارد.")
             if day in school_days and overlaps(start, end, *school):
-                errors.append(f"H2: بلوک روز {day} با ساعات مدرسه هم‌پوشانی دارد.")
+                errors.append(f"H2: بلوک روز {day} با ساعات مدرسه هم پوشانی دارد.")
             if any(overlaps(start, end, *meal) for meal in meals):
-                errors.append(f"H2: بلوک روز {day} با وعدهٔ غذایی هم‌پوشانی دارد.")
+                errors.append(f"H2: بلوک روز {day} با وعده غذایی هم پوشانی دارد.")
             if any(overlaps(start, end, bs, be) for bs, be in blocked_spans.get(day, ())):
-                errors.append(f"H2: بلوک روز {day} با یک تعهد ثابت هم‌پوشانی دارد.")
+                errors.append(f"H2: بلوک روز {day} با یک تعهد ثابت هم پوشانی دارد.")
 
             if i + 1 < len(items):
                 nxt = items[i + 1]
                 if nxt["start"] < end:
-                    errors.append(f"H1: دو بلوک روز {day} هم‌پوشانی دارند.")
+                    errors.append(f"H1: دو بلوک روز {day} هم پوشانی دارند.")
                 elif nxt["start"] - end < catalog.MIN_BREAK_MINUTES:
                     errors.append(
-                        f"H4: فاصلهٔ استراحت بین دو بلوک روز {day} کمتر از "
+                        f"H4: فاصله استراحت بین دو بلوک روز {day} کمتر از "
                         f"{catalog.MIN_BREAK_MINUTES} دقیقه است."
                     )
 
     placed = {p.get("subject") for p in placements}
     missing = [s for s in required_subjects if s not in placed]
     if missing:
-        errors.append("H5: درس‌های بدون سهمیه: " + "، ".join(sorted(missing)))
+        errors.append("H5: درس های بدون سهمیه: " + "، ".join(sorted(missing)))
 
     return errors

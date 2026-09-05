@@ -14,7 +14,7 @@ from src.styles.theme import Colors
 from src.views.components.ui_kit import Card, Dropdown, PrimaryButton, SecondaryButton
 
 _WEIGHT_FIELDS = (
-    ("s1", "هم‌راستایی با ساعات اوج تمرکز"),
+    ("s1", "هم راستایی با ساعات اوج تمرکز"),
     ("s2", "تنوع نوع دروس در طول روز"),
     ("s3", "کنترل تعداد دروس متمایز روزانه"),
     ("s4", "تکرار با فاصله برای دروس ضعیف"),
@@ -55,11 +55,11 @@ class PlannerPanel(QWidget):
             spin.setRange(0, 500)
             spin.setSingleStep(5)
             self.weights[key] = spin
-            form.addRow(f"جریمهٔ نقض «{label}»", spin)
+            form.addRow(f"جریمه نقض «{label}»", spin)
 
         card.body_layout.addLayout(form)
 
-        hint = QLabel("عدد بزرگ‌تر یعنی موتور برنامه‌ریزی سخت‌گیرتر روی آن قاعده.")
+        hint = QLabel("عدد بزرگ تر یعنی موتور برنامه ریزی سخت گیرتر روی آن قاعده.")
         hint.setStyleSheet(f"font-size:12px; color:{Colors.TEXT_MUTED};")
         card.body_layout.addWidget(hint)
 

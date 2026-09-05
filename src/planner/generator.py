@@ -130,8 +130,8 @@ def _prune_general(
 
 
 _RELAX_NOTE = {
-    "half": "برای جا شدن همهٔ دروس، درس‌های کم‌ضریب به بلوک‌های ۴۵ دقیقه‌ای کوتاه شدند.",
-    "compress": "طول بلوک‌ها به ۷۵ دقیقه کاهش یافت تا برنامه کامل شود.",
+    "half": "برای جا شدن همه دروس، درس های کم ضریب به بلوک های ۴۵ دقیقه ای کوتاه شدند.",
+    "compress": "طول بلوک ها به ۷۵ دقیقه کاهش یافت تا برنامه کامل شود.",
 }
 
 
@@ -178,7 +178,7 @@ def _build_schedule(
 
     deficit = best.unplaced * (best.block_minutes / 60.0)
     best.notes = [
-        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی. برنامهٔ ناقص تولید شد."
+        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی. برنامه ناقص تولید شد."
     ]
     return best
 
@@ -256,7 +256,7 @@ def _persist(
                         start_time=grid.to_hhmm(start),
                         end_time=grid.to_hhmm(end),
                         subject_name="تعهد ثابت",
-                        session_type="قفل‌شده",
+                        session_type="قفل شده",
                         duration_minutes=end - start,
                         is_locked=True,
                     )
@@ -322,7 +322,7 @@ def generate_plan(student: Student, params: PlanParams) -> PlanResult:
 
     warnings = list(schedule.notes)
     if violations:
-        warnings.append("هشدار: ", ";".join(violations))
+        warnings.append("هشدار: " + ";".join(violations))
 
     plan = _persist(student, params, schedule, locked)
     return PlanResult(plan=plan, warnings=tuple(warnings), errors=())

@@ -1,5 +1,5 @@
 from src.planner import budget, catalog, grid, solver, validate
-from src.planner.generator import generate_plan, params_for_student
+from src.planner.generator import generate_plan, get_student_params
 from src.storage.db import DatabaseManager
 from src.storage.models import (
     AcademicGrade,
@@ -19,7 +19,7 @@ SCHOOL_HOURS = ("07:30", "13:30")
 
 
 def test_budget_fits_capacity_and_never_starves_a_graded_subject():
-    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست‌شناسی", "عربی", "دین و زندگی"]
+    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست شناسی", "عربی", "دین و زندگی"]
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
     weaknesses = {s: 1.5 for s in subjects}
     weaknesses["ریاضی"] = 2.0
@@ -34,7 +34,7 @@ def test_budget_fits_capacity_and_never_starves_a_graded_subject():
 
 
 def test_budget_never_exceeds_grid_capacity():
-    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست‌شناسی", "عربی", "دین و زندگی", "انگلیسی"]
+    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست شناسی", "عربی", "دین و زندگی", "انگلیسی"]
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
     weaknesses = {s: 1.5 for s in subjects}
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
@@ -103,7 +103,7 @@ def test_solver_is_deterministic():
 def test_improvement_sweep_never_worsens_greedy(monkeypatch):
     """Filling every slot exactly disables the relocate-to-empty move, so any
     penalty drop here comes from the pairwise swap. It must never regress."""
-    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست‌شناسی", "فارسی و نگارش", "عربی", "دین و زندگی"]
+    subjects = ["ریاضی", "فیزیک", "شیمی", "زیست شناسی", "فارسی و نگارش", "عربی", "دین و زندگی"]
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
     weaknesses = {s: 2.0 for s in subjects}  # all weak -> dense s4 interplay
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
@@ -147,7 +147,7 @@ def _seed(tmp_path, *, daily_hours=5.0):
         major=AcademicMajor.EXPERIMENTAL,
         daily_active_hours=daily_hours,
     )
-    for subject, score in (("زیست‌شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0)):
+    for subject, score in (("زیست شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0)):
         AcademicGrade.create(student=student, subject_name=subject, score=score, max_score=20.0)
     return manager, student
 
@@ -155,7 +155,7 @@ def _seed(tmp_path, *, daily_hours=5.0):
 def test_generate_plan_end_to_end_is_valid(tmp_path):
     manager, student = _seed(tmp_path)
     try:
-        result = generate_plan(student, params_for_student(student))
+        result = generate_plan(student, get_student_params(student))
         plan = result.plan
 
         assert plan is not None and plan.status == PlanStatus.DRAFT
@@ -189,7 +189,7 @@ def test_generate_plan_end_to_end_is_valid(tmp_path):
 def test_generate_plan_generous_time_has_no_deficit(tmp_path):
     manager, student = _seed(tmp_path, daily_hours=7.0)
     try:
-        result = generate_plan(student, params_for_student(student))
+        result = generate_plan(student, get_student_params(student))
         assert result.plan is not None
         assert not any("کمبود" in w for w in result.warnings)
         study_subjects = {
@@ -204,7 +204,7 @@ def test_generate_plan_generous_time_has_no_deficit(tmp_path):
 def test_generate_plan_low_time_emits_deficit_warning(tmp_path):
     manager, student = _seed(tmp_path, daily_hours=1.0)
     try:
-        result = generate_plan(student, params_for_student(student))
+        result = generate_plan(student, get_student_params(student))
         assert result.plan is not None
         assert any("کمبود" in w for w in result.warnings)
     finally:

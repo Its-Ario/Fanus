@@ -307,7 +307,7 @@ class FirstRunWizard(QDialog):
         descriptions = {
             "counselor": "مشاور: برای کار با یادداشت های محرمانه از یک پین اختصاصی استفاده می کند.",
             "assistant": "معاون: نقش اجرایی برای پیگیری امور مدرسه.",
-            "principal": "مدیر مدرسه: نقش مدیریتی برای ادارهٔ مدرسه.",
+            "principal": "مدیر مدرسه: نقش مدیریتی برای اداره مدرسه.",
         }
         self.role_description.setText(descriptions[self._selected_role()])
 

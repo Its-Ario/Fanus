@@ -68,7 +68,7 @@ class ClassDialog(_Dialog):
                 self.grade.setEnabled(False)
                 self.major.setEnabled(False)
                 self.layout.addWidget(
-                    QLabel("پایه و رشتهٔ کلاس دارای دانش آموز فعال قابل تغییر نیست.")
+                    QLabel("پایه و رشته کلاس دارای دانش آموز فعال قابل تغییر نیست.")
                 )
         self.grade.currentIndexChanged.connect(self._sync_major)
         self._sync_major()
@@ -196,7 +196,7 @@ class VaultPinDialog(_Dialog):
         self.layout.addWidget(self.new)
         self.layout.addWidget(self.ack)
         self.layout.addWidget(
-            QLabel("در صورت قطع ناگهانی برق هنگام عملیات، از نسخهٔ پشتیبان معتبر بازیابی کنید.")
+            QLabel("در صورت قطع ناگهانی برق هنگام عملیات، از نسخه پشتیبان معتبر بازیابی کنید.")
         )
         self.actions("تغییر پین", self._save)
 

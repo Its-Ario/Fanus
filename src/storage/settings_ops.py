@@ -65,7 +65,7 @@ def update_school(actor, school_name, school_start_time=None, school_end_time=No
         "SchoolProfile",
         None,
         lambda: (
-            f"تنظیمات مدرسه به «{school_name}» و بازهٔ "
+            f"تنظیمات مدرسه به «{school_name}» و بازه "
             f"{school_start_time.strip()} تا {school_end_time.strip()} تغییر کرد"
         ),
         write,
@@ -89,7 +89,7 @@ def save_classroom(actor, room=None, *, grade_level, major, code, academic_year)
             if Student.select().where((Student.classroom == room) & Student.is_active).exists():
                 if room.grade_level != grade_level or room.major != major:
                     raise SettingsValidationError(
-                        "پایه و رشتهٔ کلاس دارای دانش آموز فعال قابل تغییر نیست."
+                        "پایه و رشته کلاس دارای دانش آموز فعال قابل تغییر نیست."
                     )
         else:
             room = Classroom()
@@ -249,7 +249,7 @@ def update_planner_settings(actor, *, block_minutes, weights):
     for key in _SOFT_WEIGHT_KEYS:
         value = int(weights.get(key, 0))
         if value < 0:
-            raise SettingsValidationError("وزن محدودیت‌ها نمی‌تواند منفی باشد.")
+            raise SettingsValidationError("وزن محدودیت ها نمی تواند منفی باشد.")
         clean[key] = value
 
     def write(_):
@@ -265,6 +265,6 @@ def update_planner_settings(actor, *, block_minutes, weights):
         "planner_settings.update",
         "PlannerSettings",
         None,
-        lambda: f"تنظیمات موتور برنامه‌ریزی به‌روزرسانی شد (بلوک {int(block_minutes)} دقیقه)",
+        lambda: f"تنظیمات موتور برنامه ریزی به روزرسانی شد (بلوک {int(block_minutes)} دقیقه)",
         write,
     )
