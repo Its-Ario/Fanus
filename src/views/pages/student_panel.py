@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from src.planner import generator
 from src.storage.db import DatabaseCredentials, get_database_manager
 from src.storage.models import (
     GRADE_ORDINALS,
@@ -125,6 +126,30 @@ def save_plan_sessions(plan: StudyPlan, sessions: Iterable[dict]) -> None:
 def archive_plan(plan: StudyPlan) -> None:
     plan.status = PlanStatus.ARCHIVED
     plan.save()
+
+
+def regenerate_plan(student):
+    """Archive the active plan (if any) and build a fresh engine-generated one,
+    activated immediately as the counselor's own action. Returns (plan, warnings)."""
+    active = StudyPlan.get_or_none(
+        StudyPlan.student == student, StudyPlan.status == PlanStatus.ACTIVE
+    )
+    database = StudyPlan._meta.database
+    with database.atomic():
+        result = generator.generate_plan(
+            student,
+            generator.params_for_student(student, keep_locked=bool(active)),
+        )
+        if active:
+            active.status = PlanStatus.ARCHIVED
+            active.save()
+        plan = result.plan
+        plan.title = "برنامه مطالعاتی هوشمند"
+        plan.status = PlanStatus.ACTIVE
+        plan.is_approved = True
+        plan.approved_at = datetime.now()
+        plan.save()
+    return plan, result.warnings
 
 
 class SummaryTab(QWidget):
@@ -234,11 +259,14 @@ class PlanTab(QWidget):
             empty = EmptyState(
                 "",
                 "هنوز برنامه مطالعاتی فعالی ثبت نشده است.",
-                "برای آغاز، برنامه هفتگی دستی بسازید.",
+                "برنامه را با موتور هوشمند بسازید یا به‌صورت دستی وارد کنید.",
                 "+ ساخت برنامه جدید",
                 self._begin_create,
             )
             self.layout.addWidget(empty, 1)
+            generate = SecondaryButton("⚡ تولید با موتور هوشمند")
+            generate.clicked.connect(self._regenerate)
+            self.layout.addWidget(generate, 0, Qt.AlignHCenter)
             return
         checkins = (
             DailyCheckIn.select(fn.AVG(DailyCheckIn.completion_rate))
@@ -256,8 +284,7 @@ class PlanTab(QWidget):
         self.layout.addWidget(line)
         actions = QHBoxLayout()
         regenerate = SecondaryButton("⚡ تولید مجدد")
-        regenerate.setEnabled(False)
-        regenerate.setToolTip("موتور برنامه ریزی هوشمند هنوز فعال نشده است.")
+        regenerate.clicked.connect(self._regenerate)
         edit = PrimaryButton("ویرایش دستی", icon="✏️")
         edit.clicked.connect(self._begin_edit)
         export = SecondaryButton("🖨️ چاپ برنامه A4 PDF")
@@ -431,6 +458,28 @@ class PlanTab(QWidget):
     def _cancel_editor(self):
         self.creating = False
         self.reload()
+
+    def _regenerate(self):
+        if (
+            QMessageBox.question(
+                self,
+                "تولید برنامه",
+                "برنامهٔ فعلی (در صورت وجود) آرشیو و یک برنامهٔ جدید توسط موتور هوشمند "
+                "ساخته می شود. ادامه می دهید؟",
+                QMessageBox.Yes | QMessageBox.No,
+            )
+            != QMessageBox.Yes
+        ):
+            return
+        try:
+            _, warnings = regenerate_plan(self.panel.student)
+        except Exception as exc:  # engine failure must not take down the panel
+            QMessageBox.critical(self, "تولید برنامه", f"ساخت برنامه ناموفق بود: {exc}")
+            return
+        self.reload()
+        self.panel.summary.reload()
+        if warnings:
+            QMessageBox.information(self, "نکات برنامه", "\n".join(warnings))
 
     def _archive(self):
         if (

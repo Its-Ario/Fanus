@@ -491,12 +491,16 @@ class FirstRunWizard(QDialog):
                     school_name=self.school_name.text(),
                     academic_year=self.academic_year.text(),
                     type=",".join(self._selected_school_types()),
+                    school_start_time="07:30",
+                    school_end_time="13:30",
                 ).on_conflict(
                     conflict_target=[SchoolProfile.id],
                     update={
                         SchoolProfile.school_name: self.school_name.text(),
                         SchoolProfile.academic_year: self.academic_year.text(),
                         SchoolProfile.type: ",".join(self._selected_school_types()),
+                        SchoolProfile.school_start_time: "07:30",
+                        SchoolProfile.school_end_time: "13:30",
                     },
                 ).execute()
                 User.create(

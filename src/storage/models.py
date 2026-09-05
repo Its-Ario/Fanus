@@ -229,6 +229,8 @@ class SchoolProfile(Model):
     id = IntegerField(primary_key=True, default=1)
     school_name = CharField()
     academic_year = CharField()
+    school_start_time = CharField(max_length=5, default="07:30")
+    school_end_time = CharField(max_length=5, default="13:30")
     type = CharField(
         choices=[
             (
@@ -250,6 +252,43 @@ class SchoolProfile(Model):
     def get_instance(cls):
         profile, _ = cls.get_or_create(id=1)
         return profile
+
+    @property
+    def school_hours(self):
+        return self.school_start_time, self.school_end_time
+
+
+class PlannerSettings(Model):
+    """Singleton tuning knobs for the study-plan engine (soft-constraint weights)."""
+
+    id = IntegerField(primary_key=True, default=1)
+    block_minutes = IntegerField(default=90)
+    weights_json = TextField(default="{}")
+    updated_at = DateTimeField(default=datetime.now)
+
+    class Meta:
+        database = db
+        table_name = "plannersettings"
+
+    @classmethod
+    def get_instance(cls):
+        instance, _ = cls.get_or_create(id=1)
+        return instance
+
+    @property
+    def weights(self) -> dict:
+        import json
+
+        try:
+            return dict(json.loads(self.weights_json or "{}"))
+        except (ValueError, TypeError):
+            return {}
+
+    @weights.setter
+    def weights(self, value: dict) -> None:
+        import json
+
+        self.weights_json = json.dumps(dict(value or {}), ensure_ascii=False)
 
 
 class User(BaseModel):
@@ -432,6 +471,7 @@ class AuditLog(BaseModel):
 
 PUBLIC_MODELS = [
     SchoolProfile,
+    PlannerSettings,
     User,
     Classroom,
     Student,

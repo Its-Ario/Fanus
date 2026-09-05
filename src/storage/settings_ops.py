@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime
+
 from src.core.auth import hash_password, verify_password
 from src.storage.audit import record_audit
 from src.storage.db import get_database_manager
@@ -33,14 +35,27 @@ def _transaction(actor, action, entity, target_id=None, details=None, write=None
         return result
 
 
-def update_school(actor, school_name):
+def update_school(actor, school_name, school_start_time=None, school_end_time=None):
     school_name = school_name.strip()
     if not 2 < len(school_name) < 50:
         raise SettingsValidationError("نام مدرسه باید بین ۳ تا ۴۹ نویسه باشد.")
+    if school_start_time is None or school_end_time is None:
+        profile = SchoolProfile.get_by_id(1)
+        school_start_time = school_start_time or profile.school_start_time
+        school_end_time = school_end_time or profile.school_end_time
+    try:
+        start = datetime.strptime(school_start_time.strip(), "%H:%M")
+        end = datetime.strptime(school_end_time.strip(), "%H:%M")
+    except ValueError as exc:
+        raise SettingsValidationError("زمان مدرسه را با قالب HH:MM وارد کنید.") from exc
+    if start >= end:
+        raise SettingsValidationError("زمان پایان مدرسه باید بعد از زمان شروع باشد.")
 
     def write(_):
         profile = SchoolProfile.get_by_id(1)
         profile.school_name = school_name
+        profile.school_start_time = school_start_time.strip()
+        profile.school_end_time = school_end_time.strip()
         profile.save()
         return profile
 
@@ -49,7 +64,10 @@ def update_school(actor, school_name):
         "school.update",
         "SchoolProfile",
         None,
-        lambda: f"نام مدرسه به «{school_name}» تغییر کرد",
+        lambda: (
+            f"تنظیمات مدرسه به «{school_name}» و بازهٔ "
+            f"{school_start_time.strip()} تا {school_end_time.strip()} تغییر کرد"
+        ),
         write,
     )
 
@@ -217,3 +235,36 @@ def rotate_vault_pin(actor, old_pin, new_pin):
     with manager.transaction():
         fresh = _actor(actor, counselor=True)
         record_audit(fresh, "vault.pin_change", "Vault")
+
+
+_SOFT_WEIGHT_KEYS = ("s1", "s2", "s3", "s4", "s5")
+
+
+def update_planner_settings(actor, *, block_minutes, weights):
+    from src.storage.models import PlannerSettings
+
+    if int(block_minutes) not in (75, 90):
+        raise SettingsValidationError("طول بلوک باید ۷۵ یا ۹۰ دقیقه باشد.")
+    clean = {}
+    for key in _SOFT_WEIGHT_KEYS:
+        value = int(weights.get(key, 0))
+        if value < 0:
+            raise SettingsValidationError("وزن محدودیت‌ها نمی‌تواند منفی باشد.")
+        clean[key] = value
+
+    def write(_):
+        row = PlannerSettings.get_instance()
+        row.block_minutes = int(block_minutes)
+        row.weights = clean
+        row.updated_at = datetime.now()
+        row.save()
+        return row
+
+    return _transaction(
+        actor,
+        "planner_settings.update",
+        "PlannerSettings",
+        None,
+        lambda: f"تنظیمات موتور برنامه‌ریزی به‌روزرسانی شد (بلوک {int(block_minutes)} دقیقه)",
+        write,
+    )

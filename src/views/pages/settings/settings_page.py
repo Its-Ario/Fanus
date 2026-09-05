@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import (
 from src.styles.theme import Colors
 from src.views.components.ui_kit import PrimaryButton, SecondaryButton
 from src.views.pages.settings.classes_panel import ClassesPanel
+from src.views.pages.settings.planner_panel import PlannerPanel
 from src.views.pages.settings.school_panel import SchoolPanel
 from src.views.pages.settings.security_panel import SecurityPanel
 from src.views.pages.settings.users_panel import UsersPanel
@@ -22,6 +23,7 @@ TABS = (
     "عمومی و اطلاعات مدرسه",
     "مدیریت کلاس ها و پایه ها",
     "مدیریت کاربران و دسترسی ها",
+    "موتور برنامه‌ریزی",
     "امنیت و گاوصندوق",
 )
 
@@ -129,8 +131,9 @@ class SettingsPage(QWidget):
         self.school = SchoolPanel(current_user, editable)
         self.classes = ClassesPanel(current_user, editable)
         self.users = UsersPanel(current_user, editable)
+        self.planner = PlannerPanel(current_user, editable)
         self.security = SecurityPanel(current_user)
-        for panel in (self.school, self.classes, self.users, self.security):
+        for panel in (self.school, self.classes, self.users, self.planner, self.security):
             self.stack.addWidget(panel)
         layout.addWidget(self.stack, 1)
 
@@ -160,4 +163,5 @@ class SettingsPage(QWidget):
         self.school.reload()
         self.classes.reload()
         self.users.reload()
+        self.planner.reload()
         self.security.reload()

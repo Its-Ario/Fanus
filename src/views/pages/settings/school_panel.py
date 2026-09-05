@@ -26,6 +26,10 @@ class SchoolPanel(QWidget):
         self.card.body_layout.addWidget(self.summary)
         self.name = FormField("نام مدرسه")
         self.card.body_layout.addWidget(self.name)
+        self.school_start_time = FormField("زمان شروع مدرسه", "07:30")
+        self.school_end_time = FormField("زمان پایان مدرسه", "13:30")
+        self.card.body_layout.addWidget(self.school_start_time)
+        self.card.body_layout.addWidget(self.school_end_time)
         row = QHBoxLayout()
         self.cancel = SecondaryButton("انصراف")
         self.save = PrimaryButton("ذخیره")
@@ -35,9 +39,13 @@ class SchoolPanel(QWidget):
         self.card.body_layout.addLayout(row)
         layout.addStretch()
         self.name.input.textEdited.connect(lambda: setattr(self, "_dirty", True))
+        self.school_start_time.input.textEdited.connect(lambda: setattr(self, "_dirty", True))
+        self.school_end_time.input.textEdited.connect(lambda: setattr(self, "_dirty", True))
         self.cancel.clicked.connect(self.reload)
         self.save.clicked.connect(self._save)
         self.name.setEnabled(editable)
+        self.school_start_time.setEnabled(editable)
+        self.school_end_time.setEnabled(editable)
         self.cancel.setEnabled(editable)
         self.save.setEnabled(editable)
         self.reload()
@@ -49,14 +57,23 @@ class SchoolPanel(QWidget):
         labels = {"elementry": "دبستان", "middle": "دوره اول", "high": "دوره دوم"}
         levels = "، ".join(labels[value] for value in parse_levels(profile.type))
         self.summary.setText(
-            f"نام مدرسه: {profile.school_name}\nسال تحصیلی: {profile.academic_year}\nمقاطع: {levels}\nکلاس ها: {Classroom.select().count()} · دانش آموزان: {Student.select().where(Student.is_active).count()} · کاربران: {User.select().where(User.is_active).count()}"
+            f"نام مدرسه: {profile.school_name}\nسال تحصیلی: {profile.academic_year}\nمقاطع: {levels}\n"
+            f"ساعات مدرسه: {profile.school_start_time} تا {profile.school_end_time}\n"
+            f"کلاس ها: {Classroom.select().count()} · دانش آموزان: {Student.select().where(Student.is_active).count()} · کاربران: {User.select().where(User.is_active).count()}"
         )
         self.name.input.setText(profile.school_name)
+        self.school_start_time.input.setText(profile.school_start_time)
+        self.school_end_time.input.setText(profile.school_end_time)
         self._dirty = False
 
     def _save(self):
         try:
-            update_school(self.actor, self.name.text())
+            update_school(
+                self.actor,
+                self.name.text(),
+                self.school_start_time.text(),
+                self.school_end_time.text(),
+            )
             self.reload()
         except Exception as exc:
             self.name.set_error(str(exc))
