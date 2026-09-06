@@ -50,6 +50,7 @@ class FirstRunWizard(QDialog):
         self.setMinimumSize(760, 650)
         self.setStyleSheet(APP_STYLE)
         self._step = 0
+        self.created_user = None
 
         self._build_ui()
         self._update_step()
@@ -503,7 +504,7 @@ class FirstRunWizard(QDialog):
                         SchoolProfile.school_end_time: "13:30",
                     },
                 ).execute()
-                User.create(
+                self.created_user = User.create(
                     username=self.username.text(),
                     password_hash=hash_password(self.password.text())
                     if self.password_enabled.isChecked()
@@ -516,6 +517,7 @@ class FirstRunWizard(QDialog):
             if not ConfigManager.mark_configured():
                 raise RuntimeError("پیکربندی برنامه ذخیره نشد.")
         except Exception as exc:
+            self.created_user = None
             self._show_error(self._friendly_error(exc))
             return
         self.accept()

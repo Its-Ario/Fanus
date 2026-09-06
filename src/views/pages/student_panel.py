@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -28,6 +29,7 @@ from src.planner import generator
 from src.storage.db import DatabaseCredentials, get_database_manager
 from src.storage.models import (
     GRADE_ORDINALS,
+    MOADEL_TERMS,
     AcademicGrade,
     AttendanceRecord,
     CounselorNote,
@@ -203,7 +205,11 @@ class SummaryTab(QWidget):
         facts = Card()
         grid = QGridLayout()
         grid.setSpacing(12)
-        grade_rows = AcademicGrade.select().where(AcademicGrade.student == student).count()
+        grade_rows = (
+            AcademicGrade.select()
+            .where(AcademicGrade.student == student, AcademicGrade.term << MOADEL_TERMS)
+            .count()
+        )
         gpa = student.calculate_gpa()
         values = (
             ("سطح ریسک", student.risk_level_persian),
@@ -229,6 +235,8 @@ class SummaryTab(QWidget):
             grid.addWidget(holder, 0, index)
         facts.body_layout.addLayout(grid)
         self.layout.addWidget(facts)
+
+        self._add_grades(student)
 
         attendance = Card()
         attendance.body_layout.addWidget(_section_title("حضور و غیاب"))
@@ -269,6 +277,60 @@ class SummaryTab(QWidget):
         history.body_layout.addWidget(table)
         self.layout.addWidget(history)
         self.layout.addStretch()
+
+    def _add_grades(self, student):
+        grades = Card()
+        grades.body_layout.addWidget(_section_title("نمرات"))
+        toggle = QCheckBox("نمایش امتحان‌های کلاسی و آزمایشی")
+        toggle.setLayoutDirection(Qt.RightToLeft)
+        grades.body_layout.addWidget(toggle)
+        table = QTableWidget(0, 4)
+        table.setHorizontalHeaderLabels(("درس", "نمره", "نوع", "تاریخ"))
+        _style_table(table)
+
+        def populate(show_extra=False):
+            terms = MOADEL_TERMS + (("مستمر",) if not show_extra else ())
+            query = (
+                AcademicGrade.select()
+                .where(AcademicGrade.student == student, AcademicGrade.term << terms)
+                .order_by(AcademicGrade.exam_date.desc(), AcademicGrade.created_at.desc())
+            )
+            rows = list(query)
+            table.setRowCount(len(rows))
+            for index, row in enumerate(rows):
+                table.setItem(index, 0, QTableWidgetItem(row.subject_name))
+                score = QTableWidgetItem(to_persian_digits(f"{row.score:g}/{row.max_score:g}"))
+                if row.score < row.max_score / 2:
+                    score.setForeground(QColor(Colors.ERROR))
+                table.setItem(index, 1, score)
+                table.setItem(index, 2, QTableWidgetItem(row.term))
+                table.setItem(index, 3, QTableWidgetItem(to_persian_digits(row.exam_date.isoformat())))
+            table.setMinimumHeight(max(72, min(250, 38 * (len(rows) + 1))))
+
+        toggle.toggled.connect(populate)
+        populate()
+        grades.body_layout.addWidget(table)
+        self.layout.addWidget(grades)
+
+        recent = Card()
+        recent.body_layout.addWidget(_section_title("۵ امتحان اخیر"))
+        rows = (
+            AcademicGrade.select()
+            .where(AcademicGrade.student == student)
+            .order_by(AcademicGrade.exam_date.desc(), AcademicGrade.created_at.desc())
+            .limit(5)
+        )
+        values = list(rows)
+        if not values:
+            recent.body_layout.addWidget(QLabel("هنوز نمره‌ای ثبت نشده است."))
+        for row in values:
+            label = QLabel(
+                f"{row.subject_name} — {to_persian_digits(f'{row.score:g}/{row.max_score:g}')} "
+                f"({row.term})"
+            )
+            label.setStyleSheet(f"font-size:13px; color:{Colors.TEXT_MAIN}; padding:3px 0;")
+            recent.body_layout.addWidget(label)
+        self.layout.addWidget(recent)
 
 
 class PlanTab(QWidget):

@@ -118,9 +118,9 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
             completed_sessions=2,
             total_sessions=2,
         )
-        AcademicGrade.create(student=high_risk, subject_name="ریاضی", score=16)
-        AcademicGrade.create(student=medium_risk, subject_name="ریاضی", score=18)
-        AcademicGrade.create(student=high_risk, subject_name="فیزیک", score=10)
+        AcademicGrade.create(student=high_risk, subject_name="ریاضی", score=16, term="نوبت اول")
+        AcademicGrade.create(student=medium_risk, subject_name="ریاضی", score=18, term="نوبت اول")
+        AcademicGrade.create(student=high_risk, subject_name="فیزیک", score=10, term="نوبت اول")
 
         data = load_dashboard_data(today)
 

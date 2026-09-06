@@ -41,6 +41,10 @@ def main():
         if wizard.exec_() != QDialog.Accepted:
             logger.info("Initial setup was not completed.")
             return
+        current_user = wizard.created_user
+        if current_user is None:
+            logger.error("Initial setup completed without creating a user.")
+            return
         logger.info("Wizard completed successfully!")
     else:
         try:

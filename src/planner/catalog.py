@@ -158,7 +158,7 @@ def subject_family(name: str) -> str:
 
 
 def type_for(name: str) -> str:
-    return _TYPE_BY_FAMILY.get(subject_family(name), "descriptive")
+    return _TYPE_BY_FAMILY.get(subject_family(name), "light")
 
 
 def coefficient_for(name: str, major: str = AcademicMajor.GENERAL) -> int:

@@ -15,6 +15,7 @@ from PyQt5.QtWidgets import (
 )
 
 from src.storage.models import (
+    MOADEL_TERMS,
     AcademicGrade,
     AcademicMajor,
     AttendanceRecord,
@@ -194,6 +195,7 @@ def load_analytics_data(
             fn.AVG(AcademicGrade.score).alias("gpa"),
             fn.COUNT(AcademicGrade.score).alias("grade_count"),
         )
+        .where(AcademicGrade.term << MOADEL_TERMS)
         .group_by(AcademicGrade.student)
         .having(fn.COUNT(AcademicGrade.score) > 0)
         .alias("gpa_by_student")

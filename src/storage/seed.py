@@ -1,5 +1,16 @@
+from datetime import date, timedelta
+
 from src.storage.db import configure_database_manager, db
-from src.storage.models import AcademicMajor, Classroom, RiskLevel, Student, StudyPeriod
+from src.storage.models import (
+    AcademicGrade,
+    AcademicMajor,
+    Classroom,
+    GradeTerm,
+    RiskLevel,
+    Student,
+    StudyPeriod,
+    subject_options,
+)
 
 MOCK_CLASSROOMS = (
     (10, AcademicMajor.MATH, "الف"),
@@ -47,7 +58,7 @@ def seed_students(academic_year="1405-1406"):
             classrooms.append(classroom)
 
         students = []
-        for (
+        for student_index, (
             national_id,
             first_name,
             last_name,
@@ -57,7 +68,7 @@ def seed_students(academic_year="1405-1406"):
             sleep_hours,
             tutoring_hours,
             preferred_study_period,
-        ) in MOCK_STUDENTS:
+        ) in enumerate(MOCK_STUDENTS):
             classroom = classrooms[classroom_index]
             student, created = Student.get_or_create(
                 national_id=national_id,
@@ -87,7 +98,57 @@ def seed_students(academic_year="1405-1406"):
                 student.save()
             students.append(student)
 
+            if not AcademicGrade.select().where(AcademicGrade.student == student).exists():
+                _seed_grades(student, student_index)
+
     return students
+
+
+def _seed_grades(student, student_index):
+    """Create a varied, current-year performance snapshot for first-run screens."""
+    # ponytail: mock distribution hand-tuned for band spread, not real data
+    today = date.today()
+    band_bases = (10.5, 13.5, 16.5, 19.0)
+    base = band_bases[student_index % len(band_bases)]
+    subjects = subject_options(student.classroom.grade_level, student.major)
+    for subject_index, subject in enumerate(subjects):
+        adjustment = ((subject_index * 3 + student_index) % 5) - 2
+        nobat_1 = max(0.0, min(20.0, base + adjustment * 0.45))
+        AcademicGrade.create(
+            student=student,
+            subject_name=subject,
+            score=nobat_1,
+            term=GradeTerm.NOBAT_1,
+            exam_date=today - timedelta(days=56),
+        )
+        if (student_index + subject_index) % 10 < 7:
+            AcademicGrade.create(
+                student=student,
+                subject_name=subject,
+                score=max(0.0, min(20.0, nobat_1 + 0.5)),
+                term=GradeTerm.NOBAT_2,
+                exam_date=today - timedelta(days=7),
+            )
+        for exam_index in range(3 + (subject_index % 4)):
+            max_score = 10.0 if (exam_index + subject_index) % 3 == 0 else 20.0
+            score = max(0.0, min(max_score, (nobat_1 / 20.0) * max_score + adjustment * 0.12))
+            AcademicGrade.create(
+                student=student,
+                subject_name=subject,
+                score=score,
+                max_score=max_score,
+                term=GradeTerm.KELASI,
+                exam_date=today - timedelta(days=exam_index * 10 + (subject_index % 6)),
+            )
+        if student.classroom.grade_level == 12:
+            for exam_index in range(1 + (subject_index % 2)):
+                AcademicGrade.create(
+                    student=student,
+                    subject_name=subject,
+                    score=max(0.0, min(20.0, nobat_1 - 0.7 + exam_index * 0.3)),
+                    term=GradeTerm.AZMAYESHI,
+                    exam_date=today - timedelta(days=exam_index * 21 + 3),
+                )
 
 
 def seed(academic_year="1405-1406"):

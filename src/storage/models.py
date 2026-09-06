@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from datetime import date, datetime
 from uuid import uuid4
 
@@ -44,6 +45,32 @@ class AcademicMajor:
     GENERAL = "عمومی"
 
     VALUES = (MATH, EXPERIMENTAL, HUMANITIES, VOCATIONAL, GENERAL)
+
+
+class GradeTerm:
+    NOBAT_1 = "نوبت اول"
+    NOBAT_2 = "نوبت دوم"
+    MOSTAMAR = "مستمر"
+    KELASI = "امتحان کلاسی"
+    AZMAYESHI = "آزمون آزمایشی"
+
+    VALUES = (NOBAT_1, NOBAT_2, MOSTAMAR, KELASI, AZMAYESHI)
+
+
+MOADEL_TERMS = (GradeTerm.NOBAT_1, GradeTerm.NOBAT_2)
+_TERM_RANK = {GradeTerm.NOBAT_1: 1, GradeTerm.NOBAT_2: 2}
+PASS_MARK = 10.0
+GPA_ROUNDING = "truncate"  # ponytail: school کارنامه truncates; flip to half_up for a school that rounds
+
+
+class GradeValidationError(ValueError):
+    pass
+
+
+def _round2(value: float) -> float:
+    if GPA_ROUNDING == "half_up":
+        return math.floor(value * 100 + 0.5) / 100
+    return math.floor(value * 100) / 100
 
 
 SUBJECTS_BY_GRADE = {
@@ -493,10 +520,25 @@ class Student(BaseModel):
         return RiskLevel.PERSIAN_MAP.get(self.risk_level, "-")
 
     def calculate_gpa(self) -> float:
-        scores = [record.score for record in self.grades]
-        if not scores:
+        # ponytail: duplicate (subject, term) rows tolerated, newest wins at read; no unique constraint
+        latest = {}
+        rows = sorted(
+            (row for row in self.grades if row.term in MOADEL_TERMS),
+            key=lambda row: (_TERM_RANK[row.term], row.exam_date, row.created_at),
+            reverse=True,
+        )
+        for row in rows:
+            latest.setdefault(row.subject_name, row)
+        if not latest:
             return 0.0
-        return round(sum(scores) / len(scores), 2)
+        total_weight = sum(row.weight for row in latest.values())
+        if not total_weight:
+            return 0.0
+        return _round2(sum(row.score * row.weight for row in latest.values()) / total_weight)
+
+    @property
+    def is_passing(self) -> bool:
+        return self.calculate_gpa() >= PASS_MARK
 
 
 class CounselorNote(VaultBaseModel):
@@ -516,10 +558,32 @@ class AcademicGrade(BaseModel):
     score = DoubleField()
     max_score = DoubleField(default=20.0)
     exam_date = DateField(default=datetime.today, index=True)
-    exam_type = CharField(max_length=30, default="مستمر")
+    term = CharField(max_length=30, default=GradeTerm.MOSTAMAR)
+    weight = DoubleField(default=1.0)
+
+    class Meta:
+        indexes = ((('student', 'subject_name', 'exam_date'), False),)
+
+    def save(self, *args, **kwargs):
+        if not (self.subject_name or "").strip():
+            raise GradeValidationError("نام درس نمی‌تواند خالی باشد.")
+        if not (0 < self.max_score <= 20):
+            raise GradeValidationError("سقف نمره باید بین ۰ تا ۲۰ باشد.")
+        if not (0 <= self.score <= self.max_score):
+            raise GradeValidationError("نمره باید بین ۰ و سقف نمره باشد.")
+        if self.term not in GradeTerm.VALUES:
+            raise GradeValidationError("نوع آزمون نامعتبر است.")
+        if self.weight <= 0:
+            raise GradeValidationError("ضریب باید بزرگ‌تر از صفر باشد.")
+        self.subject_name = self.subject_name.strip()
+        return super().save(*args, **kwargs)
 
     def get_percentage(self) -> float:
         return round((self.score / self.max_score) * 100, 1)
+
+    @property
+    def is_passing(self) -> bool:
+        return self.score >= PASS_MARK
 
 
 class AttendanceRecord(BaseModel):

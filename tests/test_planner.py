@@ -148,7 +148,9 @@ def _seed(tmp_path, *, daily_hours=5.0):
         daily_active_hours=daily_hours,
     )
     for subject, score in (("زیست شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0)):
-        AcademicGrade.create(student=student, subject_name=subject, score=score, max_score=20.0)
+        AcademicGrade.create(
+            student=student, subject_name=subject, score=score, max_score=20.0, term="نوبت اول"
+        )
     return manager, student
 
 

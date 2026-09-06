@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from src.planner import budget, catalog, grid, solver, validate
 from src.storage.models import (
+    AcademicGrade,
     PlanStatus,
     SchoolProfile,
     Student,
@@ -79,19 +80,34 @@ def _weakness_map(
     overrides: Sequence[Tuple[str, float]],
 ) -> Dict[str, float]:
     override = {name: float(w) for name, w in overrides}
-    ratios: Dict[str, List[float]] = {}
-    for row in student.grades:
-        if not row.max_score:
-            continue
-        ratios.setdefault(catalog.subject_family(row.subject_name), []).append(
-            row.score / row.max_score
-        )
+    rows_by_subject: Dict[str, List] = {}
+    for row in AcademicGrade.select().where(AcademicGrade.student == student):
+        if row.max_score:
+            rows_by_subject.setdefault(row.subject_name, []).append(row)
+
+    family_ratios: Dict[str, List[float]] = {}
+    for name, rows in rows_by_subject.items():
+        recent = sorted(
+            rows,
+            key=lambda row: (row.exam_date, row.created_at),
+            reverse=True,
+        )[:3]
+        average = sum(row.score / row.max_score for row in recent) / len(recent)
+        family_ratios.setdefault(catalog.subject_family(name), []).append(average)
+
     out: Dict[str, float] = {}
     for subject in subjects:
         if subject in override:
             out[subject] = override[subject]
             continue
-        values = ratios.get(catalog.subject_family(subject))
+        values = family_ratios.get(catalog.subject_family(subject))
+        if not values and subject in rows_by_subject:
+            rows = sorted(
+                rows_by_subject[subject],
+                key=lambda row: (row.exam_date, row.created_at),
+                reverse=True,
+            )[:3]
+            values = [sum(row.score / row.max_score for row in rows) / len(rows)]
         if not values:
             out[subject] = 1.5
         else:
