@@ -94,6 +94,7 @@ class AttendancePage(QWidget):
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels(("ردیف", "دانش‌آموز", "وضعیت", "توضیح"))
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(46)  # fit the 38px status Dropdown
         self.table.setLayoutDirection(Qt.RightToLeft)
         self.table.setSelectionBehavior(QAbstractItemView.SelectItems)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
