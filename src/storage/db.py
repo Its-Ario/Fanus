@@ -306,6 +306,25 @@ class DatabaseManager:
 
     def _verify_or_initialize_vault_anchor(self) -> None:
         """Fail closed when a Windows-protected anchor disagrees with vault state."""
+        restore_marker = self.vault_path.with_name(".restore_pending")
+        if restore_marker.exists():
+            # The vault DB was just replaced by a restore; any local anchor is
+            # stale or from another machine. Rebuild it, bound to this machine,
+            # from the freshly restored vault state.
+            if self.state_anchor.available:
+                try:
+                    self.state_anchor.path.unlink()
+                except FileNotFoundError:
+                    pass
+            self.state_anchor.store(0, self._vault_state_commitment())
+            self._vault_generation = 0
+            try:
+                restore_marker.unlink()
+            except FileNotFoundError:
+                pass
+            logger.info("Re-anchored confidential vault after restore")
+            return
+
         commitment = self._vault_state_commitment()
         anchor = self.state_anchor.load()
         if anchor is None:

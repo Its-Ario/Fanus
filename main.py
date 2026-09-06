@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QApplication, QDialog, QMessageBox
 
 from src.core.config import ConfigManager
 from src.core.logger import setup_logging
+from src.storage import backup_ops
 from src.storage.db import DatabaseError, configure_database_manager, get_database_manager
 from src.storage.models import User
 from src.styles.theme import MODERN_STYLE
@@ -35,6 +36,7 @@ def main():
     app.setStyleSheet(MODERN_STYLE)
 
     config = ConfigManager.load()
+    backup_ops.heal_interrupted_restore()
     current_user = None
     if not config.is_configured:
         wizard = FirstRunWizard()

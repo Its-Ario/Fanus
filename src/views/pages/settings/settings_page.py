@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
 
 from src.styles.theme import Colors
 from src.views.components.ui_kit import PrimaryButton, SecondaryButton
+from src.views.pages.settings.backup_panel import BackupPanel
 from src.views.pages.settings.classes_panel import ClassesPanel
 from src.views.pages.settings.planner_panel import PlannerPanel
 from src.views.pages.settings.school_panel import SchoolPanel
@@ -25,6 +26,7 @@ TABS = (
     "مدیریت کاربران و دسترسی ها",
     "موتور برنامه ریزی",
     "امنیت و گاوصندوق",
+    "پشتیبان گیری و بازیابی",
 )
 
 SEGMENTED_STYLE = f"""
@@ -133,7 +135,10 @@ class SettingsPage(QWidget):
         self.users = UsersPanel(current_user, editable)
         self.planner = PlannerPanel(current_user, editable)
         self.security = SecurityPanel(current_user)
-        for panel in (self.school, self.classes, self.users, self.planner, self.security):
+        self.backup = BackupPanel(current_user)
+        for panel in (
+            self.school, self.classes, self.users, self.planner, self.security, self.backup,
+        ):
             self.stack.addWidget(panel)
         layout.addWidget(self.stack, 1)
 
