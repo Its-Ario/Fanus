@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import ceil
 
-from peewee import IntegrityError
+from peewee import Case, IntegrityError
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import (
@@ -18,12 +18,18 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from src.storage.models import Classroom, Student
+from src.storage.models import (
+    GRADE_ORDINALS,
+    AcademicMajor,
+    Classroom,
+    RiskLevel,
+    Student,
+)
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
-    EmptyState,
     Dropdown,
+    EmptyState,
     FormField,
     PrimaryButton,
     SearchInput,
@@ -32,6 +38,21 @@ from src.views.components.ui_kit import (
 
 PAGE_SIZE = 25
 
+# One order-by expression per table column; risk sorts by severity, not alphabetically.
+_RISK_ORDER = Case(
+    Student.risk_level,
+    ((RiskLevel.LOW, 0), (RiskLevel.MEDIUM, 1), (RiskLevel.HIGH, 2)),
+    3,
+)
+SORT_COLUMNS = (
+    (Student.last_name, Student.first_name),
+    (Student.national_id,),
+    (Classroom.grade_level, Classroom.name),
+    (Student.major,),
+    (_RISK_ORDER,),
+    (Student.is_active,),
+)
+
 
 @dataclass(frozen=True)
 class StudentPage:
@@ -39,7 +60,17 @@ class StudentPage:
     total: int
 
 
-def load_students_page(query: str = "", page: int = 0, page_size: int = PAGE_SIZE) -> StudentPage:
+def load_students_page(
+    query: str = "",
+    page: int = 0,
+    page_size: int = PAGE_SIZE,
+    *,
+    major: str = "",
+    grade_level=None,
+    classroom_id=None,
+    sort_key: int = 0,
+    sort_desc: bool = False,
+) -> StudentPage:
     """Read only the requested active-student slice from the local database."""
     query_builder = Student.select(Student, Classroom).join(Classroom).where(Student.is_active)
     normalized = query.strip()
@@ -49,11 +80,17 @@ def load_students_page(query: str = "", page: int = 0, page_size: int = PAGE_SIZ
             | (Student.last_name.contains(normalized))
             | (Student.national_id.contains(normalized))
         )
+    if major:
+        query_builder = query_builder.where(Student.major == major)
+    if grade_level is not None:
+        query_builder = query_builder.where(Classroom.grade_level == grade_level)
+    if classroom_id is not None:
+        query_builder = query_builder.where(Student.classroom == classroom_id)
 
     total = query_builder.count()
-    students = tuple(
-        query_builder.order_by(Student.last_name, Student.first_name).paginate(page + 1, page_size)
-    )
+    columns = SORT_COLUMNS[sort_key] if 0 <= sort_key < len(SORT_COLUMNS) else SORT_COLUMNS[0]
+    order = [column.desc() if sort_desc else column for column in columns]
+    students = tuple(query_builder.order_by(*order).paginate(page + 1, page_size))
     return StudentPage(students=students, total=total)
 
 
@@ -197,6 +234,7 @@ class NewStudentDialog(QDialog):
 
 class StudentsPage(QWidget):
     student_opened = pyqtSignal(object)
+    open_grade_entry = pyqtSignal()
 
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
@@ -205,6 +243,10 @@ class StudentsPage(QWidget):
         self._page = 0
         self._query = ""
         self._total = 0
+        self._sort_key = 0
+        self._sort_desc = False
+        self._scope_loaded = False
+        self._all_rooms: tuple[Classroom, ...] = ()
 
         self.search_timer = QTimer(self)
         self.search_timer.setSingleShot(True)
@@ -225,6 +267,9 @@ class StudentsPage(QWidget):
         titles.addWidget(subtitle)
         header.addLayout(titles)
         header.addStretch()
+        grades_button = SecondaryButton("ثبت نمرات", icon="📝")
+        grades_button.clicked.connect(self.open_grade_entry.emit)
+        header.addWidget(grades_button)
         add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
@@ -236,8 +281,29 @@ class StudentsPage(QWidget):
         self.search_input = SearchInput("نام یا کد ملی را جستجو کنید")
         self.search_input.setMinimumWidth(300)
         self.search_input.textChanged.connect(self._schedule_search)
+
+        self.major_filter = Dropdown()
+        self.major_filter.setFixedWidth(150)
+        self.major_filter.addItem("همه رشته‌ها", "")
+        for value in AcademicMajor.VALUES:
+            self.major_filter.addItem(value, value)
+        self.major_filter.currentIndexChanged.connect(self._on_scope_changed)
+
+        self.grade_filter = Dropdown()
+        self.grade_filter.setFixedWidth(120)
+        self.grade_filter.addItem("همه پایه‌ها", None)
+        self.grade_filter.currentIndexChanged.connect(self._on_scope_changed)
+
+        self.class_filter = Dropdown()
+        self.class_filter.setFixedWidth(150)
+        self.class_filter.addItem("همه کلاس‌ها", None)
+        self.class_filter.currentIndexChanged.connect(self._apply_filters)
+
         controls.addWidget(self.result_label)
         controls.addStretch()
+        controls.addWidget(self.major_filter)
+        controls.addWidget(self.grade_filter)
+        controls.addWidget(self.class_filter)
         controls.addWidget(self.search_input)
         layout.addLayout(controls)
 
@@ -270,7 +336,12 @@ class StudentsPage(QWidget):
         self.table.setAlternatingRowColors(False)
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(48)
-        self.table.horizontalHeader().setStretchLastSection(True)
+        header_view = self.table.horizontalHeader()
+        header_view.setStretchLastSection(True)
+        header_view.setSectionsClickable(True)
+        header_view.setSortIndicatorShown(True)
+        header_view.setSortIndicator(self._sort_key, Qt.AscendingOrder)
+        header_view.sectionClicked.connect(self._sort_by_section)
         self.table.setStyleSheet(
             f"QTableView {{ background: {Colors.SURFACE}; border: 1px solid {Colors.BORDER}; "
             f"border-radius: 10px; gridline-color: {Colors.BORDER}; color: {Colors.TEXT_MAIN}; }}"
@@ -363,12 +434,81 @@ class StudentsPage(QWidget):
         for candidate in self._states:
             candidate.setVisible(candidate is state)
 
+    def _ensure_scope_options(self):
+        """Load classrooms and grades once, tolerating an unavailable database."""
+        if self._scope_loaded:
+            return
+        try:
+            rooms = tuple(Classroom.select().order_by(Classroom.grade_level, Classroom.name))
+        except Exception:
+            return
+        self._all_rooms = rooms
+        self.grade_filter.blockSignals(True)
+        for grade in sorted({room.grade_level for room in rooms}):
+            self.grade_filter.addItem(GRADE_ORDINALS.get(grade, str(grade)), grade)
+        self.grade_filter.blockSignals(False)
+        self._scope_loaded = True
+        self._rebuild_class_options()
+
+    def _rebuild_class_options(self):
+        """Show only classrooms matching the selected major and grade; keep the pick if still valid."""
+        major = self.major_filter.currentData()
+        grade = self.grade_filter.currentData()
+        current = self.class_filter.currentData()
+        self.class_filter.blockSignals(True)
+        self.class_filter.clear()
+        self.class_filter.addItem("همه کلاس‌ها", None)
+        for room in self._all_rooms:
+            if major and room.major != major:
+                continue
+            if grade is not None and room.grade_level != grade:
+                continue
+            self.class_filter.addItem(room.name, room.id)
+        index = self.class_filter.findData(current)
+        self.class_filter.setCurrentIndex(index if index >= 0 else 0)
+        self.class_filter.blockSignals(False)
+
+    def _on_scope_changed(self):
+        self._rebuild_class_options()
+        self._apply_filters()
+
+    def _apply_filters(self):
+        self._page = 0
+        self.reload()
+
+    def _sort_by_section(self, section: int):
+        if section == self._sort_key:
+            self._sort_desc = not self._sort_desc
+        else:
+            self._sort_key = section
+            self._sort_desc = False
+        order = Qt.DescendingOrder if self._sort_desc else Qt.AscendingOrder
+        self.table.horizontalHeader().setSortIndicator(section, order)
+        self._page = 0
+        self.reload()
+
+    def _has_filters(self) -> bool:
+        return (
+            bool(self.major_filter.currentData())
+            or self.grade_filter.currentData() is not None
+            or self.class_filter.currentData() is not None
+        )
+
     def reload(self):
+        self._ensure_scope_options()
         had_rows = bool(self.model.students)
         if not had_rows:
             self._show_state(self.loading_state)
         try:
-            result = load_students_page(self._query, self._page)
+            result = load_students_page(
+                self._query,
+                self._page,
+                major=self.major_filter.currentData(),
+                grade_level=self.grade_filter.currentData(),
+                classroom_id=self.class_filter.currentData(),
+                sort_key=self._sort_key,
+                sort_desc=self._sort_desc,
+            )
         except Exception:
             if had_rows:
                 self.error_banner.show()
@@ -382,7 +522,7 @@ class StudentsPage(QWidget):
         self._update_pagination()
         if result.total:
             self._show_state(None)
-        elif self._query:
+        elif self._query or self._has_filters():
             self._show_state(self.no_results_state)
         else:
             self._show_state(self.empty_state)
@@ -395,8 +535,16 @@ class StudentsPage(QWidget):
         )
         self.result_label.setText(f"{to_persian_digits(self._total)} دانش آموز فعال")
 
+    def _reset_filters(self):
+        for combo in (self.major_filter, self.grade_filter, self.class_filter):
+            combo.blockSignals(True)
+            combo.setCurrentIndex(0)
+            combo.blockSignals(False)
+        self._rebuild_class_options()
+
     def _clear_search(self):
         self.search_input.clear()
+        self._reset_filters()
         self._query = ""
         self._page = 0
         self.reload()
@@ -413,4 +561,5 @@ class StudentsPage(QWidget):
             self.search_input.blockSignals(True)
             self.search_input.clear()
             self.search_input.blockSignals(False)
+            self._reset_filters()
             self.reload()

@@ -48,6 +48,75 @@ def test_student_page_searches_active_students_and_paginates(tmp_path):
         manager.close()
 
 
+def test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(tmp_path):
+    manager = DatabaseManager(
+        fanus_path=tmp_path / "fanus.db",
+        vault_path=tmp_path / "vault.db",
+        migrations_dir=tmp_path / "migrations",
+    )
+    try:
+        manager.initialize_public()
+        math_room = Classroom.create(name="دهم ریاضی", grade_level=10, major="ریاضی فیزیک")
+        exp_room = Classroom.create(name="یازدهم تجربی", grade_level=11, major="علوم تجربی")
+
+        Student.create(
+            national_id="1000000001", first_name="آرش", last_name="الف",
+            classroom=math_room, major="ریاضی فیزیک", risk_level=RiskLevel.HIGH,
+        )
+        Student.create(
+            national_id="1000000002", first_name="بابک", last_name="ب",
+            classroom=math_room, major="ریاضی فیزیک", risk_level=RiskLevel.LOW,
+        )
+        Student.create(
+            national_id="1000000003", first_name="پری", last_name="پ",
+            classroom=exp_room, major="علوم تجربی", risk_level=RiskLevel.MEDIUM,
+        )
+
+        by_major = load_students_page(major="ریاضی فیزیک")
+        by_grade = load_students_page(grade_level=11)
+        by_class = load_students_page(classroom_id=exp_room.id)
+        by_id_desc = load_students_page(sort_key=1, sort_desc=True)
+        by_risk = load_students_page(sort_key=4)
+
+        assert by_major.total == 2
+        assert {s.national_id for s in by_major.students} == {"1000000001", "1000000002"}
+        assert [s.national_id for s in by_grade.students] == ["1000000003"]
+        assert [s.national_id for s in by_class.students] == ["1000000003"]
+        assert [s.national_id for s in by_id_desc.students] == [
+            "1000000003", "1000000002", "1000000001",
+        ]
+        # risk ascending follows severity, not alphabetical order
+        assert [s.risk_level for s in by_risk.students] == [
+            RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH,
+        ]
+    finally:
+        manager.close()
+
+
+def test_major_selection_narrows_the_class_filter(qtbot, tmp_path):
+    manager = DatabaseManager(
+        fanus_path=tmp_path / "fanus.db",
+        vault_path=tmp_path / "vault.db",
+        migrations_dir=tmp_path / "migrations",
+    )
+    try:
+        manager.initialize_public()
+        Classroom.create(grade_level=10, major="ریاضی فیزیک", code="۱")
+        Classroom.create(grade_level=10, major="علوم تجربی", code="۲")
+
+        page = students_page.StudentsPage()
+        qtbot.addWidget(page)
+        page.reload()
+        assert page.class_filter.count() == 3  # «همه کلاس‌ها» + دو کلاس
+
+        page.major_filter.setCurrentIndex(page.major_filter.findData("ریاضی فیزیک"))
+        rooms = [page.class_filter.itemText(i) for i in range(1, page.class_filter.count())]
+        assert page.class_filter.count() == 2
+        assert all("ریاضی" in name for name in rooms)
+    finally:
+        manager.close()
+
+
 def test_student_table_model_exposes_student_for_row_actions(qtbot, tmp_path):
     manager = DatabaseManager(
         fanus_path=tmp_path / "fanus.db",
@@ -76,7 +145,7 @@ def test_student_table_model_exposes_student_for_row_actions(qtbot, tmp_path):
 def test_students_page_debounces_search_and_surfaces_a_retryable_error(qtbot, monkeypatch):
     calls = []
 
-    def fake_loader(query, page):
+    def fake_loader(query, page, **kwargs):
         calls.append((query, page))
         return StudentPage(students=(), total=0)
 
@@ -92,7 +161,7 @@ def test_students_page_debounces_search_and_surfaces_a_retryable_error(qtbot, mo
     monkeypatch.setattr(
         students_page,
         "load_students_page",
-        lambda *_: (_ for _ in ()).throw(RuntimeError("database unavailable")),
+        lambda *_, **__: (_ for _ in ()).throw(RuntimeError("database unavailable")),
     )
     page.reload()
     assert not page.error_state.isHidden()

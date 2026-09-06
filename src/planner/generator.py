@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from src.planner import budget, catalog, grid, solver, validate
 from src.storage.models import (
     AcademicGrade,
+    Exam,
     PlanStatus,
     SchoolProfile,
     Student,
@@ -14,6 +15,12 @@ from src.storage.models import (
     StudySession,
     subject_options,
 )
+
+
+# A relative score is meaningful only with a reasonably sized peer group.
+MIN_RELATIVE_COHORT_SIZE = 8
+# Do not treat a universally failed exam as mastery merely because it has a low top score.
+RELATIVE_SCORE_FLOOR = 0.50
 
 
 @dataclass(frozen=True)
@@ -81,18 +88,50 @@ def _weakness_map(
 ) -> Dict[str, float]:
     override = {name: float(w) for name, w in overrides}
     rows_by_subject: Dict[str, List] = {}
-    for row in AcademicGrade.select().where(AcademicGrade.student == student):
-        if row.max_score:
+    grades = (
+        AcademicGrade.select(AcademicGrade, Exam)
+        .join(Exam)
+        .where(AcademicGrade.student == student, AcademicGrade.score.is_null(False))
+    )
+    for row in grades:
+        if row.exam.max_score:
             rows_by_subject.setdefault(row.subject_name, []).append(row)
+
+    cohort_ratios: Dict[Tuple[int, str], List[float]] = {}
+    exam_max_scores = {row.exam_id: row.exam.max_score for rows in rows_by_subject.values() for row in rows}
+    if exam_max_scores:
+        peer_grades = (
+            AcademicGrade.select(AcademicGrade, Student)
+            .join(Student)
+            .where(
+                AcademicGrade.exam << tuple(exam_max_scores),
+                AcademicGrade.score.is_null(False),
+                Student.classroom == student.classroom,
+            )
+        )
+        for peer in peer_grades:
+            maximum = exam_max_scores.get(peer.exam_id)
+            if maximum:
+                cohort_ratios.setdefault((peer.exam_id, peer.subject_name), []).append(
+                    peer.score / maximum
+                )
+
+    def effective_ratio(row) -> float:
+        raw_ratio = row.score / row.exam.max_score
+        cohort = cohort_ratios.get((row.exam_id, row.subject_name), ())
+        if len(cohort) < MIN_RELATIVE_COHORT_SIZE:
+            return raw_ratio
+        effective_max = max(max(cohort), RELATIVE_SCORE_FLOOR)
+        return raw_ratio / effective_max
 
     family_ratios: Dict[str, List[float]] = {}
     for name, rows in rows_by_subject.items():
         recent = sorted(
             rows,
-            key=lambda row: (row.exam_date, row.created_at),
+            key=lambda row: (row.exam.exam_date, row.created_at),
             reverse=True,
         )[:3]
-        average = sum(row.score / row.max_score for row in recent) / len(recent)
+        average = sum(effective_ratio(row) for row in recent) / len(recent)
         family_ratios.setdefault(catalog.subject_family(name), []).append(average)
 
     out: Dict[str, float] = {}
@@ -104,10 +143,10 @@ def _weakness_map(
         if not values and subject in rows_by_subject:
             rows = sorted(
                 rows_by_subject[subject],
-                key=lambda row: (row.exam_date, row.created_at),
+                key=lambda row: (row.exam.exam_date, row.created_at),
                 reverse=True,
             )[:3]
-            values = [sum(row.score / row.max_score for row in rows) / len(rows)]
+            values = [sum(effective_ratio(row) for row in rows) / len(rows)]
         if not values:
             out[subject] = 1.5
         else:

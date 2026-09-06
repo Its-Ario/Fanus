@@ -109,9 +109,12 @@ Contract change:
 - Input = **mean of the last 3 rows per `subject_name`** (by `exam_date` desc, then
   `created_at` desc), **across all term types** including `آزمون آزمایشی` — mocks are the
   strongest konkoor-prep weakness signal. Recent-weighted, single-outlier-damped.
-- Each row contributes `score / max_score` (**ratio, never raw**) so a `/5` امتحان کلاسی and
-  a `/20` نوبت combine correctly.
-- Ratio mean → family via `subject_family()` → existing `weakness_bucket` thresholds →
+- Each row starts as `raw_ratio = score / max_score` so a `/5` امتحان کلاسی and a `/20` نوبت
+  combine correctly. For an exam-subject cohort of at least 8 non-absent students in the
+  student's own classroom, its effective ratio is `raw_ratio / max(class_top_ratio, 0.50)`.
+  Smaller cohorts use `raw_ratio` directly. The 50% floor prevents a universally failed exam
+  from being treated as mastery.
+- Effective-ratio mean → family via `subject_family()` → existing `weakness_bucket` thresholds →
   `1.0 / 1.5 / 2.0`. **Thresholds carried over unchanged.**
   `ponytail: weakness cut points not recalibrated against the new mean-of-3-ratios input; eyeball against seed data, adjust constants if visibly off.`
 - **Custom subject** with no known family: `subject_family()` returns the raw name as a
@@ -248,7 +251,7 @@ dashboard/analytics/planner have realistic data on first run:
 | `AcademicGrade` (no year field) | `grades assumed current-year; add explicit year field only if multi-year history is needed` |
 | `calculate_gpa` dup handling | `duplicate (subject, term) rows tolerated, newest wins at read; no unique constraint` |
 | `_round2` / `GPA_ROUNDING` | `school کارنامه truncates; flip to half_up for a school that rounds` |
-| weakness thresholds | `cut points not recalibrated against mean-of-3-ratios input; adjust if seed data looks off` |
+| weakness thresholds | `cut points not recalibrated against the dual-anchor effective-ratio input; adjust if seed data looks off` |
 | seed grade generation | `mock distribution hand-tuned for band spread, not real data` |
 
 ---

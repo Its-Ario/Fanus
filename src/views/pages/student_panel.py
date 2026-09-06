@@ -4,7 +4,7 @@ from datetime import date, datetime, timedelta
 from typing import Iterable
 
 from peewee import fn
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
     QButtonGroup,
@@ -33,16 +33,25 @@ from src.storage.models import (
     MOADEL_TERMS,
     AcademicGrade,
     AttendanceRecord,
-    CounselorNote,
     DailyCheckIn,
     DayOfWeek,
+    Exam,
     PlanStatus,
     StudyPlan,
     StudySession,
     subject_options,
 )
+from src.storage.note_ops import (
+    NotePermissionError,
+    NoteValidationError,
+    create_note,
+    list_note_audit,
+    list_notes,
+    update_note,
+)
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
+from src.views.components.persian_date_picker import PersianDatePicker
 from src.views.components.ui_kit import (
     Card,
     Dropdown,
@@ -57,13 +66,6 @@ from src.views.pages.settings.settings_page import SEGMENTED_STYLE
 
 def _latin_digits(value: str) -> str:
     return value.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
-
-
-def _parse_date(value: str) -> date:
-    try:
-        return datetime.strptime(_latin_digits(value), "%Y-%m-%d").date()
-    except ValueError as exc:
-        raise ValueError("تاریخ را با قالب YYYY-MM-DD وارد کنید.") from exc
 
 
 def _duration_minutes(start_time: str, end_time: str) -> int:
@@ -176,7 +178,7 @@ def regenerate_plan(student):
     with database.atomic():
         result = generator.generate_plan(
             student,
-            generator.params_for_student(student, keep_locked=bool(active)),
+            generator.get_student_params(student, keep_locked=bool(active)),
         )
         if active:
             active.status = PlanStatus.ARCHIVED
@@ -208,7 +210,12 @@ class SummaryTab(QWidget):
         grid.setSpacing(12)
         grade_rows = (
             AcademicGrade.select()
-            .where(AcademicGrade.student == student, AcademicGrade.term << MOADEL_TERMS)
+            .join(Exam)
+            .where(
+                AcademicGrade.student == student,
+                AcademicGrade.score.is_null(False),
+                Exam.term << MOADEL_TERMS,
+            )
             .count()
         )
         gpa = student.calculate_gpa()
@@ -292,20 +299,28 @@ class SummaryTab(QWidget):
         def populate(show_extra=False):
             terms = MOADEL_TERMS + (("مستمر",) if not show_extra else ())
             query = (
-                AcademicGrade.select()
-                .where(AcademicGrade.student == student, AcademicGrade.term << terms)
-                .order_by(AcademicGrade.exam_date.desc(), AcademicGrade.created_at.desc())
+                AcademicGrade.select(AcademicGrade, Exam)
+                .join(Exam)
+                .where(AcademicGrade.student == student, Exam.term << terms)
+                .order_by(Exam.exam_date.desc(), AcademicGrade.created_at.desc())
             )
             rows = list(query)
             table.setRowCount(len(rows))
             for index, row in enumerate(rows):
+                ceiling = row.exam.max_score
                 table.setItem(index, 0, QTableWidgetItem(row.subject_name))
-                score = QTableWidgetItem(to_persian_digits(f"{row.score:g}/{row.max_score:g}"))
-                if row.score < row.max_score / 2:
-                    score.setForeground(QColor(Colors.ERROR))
+                if row.score is None:
+                    score = QTableWidgetItem("غایب")
+                    score.setForeground(QColor(Colors.TEXT_MUTED))
+                else:
+                    score = QTableWidgetItem(to_persian_digits(f"{row.score:g}/{ceiling:g}"))
+                    if row.score < ceiling / 2:
+                        score.setForeground(QColor(Colors.ERROR))
                 table.setItem(index, 1, score)
-                table.setItem(index, 2, QTableWidgetItem(row.term))
-                table.setItem(index, 3, QTableWidgetItem(to_persian_digits(row.exam_date.isoformat())))
+                table.setItem(index, 2, QTableWidgetItem(row.exam.term))
+                table.setItem(
+                    index, 3, QTableWidgetItem(to_persian_digits(row.exam.exam_date.isoformat()))
+                )
             table.setMinimumHeight(max(72, min(250, 38 * (len(rows) + 1))))
 
         toggle.toggled.connect(populate)
@@ -316,19 +331,22 @@ class SummaryTab(QWidget):
         recent = Card()
         recent.body_layout.addWidget(_section_title("۵ امتحان اخیر"))
         rows = (
-            AcademicGrade.select()
+            AcademicGrade.select(AcademicGrade, Exam)
+            .join(Exam)
             .where(AcademicGrade.student == student)
-            .order_by(AcademicGrade.exam_date.desc(), AcademicGrade.created_at.desc())
+            .order_by(Exam.exam_date.desc(), AcademicGrade.created_at.desc())
             .limit(5)
         )
         values = list(rows)
         if not values:
             recent.body_layout.addWidget(QLabel("هنوز نمره‌ای ثبت نشده است."))
         for row in values:
-            label = QLabel(
-                f"{row.subject_name} — {to_persian_digits(f'{row.score:g}/{row.max_score:g}')} "
-                f"({row.term})"
+            shown = (
+                "غایب"
+                if row.score is None
+                else to_persian_digits(f"{row.score:g}/{row.exam.max_score:g}")
             )
+            label = QLabel(f"{row.subject_name} — {shown} ({row.exam.term})")
             label.setStyleSheet(f"font-size:13px; color:{Colors.TEXT_MAIN}; padding:3px 0;")
             recent.body_layout.addWidget(label)
         self.layout.addWidget(recent)
@@ -444,9 +462,9 @@ class PlanTab(QWidget):
         _clear_layout(self.layout)
         if self.creating:
             dates = QHBoxLayout()
-            self.start_date = FormField("تاریخ شروع", date.today().isoformat(), "YYYY-MM-DD")
-            self.end_date = FormField(
-                "تاریخ پایان", (date.today() + timedelta(days=6)).isoformat(), "YYYY-MM-DD"
+            self.start_date = PersianDatePicker("تاریخ شروع", default=date.today())
+            self.end_date = PersianDatePicker(
+                "تاریخ پایان", default=date.today() + timedelta(days=6)
             )
             dates.addWidget(self.start_date)
             dates.addWidget(self.end_date)
@@ -559,8 +577,8 @@ class PlanTab(QWidget):
             if self.creating:
                 self.plan = create_manual_plan(
                     self.panel.student,
-                    _parse_date(self.start_date.text()),
-                    _parse_date(self.end_date.text()),
+                    self.start_date.date(),
+                    self.end_date.date(),
                 )
             save_plan_sessions(self.plan, self.editor_rows)
         except ValueError as exc:
@@ -617,6 +635,11 @@ class NotesTab(QWidget):
         super().__init__()
         self.panel = panel
         self.unlocked = False
+        self.editing_note_id = None
+        self.idle_timer = QTimer(self)
+        self.idle_timer.setSingleShot(True)
+        self.idle_timer.setInterval(5 * 60 * 1000)
+        self.idle_timer.timeout.connect(self.lock)
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(0, 12, 0, 0)
         self.layout.setSpacing(12)
@@ -638,17 +661,20 @@ class NotesTab(QWidget):
         self.content = QTextEdit()
         self.content.setPlaceholderText("متن یادداشت محرمانه")
         self.content.setMinimumHeight(90)
-        add = PrimaryButton("افزودن یادداشت")
-        add.clicked.connect(self._add_note)
+        self.title.input.textEdited.connect(self.touch)
+        self.tags.input.textEdited.connect(self.touch)
+        self.content.textChanged.connect(self.touch)
+        action = PrimaryButton("ذخیره تغییرات" if self.editing_note_id else "افزودن یادداشت")
+        action.clicked.connect(self._save_note)
         self.layout.addWidget(self.title)
         self.layout.addWidget(self.tags)
         self.layout.addWidget(self.content)
-        self.layout.addWidget(add)
-        notes = (
-            CounselorNote.select()
-            .where(CounselorNote.student_id == self.panel.student.id)
-            .order_by(CounselorNote.created_at.desc())
-        )
+        self.layout.addWidget(action)
+        try:
+            notes = list_notes(self.panel.current_user, self.panel.student)
+        except NotePermissionError:
+            self.lock()
+            return
         for note in notes:
             card = Card()
             card.body_layout.addWidget(_section_title(note.title))
@@ -658,28 +684,63 @@ class NotesTab(QWidget):
             body.setWordWrap(True)
             card.body_layout.addWidget(meta)
             card.body_layout.addWidget(body)
+            edit = SecondaryButton("ویرایش")
+            edit.clicked.connect(lambda _, item=note: self._edit_note(item))
+            card.body_layout.addWidget(edit)
             self.layout.addWidget(card)
+        events = list_note_audit(self.panel.current_user, self.panel.student)
+        if events:
+            self.layout.addWidget(_section_title("فعالیت های محرمانه من"))
+            labels = {
+                "note.create": "ایجاد یادداشت",
+                "note.view": "مشاهده یادداشت",
+                "note.edit": "ویرایش یادداشت",
+            }
+            for event in events[:10]:
+                self.layout.addWidget(
+                    QLabel(f"{event.created_at:%Y-%m-%d %H:%M} — {labels.get(event.action, event.action)}")
+                )
         self.layout.addStretch()
 
     def _unlock(self):
         try:
             get_database_manager().unlock_vault(DatabaseCredentials.from_vault_pin(self.pin.text()))
             self.unlocked = True
+            self.touch()
             self.reload()
         except Exception as exc:
             self.pin.set_error(str(exc))
 
-    def _add_note(self):
-        content = self.content.toPlainText().strip()
-        if not content:
-            self.title.set_error("متن یادداشت را وارد کنید.")
+    def touch(self, *_):
+        if self.unlocked:
+            self.idle_timer.start()
+
+    def lock(self):
+        self.idle_timer.stop()
+        self.unlocked = False
+        self.editing_note_id = None
+        get_database_manager().lock_vault()
+        self.reload()
+
+    def _edit_note(self, note):
+        self.editing_note_id = note.id
+        self.title.input.setText(note.title)
+        self.tags.input.setText(note.tags)
+        self.content.setPlainText(note.content)
+        self.touch()
+
+    def _save_note(self):
+        try:
+            values = {"title": self.title.text(), "tags": self.tags.text(), "content": self.content.toPlainText()}
+            if self.editing_note_id:
+                update_note(self.panel.current_user, self.editing_note_id, **values)
+            else:
+                create_note(self.panel.current_user, self.panel.student, **values)
+        except (NotePermissionError, NoteValidationError) as exc:
+            self.title.set_error(str(exc))
             return
-        CounselorNote.create(
-            student_id=self.panel.student.id,
-            title=self.title.text() or "یادداشت مشاوره",
-            tags=self.tags.text() or "عمومی",
-            content=content,
-        )
+        self.editing_note_id = None
+        self.touch()
         self.reload()
 
 
@@ -730,13 +791,13 @@ class StudentPanel(QWidget):
             viewport = _scrollable_tab(widget)
             self._tab_viewports[widget] = viewport
             self.stack.addWidget(viewport)
-        self.group.buttonClicked.connect(
-            lambda button: self.stack.setCurrentIndex(self.group.id(button))
-        )
+        self.group.buttonClicked.connect(self._select_tab)
         layout.addWidget(self.seg)
         layout.addWidget(self.stack, 1)
 
     def load(self, student):
+        if self.notes.unlocked:
+            self.notes.lock()
         self.student = student
         classroom = student.classroom
         ordinal = GRADE_ORDINALS.get(classroom.grade_level, str(classroom.grade_level))
@@ -753,6 +814,13 @@ class StudentPanel(QWidget):
             self.plan.reload()
             if self.notes in self._tab_viewports:
                 self.notes.reload()
+
+    def _select_tab(self, button):
+        index = self.group.id(button)
+        if self.notes in self._tab_viewports and index != self.stack.indexOf(self._tab_viewports[self.notes]):
+            if self.notes.unlocked:
+                self.notes.lock()
+        self.stack.setCurrentIndex(index)
 
 
 def _section_title(text):

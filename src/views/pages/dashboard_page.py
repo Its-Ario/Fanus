@@ -12,6 +12,7 @@ from src.storage.models import (
     AcademicGrade,
     Classroom,
     DailyCheckIn,
+    Exam,
     PlanStatus,
     RiskLevel,
     Student,
@@ -96,11 +97,13 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
         AcademicGrade.select(
             AcademicGrade.subject_name,
             (
-                fn.SUM(AcademicGrade.score) * 100.0 / fn.NULLIF(fn.SUM(AcademicGrade.max_score), 0)
+                fn.SUM(AcademicGrade.score) * 100.0 / fn.NULLIF(fn.SUM(Exam.max_score), 0)
             ).alias("percentage"),
         )
         .join(Student)
-        .where(Student.is_active)
+        .switch(AcademicGrade)
+        .join(Exam)
+        .where(Student.is_active, AcademicGrade.score.is_null(False))
         .group_by(AcademicGrade.subject_name)
         .order_by(fn.SUM(AcademicGrade.score).desc())
         .limit(4)

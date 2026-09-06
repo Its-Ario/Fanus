@@ -10,6 +10,7 @@ dependencies = [
     "peewee==3.17.0",
     "peewee-migrate>=1.13.0",
     "cryptography>=42.0.0",
+    "jdatetime>=5.0",
 ]
 
 

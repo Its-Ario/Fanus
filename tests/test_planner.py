@@ -1,3 +1,5 @@
+from datetime import date
+
 from src.planner import budget, catalog, grid, solver, validate
 from src.planner.generator import generate_plan, get_student_params
 from src.storage.db import DatabaseManager
@@ -5,6 +7,8 @@ from src.storage.models import (
     AcademicGrade,
     AcademicMajor,
     Classroom,
+    Exam,
+    ExamClassroom,
     PlanStatus,
     SchoolProfile,
     Student,
@@ -147,10 +151,16 @@ def _seed(tmp_path, *, daily_hours=5.0):
         major=AcademicMajor.EXPERIMENTAL,
         daily_active_hours=daily_hours,
     )
-    for subject, score in (("زیست شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0)):
-        AcademicGrade.create(
-            student=student, subject_name=subject, score=score, max_score=20.0, term="نوبت اول"
-        )
+    rows = (("زیست شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0))
+    exam = Exam(
+        name="نوبت اول", exam_date=date(2026, 1, 1), term="نوبت اول", max_score=20.0,
+        grade_level=11, major=AcademicMajor.EXPERIMENTAL,
+    )
+    exam.subjects = [subject for subject, _ in rows]
+    exam.save(force_insert=True)
+    ExamClassroom.create(exam=exam, classroom=classroom)
+    for subject, score in rows:
+        AcademicGrade.create(student=student, exam=exam, subject_name=subject, score=score)
     return manager, student
 
 

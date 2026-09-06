@@ -15,9 +15,10 @@ from src.views.components.sidebar import Sidebar
 from src.views.components.title_bar import TitleBar
 from src.views.pages.analytics_page import AnalyticsPage
 from src.views.pages.dashboard_page import DashboardPage
+from src.views.pages.grade_entry_page import GradeEntryPage
 from src.views.pages.settings import SettingsPage
-from src.views.pages.students_page import StudentsPage
 from src.views.pages.student_panel import StudentPanel
+from src.views.pages.students_page import StudentsPage
 
 
 class MainWindow(QMainWindow):
@@ -81,9 +82,13 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.settings_page)
         self.student_panel = StudentPanel(current_user=self.current_user)
         self.pages.addWidget(self.student_panel)
+        self.grade_entry_page = GradeEntryPage(current_user=self.current_user)
+        self.pages.addWidget(self.grade_entry_page)
 
         students_page.student_opened.connect(self._open_student_panel)
+        students_page.open_grade_entry.connect(self._open_grade_entry)
         self.student_panel.back_requested.connect(lambda: self._navigate_to(1))
+        self.grade_entry_page.back_requested.connect(lambda: self._navigate_to(1))
 
         self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
         self.sidebar.add_nav_item("👥", "دانش آموزان", lambda: self._navigate_to(1))
@@ -96,6 +101,9 @@ class MainWindow(QMainWindow):
         self.student_panel.load(student)
         self._navigate_to(self.pages.indexOf(self.student_panel))
 
+    def _open_grade_entry(self) -> None:
+        self._navigate_to(self.pages.indexOf(self.grade_entry_page))
+
     def _navigate_to(self, index: int) -> None:
         settings_index = self.pages.indexOf(self.settings_page)
         if (
@@ -105,10 +113,25 @@ class MainWindow(QMainWindow):
         ):
             self.sidebar.nav_items[settings_index].setChecked(True)
             return
+        grade_index = self.pages.indexOf(self.grade_entry_page)
+        if (
+            self.pages.currentWidget() is self.grade_entry_page
+            and index != grade_index
+            and not self.grade_entry_page.confirm_navigation_away()
+        ):
+            return
+        if self.pages.currentWidget() is self.student_panel and index != self.pages.indexOf(self.student_panel):
+            if self.student_panel.notes.unlocked:
+                self.student_panel.notes.lock()
         self.pages.setCurrentIndex(index)
 
     def closeEvent(self, event) -> None:
-        if self.settings_page.confirm_navigation_away():
+        if self.settings_page.confirm_navigation_away() and (
+            self.pages.currentWidget() is not self.grade_entry_page
+            or self.grade_entry_page.confirm_navigation_away()
+        ):
+            if self.student_panel.notes.unlocked:
+                self.student_panel.notes.lock()
             event.accept()
         else:
             event.ignore()

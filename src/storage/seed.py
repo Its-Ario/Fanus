@@ -1,3 +1,4 @@
+import random
 from datetime import date, timedelta
 
 from src.storage.db import configure_database_manager, db
@@ -5,6 +6,8 @@ from src.storage.models import (
     AcademicGrade,
     AcademicMajor,
     Classroom,
+    Exam,
+    ExamClassroom,
     GradeTerm,
     RiskLevel,
     Student,
@@ -57,7 +60,8 @@ def seed_students(academic_year="1405-1406"):
             )
             classrooms.append(classroom)
 
-        students = []
+        roster: dict[int, list[Student]] = {c.id: [] for c in classrooms}
+        band_index: dict[str, int] = {}
         for student_index, (
             national_id,
             first_name,
@@ -96,58 +100,83 @@ def seed_students(academic_year="1405-1406"):
                 student.preferred_study_period = preferred_study_period
                 student.is_active = True
                 student.save()
-            students.append(student)
+            roster[classroom.id].append(student)
+            band_index[student.id] = student_index
 
-            if not AcademicGrade.select().where(AcademicGrade.student == student).exists():
-                _seed_grades(student, student_index)
+        for classroom in classrooms:
+            if not ExamClassroom.select().where(ExamClassroom.classroom == classroom).exists():
+                _seed_exams(classroom, roster[classroom.id], band_index)
 
-    return students
+    return [s for students in roster.values() for s in students]
 
 
-def _seed_grades(student, student_index):
-    """Create a varied, current-year performance snapshot for first-run screens."""
-    # ponytail: mock distribution hand-tuned for band spread, not real data
-    today = date.today()
+def _make_exam(classroom, name, term, subjects, *, days_ago, max_score=20.0):
+    exam = Exam(
+        name=name,
+        exam_date=date.today() - timedelta(days=days_ago),
+        term=term,
+        max_score=max_score,
+        grade_level=classroom.grade_level,
+        major=classroom.major,
+    )
+    exam.subjects = list(subjects)
+    exam.save(force_insert=True)
+    ExamClassroom.create(exam=exam, classroom=classroom)
+    return exam
+
+
+def _seed_exams(classroom, students, band_index):
+    """A varied current-year snapshot per class: term exams, class quizzes, mock exams.
+
+    ponytail: mock distribution hand-tuned for band spread, not real data (carried over).
+    """
+    rng = random.Random(f"{classroom.grade_level}-{classroom.major}-{classroom.code}")
+    subjects = list(subject_options(classroom.grade_level, classroom.major))
+    if not subjects:
+        return
     band_bases = (10.5, 13.5, 16.5, 19.0)
-    base = band_bases[student_index % len(band_bases)]
-    subjects = subject_options(student.classroom.grade_level, student.major)
-    for subject_index, subject in enumerate(subjects):
-        adjustment = ((subject_index * 3 + student_index) % 5) - 2
-        nobat_1 = max(0.0, min(20.0, base + adjustment * 0.45))
-        AcademicGrade.create(
-            student=student,
-            subject_name=subject,
-            score=nobat_1,
-            term=GradeTerm.NOBAT_1,
-            exam_date=today - timedelta(days=56),
+
+    exams: list[tuple[Exam, float]] = []  # (exam, per-exam noise scale)
+    exams.append((_make_exam(classroom, "نوبت اول", GradeTerm.NOBAT_1, subjects, days_ago=70), 0.9))
+    if rng.random() < 0.7:
+        exams.append(
+            (_make_exam(classroom, "نوبت دوم", GradeTerm.NOBAT_2, subjects, days_ago=7), 0.9)
         )
-        if (student_index + subject_index) % 10 < 7:
-            AcademicGrade.create(
-                student=student,
-                subject_name=subject,
-                score=max(0.0, min(20.0, nobat_1 + 0.5)),
-                term=GradeTerm.NOBAT_2,
-                exam_date=today - timedelta(days=7),
+    for i in range(rng.randint(3, 6)):
+        picked = rng.sample(subjects, rng.randint(1, 2))
+        ceiling = 10.0 if i % 3 == 0 else 20.0
+        exams.append(
+            (
+                _make_exam(
+                    classroom, f"امتحان کلاسی {i + 1}", GradeTerm.KELASI, picked,
+                    days_ago=rng.randint(1, 56), max_score=ceiling,
+                ),
+                1.6,
             )
-        for exam_index in range(3 + (subject_index % 4)):
-            max_score = 10.0 if (exam_index + subject_index) % 3 == 0 else 20.0
-            score = max(0.0, min(max_score, (nobat_1 / 20.0) * max_score + adjustment * 0.12))
-            AcademicGrade.create(
-                student=student,
-                subject_name=subject,
-                score=score,
-                max_score=max_score,
-                term=GradeTerm.KELASI,
-                exam_date=today - timedelta(days=exam_index * 10 + (subject_index % 6)),
+        )
+    if classroom.grade_level == 12:
+        for i in range(rng.randint(1, 2)):
+            exams.append(
+                (
+                    _make_exam(
+                        classroom, f"آزمون آزمایشی {i + 1}", GradeTerm.AZMAYESHI, subjects,
+                        days_ago=rng.randint(3, 45),
+                    ),
+                    1.4,
+                )
             )
-        if student.classroom.grade_level == 12:
-            for exam_index in range(1 + (subject_index % 2)):
+
+    for student in students:
+        base = band_bases[band_index[student.id] % len(band_bases)]
+        for exam, noise in exams:
+            for subject in exam.subjects:
+                if rng.random() < 0.05:  # ~5% absent -> NULL, exercises the null path
+                    score = None
+                else:
+                    ratio = max(0.0, min(1.0, (base + rng.uniform(-noise, noise)) / 20.0))
+                    score = round(ratio * exam.max_score, 2)
                 AcademicGrade.create(
-                    student=student,
-                    subject_name=subject,
-                    score=max(0.0, min(20.0, nobat_1 - 0.7 + exam_index * 0.3)),
-                    term=GradeTerm.AZMAYESHI,
-                    exam_date=today - timedelta(days=exam_index * 21 + 3),
+                    student=student, exam=exam, subject_name=subject, score=score
                 )
 
 

@@ -21,6 +21,7 @@ from src.storage.models import (
     AttendanceRecord,
     Classroom,
     DailyCheckIn,
+    Exam,
     RiskLevel,
     SchoolProfile,
     Student,
@@ -195,7 +196,8 @@ def load_analytics_data(
             fn.AVG(AcademicGrade.score).alias("gpa"),
             fn.COUNT(AcademicGrade.score).alias("grade_count"),
         )
-        .where(AcademicGrade.term << MOADEL_TERMS)
+        .join(Exam)
+        .where(Exam.term << MOADEL_TERMS, AcademicGrade.score.is_null(False))
         .group_by(AcademicGrade.student)
         .having(fn.COUNT(AcademicGrade.score) > 0)
         .alias("gpa_by_student")

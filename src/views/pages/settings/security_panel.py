@@ -19,6 +19,8 @@ ACTION_LABELS = {
     "user.password_reset": "بازنشانی رمز",
     "vault.pin_change": "تغییر پین گاوصندوق",
     "password.self_change": "تغییر رمز شخصی",
+    "exam.create": "ایجاد آزمون",
+    "grade.bulk_save": "ثبت گروهی نمرات",
 }
 
 
@@ -115,6 +117,7 @@ class SecurityPanel(QWidget):
         if self.actor.can_manage_users:
             self.model.set_rows(
                 AuditLog.select()
+                .where(~AuditLog.action.startswith("note."))
                 .order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
                 .paginate(self.page + 1, 25)
             )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import math
 from datetime import date, datetime
@@ -520,11 +521,16 @@ class Student(BaseModel):
         return RiskLevel.PERSIAN_MAP.get(self.risk_level, "-")
 
     def calculate_gpa(self) -> float:
-        # ponytail: duplicate (subject, term) rows tolerated, newest wins at read; no unique constraint
+        # One row per (subject, exam) enforced by AcademicGrade's unique index; when the
+        # same subject appears in several معدل exams the latest/highest term wins.
         latest = {}
         rows = sorted(
-            (row for row in self.grades if row.term in MOADEL_TERMS),
-            key=lambda row: (_TERM_RANK[row.term], row.exam_date, row.created_at),
+            (
+                row
+                for row in self.grades
+                if row.score is not None and row.exam_id and row.exam.term in MOADEL_TERMS
+            ),
+            key=lambda row: (_TERM_RANK[row.exam.term], row.exam.exam_date, row.created_at),
             reverse=True,
         )
         for row in rows:
@@ -543,47 +549,98 @@ class Student(BaseModel):
 
 class CounselorNote(VaultBaseModel):
     student_id = UUIDField(index=True)
+    # The public User table is deliberately not a foreign key: notes are kept in the
+    # separately encrypted vault database.  Missing owners on legacy records fail
+    # closed in note_ops and are never shown to a counselor.
+    author_id = UUIDField(null=True, index=True)
     title = CharField(max_length=100, default="یادداشت مشاوره")
     content = EncryptedTextField()
     is_confidential = BooleanField(default=True)
     tags = CharField(max_length=150, default="عمومی")
 
     def __str__(self) -> str:
-        return f"Note ({self.student.full_name}): {self.title}"
+        return f"Note ({self.student_id}): {self.title}"
+
+
+class Exam(BaseModel):
+    """A teacher-defined assessment: one نوبت/date/سقف نمره over one or more classes and subjects."""
+
+    name = CharField(max_length=100)
+    exam_date = DateField(index=True)
+    term = CharField(max_length=30)
+    max_score = DoubleField(default=20.0)  # one ceiling for every subject column
+    grade_level = IntegerField()
+    major = CharField(max_length=50)
+    subjects_json = TextField(default="[]")  # ordered list of subject_name strings
+
+    @property
+    def subjects(self) -> list[str]:
+        try:
+            return list(json.loads(self.subjects_json or "[]"))
+        except (ValueError, TypeError):
+            return []
+
+    @subjects.setter
+    def subjects(self, value):
+        self.subjects_json = json.dumps(list(value or []), ensure_ascii=False)
+
+    def save(self, *args, **kwargs):
+        if not (self.name or "").strip():
+            raise GradeValidationError("نام آزمون نمی‌تواند خالی باشد.")
+        if not self.subjects:
+            raise GradeValidationError("حداقل یک درس برای آزمون لازم است.")
+        if self.term not in GradeTerm.VALUES:
+            raise GradeValidationError("نوبت نامعتبر است.")
+        if not (0 < self.max_score <= 20):
+            raise GradeValidationError("سقف نمره باید بین ۰ تا ۲۰ باشد.")
+        if self.exam_date is None:
+            raise GradeValidationError("تاریخ آزمون لازم است.")
+        self.name = self.name.strip()
+        return super().save(*args, **kwargs)
+
+
+class ExamClassroom(BaseModel):
+    """One row per class an exam covers -> one tab in the grade grid."""
+
+    exam = ForeignKeyField(Exam, backref="exam_classrooms", on_delete="CASCADE")
+    classroom = ForeignKeyField(Classroom, on_delete="CASCADE")
+
+    class Meta:
+        indexes = ((("exam", "classroom"), True),)
 
 
 class AcademicGrade(BaseModel):
     student = ForeignKeyField(Student, backref="grades", on_delete="CASCADE")
+    exam = ForeignKeyField(Exam, backref="grades", null=True, on_delete="CASCADE")
     subject_name = CharField(max_length=50, index=True)
-    score = DoubleField()
-    max_score = DoubleField(default=20.0)
-    exam_date = DateField(default=datetime.today, index=True)
-    term = CharField(max_length=30, default=GradeTerm.MOSTAMAR)
-    weight = DoubleField(default=1.0)
+    score = DoubleField(null=True)  # NULL = absent/exempt; never written as 0
+    weight = DoubleField(default=1.0)  # معدل weighting escape hatch, still unexposed in the UI
 
     class Meta:
-        indexes = ((('student', 'subject_name', 'exam_date'), False),)
+        indexes = ((("exam", "student", "subject_name"), True),)
+
+    @property
+    def ceiling(self) -> float:
+        return self.exam.max_score if self.exam_id else 20.0
 
     def save(self, *args, **kwargs):
         if not (self.subject_name or "").strip():
             raise GradeValidationError("نام درس نمی‌تواند خالی باشد.")
-        if not (0 < self.max_score <= 20):
-            raise GradeValidationError("سقف نمره باید بین ۰ تا ۲۰ باشد.")
-        if not (0 <= self.score <= self.max_score):
-            raise GradeValidationError("نمره باید بین ۰ و سقف نمره باشد.")
-        if self.term not in GradeTerm.VALUES:
-            raise GradeValidationError("نوع آزمون نامعتبر است.")
         if self.weight <= 0:
             raise GradeValidationError("ضریب باید بزرگ‌تر از صفر باشد.")
+        if self.score is not None and not (0 <= self.score <= self.ceiling):
+            raise GradeValidationError("نمره باید بین ۰ و سقف نمره باشد.")
         self.subject_name = self.subject_name.strip()
         return super().save(*args, **kwargs)
 
     def get_percentage(self) -> float:
-        return round((self.score / self.max_score) * 100, 1)
+        if self.score is None:
+            return 0.0
+        return round((self.score / self.ceiling) * 100, 1)
 
     @property
     def is_passing(self) -> bool:
-        return self.score >= PASS_MARK
+        return self.score is not None and self.score >= PASS_MARK
 
 
 class AttendanceRecord(BaseModel):
@@ -648,10 +705,12 @@ class DailyCheckIn(BaseModel):
 
 
 class AuditLog(BaseModel):
+    actor_id = UUIDField(null=True, index=True)
     actor_name = CharField(max_length=100, default="مشاور")
     action = CharField(max_length=50)
     target_entity = CharField(max_length=50)
     target_id = UUIDField(null=True)
+    student_id = UUIDField(null=True, index=True)
     details = TextField(null=True)
 
     class Meta:
@@ -664,6 +723,8 @@ PUBLIC_MODELS = [
     User,
     Classroom,
     Student,
+    Exam,
+    ExamClassroom,
     AcademicGrade,
     AttendanceRecord,
     StudyPlan,

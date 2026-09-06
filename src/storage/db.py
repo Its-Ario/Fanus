@@ -521,6 +521,10 @@ class DatabaseManager:
         set_vault_cipher_key(None)
         self._vault_initialized = False
 
+    @property
+    def vault_unlocked(self) -> bool:
+        return self._vault_initialized
+
     @staticmethod
     def _close_database(database) -> None:
         try:
