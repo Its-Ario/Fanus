@@ -5,11 +5,13 @@ from typing import Iterable
 
 from peewee import fn
 from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
     QButtonGroup,
     QFrame,
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -17,6 +19,7 @@ from PyQt5.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -70,6 +73,38 @@ def _duration_minutes(start_time: str, end_time: str) -> int:
     if minutes <= 0:
         raise ValueError("زمان پایان باید بعد از زمان شروع باشد.")
     return minutes
+
+
+class _DeleteRowButton(QToolButton):
+    """Compact destructive action for a table row, drawn as a bin icon."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(28, 28)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setToolTip("حذف جلسه")
+        self.setAccessibleName("حذف جلسه")
+        self.setStyleSheet(f"""
+            QToolButton {{ background: transparent; border: 1px solid transparent; border-radius: 6px; }}
+            QToolButton:hover {{ background: {Colors.ERROR_BG}; }}
+            QToolButton:pressed {{ background: {Colors.ERROR_BG}; border-color: {Colors.ERROR}; }}
+            QToolButton:focus {{ border: 2px solid {Colors.ERROR}; }}
+        """)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        color = QColor(Colors.ERROR if self.underMouse() else Colors.TEXT_MUTED)
+        painter.setPen(QPen(color, 1.6, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        left, top = 8, 7
+        painter.drawLine(left - 1, top + 3, left + 13, top + 3)
+        painter.drawLine(left + 5, top + 1, left + 8, top + 1)
+        painter.drawLine(left + 2, top + 5, left + 3, top + 14)
+        painter.drawLine(left + 12, top + 5, left + 11, top + 14)
+        painter.drawLine(left + 3, top + 14, left + 11, top + 14)
+        painter.drawLine(left + 6, top + 6, left + 6, top + 12)
+        painter.drawLine(left + 9, top + 6, left + 9, top + 12)
 
 
 def create_manual_plan(
@@ -302,6 +337,12 @@ class PlanTab(QWidget):
         table = QTableWidget(0, 7)
         table.setHorizontalHeaderLabels(tuple(DayOfWeek.PERSIAN_NAMES[i] for i in range(7)))
         _style_table(table)
+        header = table.horizontalHeader()
+        header.setStretchLastSection(False)
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        table.setWordWrap(True)
+        table.setTextElideMode(Qt.ElideNone)
+        table.verticalHeader().setDefaultSectionSize(62)
         buckets = {day: [] for day in range(7)}
         for session in sessions:
             buckets[session.day_of_week].append(session)
@@ -382,6 +423,14 @@ class PlanTab(QWidget):
         self.editor_table = QTableWidget(0, 6)
         self.editor_table.setHorizontalHeaderLabels(("روز", "شروع", "پایان", "درس", "نوع", ""))
         _style_table(self.editor_table)
+        header = self.editor_table.horizontalHeader()
+        header.setStretchLastSection(False)
+        for column in (0, 1, 2, 4):
+            header.setSectionResizeMode(column, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.Stretch)
+        header.setSectionResizeMode(5, QHeaderView.Fixed)
+        self.editor_table.setColumnWidth(5, 44)
+        self.editor_table.verticalHeader().setDefaultSectionSize(38)
         self.layout.addWidget(self.editor_table, 1)
         self._render_editor_rows()
         actions = QHBoxLayout()
@@ -429,10 +478,14 @@ class PlanTab(QWidget):
                 )
             ):
                 self.editor_table.setItem(index, col, QTableWidgetItem(value))
-            remove = SecondaryButton("حذف", icon="×")
-            remove.setFixedHeight(30)
+            action_cell = QWidget()
+            action_layout = QHBoxLayout(action_cell)
+            action_layout.setContentsMargins(0, 0, 0, 0)
+            action_layout.setAlignment(Qt.AlignCenter)
+            remove = _DeleteRowButton(action_cell)
             remove.clicked.connect(lambda _, i=index: self._delete_row(i))
-            self.editor_table.setCellWidget(index, 5, remove)
+            action_layout.addWidget(remove)
+            self.editor_table.setCellWidget(index, 5, action_cell)
 
     def _delete_row(self, index):
         del self.editor_rows[index]
