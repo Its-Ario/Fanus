@@ -20,7 +20,7 @@ Four tabs: عمومی و اطلاعات مدرسه · مدیریت کلاس‌ه
 
 ## Non-goals (deferred, not this build)
 
-Year rollover / grade promotion / class archiving · encrypted backup & restore · export ·
+Year rollover / grade promotion / class archiving · export ·
 CSV import · custom/editable major list · moving vault re-encryption to a worker thread.
 
 ## Pre-existing conditions this spec must work around
