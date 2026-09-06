@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
@@ -711,6 +712,7 @@ class StudentPanel(QWidget):
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
         self.stack = QStackedWidget()
+        self._tab_viewports = {}
         self.summary = SummaryTab(self)
         self.plan = PlanTab(self)
         self.notes = NotesTab(self)
@@ -725,7 +727,9 @@ class StudentPanel(QWidget):
             button.setFixedHeight(32)
             self.group.addButton(button, index)
             seg_layout.addWidget(button)
-            self.stack.addWidget(widget)
+            viewport = _scrollable_tab(widget)
+            self._tab_viewports[widget] = viewport
+            self.stack.addWidget(viewport)
         self.group.buttonClicked.connect(
             lambda button: self.stack.setCurrentIndex(self.group.id(button))
         )
@@ -747,7 +751,7 @@ class StudentPanel(QWidget):
         if self.student:
             self.summary.reload()
             self.plan.reload()
-            if self.stack.indexOf(self.notes) != -1:
+            if self.notes in self._tab_viewports:
                 self.notes.reload()
 
 
@@ -755,6 +759,25 @@ def _section_title(text):
     label = QLabel(text)
     label.setStyleSheet(f"font-size:15px; font-weight:800; color:{Colors.TEXT_MAIN};")
     return label
+
+
+def _scrollable_tab(widget):
+    """Keep student navigation fixed while each long tab scrolls independently."""
+    scroll = QScrollArea()
+    scroll.setObjectName("StudentTabScroll")
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+    scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+    scroll.setStyleSheet(
+        f"QScrollArea#StudentTabScroll {{ background: transparent; }} "
+        f"QScrollBar:vertical {{ background: transparent; width: 10px; margin: 4px 0; }} "
+        f"QScrollBar::handle:vertical {{ background: {Colors.BORDER}; border-radius: 5px; min-height: 28px; }} "
+        f"QScrollBar::handle:vertical:hover {{ background: {Colors.TEXT_MUTED}; }} "
+        "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }"
+    )
+    scroll.setWidget(widget)
+    return scroll
 
 
 def _clear_layout(layout):
