@@ -235,6 +235,7 @@ class NewStudentDialog(QDialog):
 class StudentsPage(QWidget):
     student_opened = pyqtSignal(object)
     open_grade_entry = pyqtSignal()
+    open_attendance = pyqtSignal()
 
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
@@ -270,6 +271,9 @@ class StudentsPage(QWidget):
         grades_button = SecondaryButton("ثبت نمرات", icon="📝")
         grades_button.clicked.connect(self.open_grade_entry.emit)
         header.addWidget(grades_button)
+        attendance_button = SecondaryButton("حضور و غیاب", icon="🗓")
+        attendance_button.clicked.connect(self.open_attendance.emit)
+        header.addWidget(attendance_button)
         add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)

@@ -21,6 +21,7 @@ ACTION_LABELS = {
     "password.self_change": "تغییر رمز شخصی",
     "exam.create": "ایجاد آزمون",
     "grade.bulk_save": "ثبت گروهی نمرات",
+    "attendance.bulk_save": "ثبت گروهی حضور و غیاب",
 }
 
 

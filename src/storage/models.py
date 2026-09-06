@@ -68,6 +68,25 @@ class GradeValidationError(ValueError):
     pass
 
 
+class AttendanceStatus:
+    PRESENT = "present"
+    ABSENT = "absent"
+    LATE = "late"
+    EXCUSED = "excused"
+
+    VALUES = (PRESENT, ABSENT, LATE, EXCUSED)
+    PERSIAN = {
+        PRESENT: "حاضر",
+        ABSENT: "غایب",
+        LATE: "تأخیر",
+        EXCUSED: "غیبت موجه",
+    }
+
+
+class AttendanceValidationError(ValueError):
+    pass
+
+
 def _round2(value: float) -> float:
     if GPA_ROUNDING == "half_up":
         return math.floor(value * 100 + 0.5) / 100
@@ -646,11 +665,17 @@ class AcademicGrade(BaseModel):
 class AttendanceRecord(BaseModel):
     student = ForeignKeyField(Student, backref="attendance", on_delete="CASCADE")
     date = DateField(default=datetime.today, index=True)
-    status = CharField(max_length=20, default="present")
+    status = CharField(max_length=20, default=AttendanceStatus.PRESENT)
     reason = CharField(max_length=255, null=True)
 
     class Meta:
         indexes = ((("student", "date"), True),)
+
+    def save(self, *args, **kwargs):
+        if self.status not in AttendanceStatus.VALUES:
+            raise AttendanceValidationError("وضعیت حضور و غیاب نامعتبر است.")
+        self.reason = (self.reason or "").strip() or None
+        return super().save(*args, **kwargs)
 
 
 class StudyPlan(BaseModel):
