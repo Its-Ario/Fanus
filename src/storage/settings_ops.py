@@ -17,11 +17,16 @@ class SettingsValidationError(ValueError):
     pass
 
 
-def _actor(actor, counselor=False):
+def _active_actor(actor):
     fresh = User.get_by_id(actor.id)
-    if not fresh.is_active or (
-        fresh.role != "counselor" if counselor else not fresh.can_manage_users
-    ):
+    if not fresh.is_active:
+        raise SettingsPermissionError("دسترسی لازم برای این عملیات را ندارید.")
+    return fresh
+
+
+def _actor(actor, counselor=False):
+    fresh = _active_actor(actor)
+    if fresh.role != "counselor" if counselor else not fresh.can_manage_users:
         raise SettingsPermissionError("دسترسی لازم برای این عملیات را ندارید.")
     return fresh
 
@@ -225,7 +230,12 @@ def change_own_password(actor, current_password, new_password):
         fresh.save()
         return fresh
 
-    return _transaction(actor, "password.self_change", "User", actor.id, None, write)
+    manager = get_database_manager()
+    with manager.transaction():
+        fresh = _active_actor(actor)
+        result = write(fresh)
+        record_audit(fresh, "password.self_change", "User", actor.id)
+        return result
 
 
 def rotate_vault_pin(actor, old_pin, new_pin):

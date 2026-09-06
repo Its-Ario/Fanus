@@ -5,6 +5,7 @@ from datetime import date, timedelta
 
 import pytest
 
+import src.storage.settings_ops as settings_ops
 from src.core.auth import hash_password, verify_password
 from src.storage.db import (
     DatabaseConfigurationError,
@@ -21,6 +22,7 @@ from src.storage.models import (
     StudyPlan,
     User,
 )
+from src.storage.settings_ops import change_own_password
 from src.views.components.ui_kit import Avatar
 from src.views.pages.dashboard_page import load_dashboard_data
 from src.views.pages.login_dialog import LoginDialog
@@ -57,6 +59,31 @@ def test_public_database_initializes_without_creating_or_unlocking_vault(tmp_pat
                 pass
         with pytest.raises(DatabaseConfigurationError):
             encrypt_vault_value("نباید بدون بازگشایی ذخیره شود")
+    finally:
+        manager.close()
+
+
+def test_active_non_manager_can_change_own_password(tmp_path, monkeypatch):
+    manager = DatabaseManager(
+        fanus_path=tmp_path / "fanus.db",
+        vault_path=tmp_path / "counselor_vault.db",
+        migrations_dir=tmp_path / "migrations",
+    )
+    try:
+        manager.initialize_public()
+        monkeypatch.setattr(settings_ops, "get_database_manager", lambda: manager)
+        user = User.create(
+            username="assistant",
+            full_name="کاربر عادی",
+            role="assistant",
+            can_manage_users=False,
+            password_hash=hash_password("old-password"),
+        )
+
+        change_own_password(user, "old-password", "new-password")
+
+        user = User.get_by_id(user.id)
+        assert verify_password("new-password", user.password_hash)
     finally:
         manager.close()
 
