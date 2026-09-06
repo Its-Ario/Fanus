@@ -79,7 +79,15 @@ class BarChartWidget(QWidget):
             self.overlay_text = "اطلاعاتی برای نمایش وجود ندارد"
             self._paint_overlay(painter)
             return
-        plot = QRectF(16, 22, self.width() - 32, self.height() - 68)
+        label_height = 38
+        label_gap = 8
+        bottom_margin = 16
+        plot = QRectF(
+            16,
+            22,
+            self.width() - 32,
+            self.height() - 22 - label_gap - label_height - bottom_margin,
+        )
         maximum = self._nice_max(max(value for _, series in self.groups for value, _, _ in series))
         painter.setPen(QPen(QColor(Colors.BORDER), 1))
         painter.drawLine(plot.bottomLeft(), plot.bottomRight())
@@ -106,7 +114,10 @@ class BarChartWidget(QWidget):
                     self._value_text(value, label),
                 )
             category_rect = QRectF(
-                plot.left() + index * group_width, plot.bottom() + 7, group_width, 30
+                plot.left() + index * group_width,
+                plot.bottom() + label_gap,
+                group_width,
+                label_height,
             )
             painter.setPen(QColor(Colors.TEXT_MUTED))
             painter.drawText(category_rect, Qt.AlignCenter | Qt.TextWordWrap, category)
