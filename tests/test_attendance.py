@@ -110,6 +110,8 @@ def test_page_read_only_for_non_assistant(tmp_path, qtbot):
     assert page.read_only is True
     assert not page.save_button.isVisibleTo(page)
     assert not page.table.cellWidget(0, STATUS_COL).isEnabled()
+    assert page.access_notice.isVisibleTo(page)
+    assert "فقط برای نقش «معاون» فعال است" in page.access_notice.text()
 
 
 def test_page_save_writes_changed_row(tmp_path, qtbot):

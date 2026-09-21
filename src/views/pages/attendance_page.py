@@ -72,6 +72,19 @@ class AttendancePage(QWidget):
         header.addStretch()
         layout.addLayout(header)
 
+        self.access_notice = QLabel(
+            "شما این صفحه را فقط برای مشاهده می‌بینید. ثبت و ویرایش حضور و غیاب "
+            "فقط برای نقش «معاون» فعال است. برای اعمال تغییرات، با معاون مدرسه هماهنگ کنید."
+        )
+        self.access_notice.setWordWrap(True)
+        self.access_notice.setStyleSheet(
+            f"background: {Colors.SURFACE_HOVER}; border: 1px solid {Colors.BORDER}; "
+            f"border-radius: 8px; padding: 9px 12px; font-size: 12px; "
+            f"font-weight: 600; color: {Colors.TEXT_MAIN};"
+        )
+        self.access_notice.setHidden(not self.read_only)
+        layout.addWidget(self.access_notice)
+
         self.classroom = Dropdown()
         self.date_picker = PersianDatePicker(default=date.today())
         selectors = QHBoxLayout()
