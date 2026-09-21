@@ -1,16 +1,13 @@
 class Colors:
-    # Primary (Teal)
     PRIMARY = "#0D9488"
     PRIMARY_HOVER = "#115E59"
     PRIMARY_ACTIVE = "#0F766E"
 
-    # AI Accent (Purple)
     AI_ACCENT = "#7C3AED"
     AI_BG = "#F5F3FF"
     AI_BORDER = "#DDD6FE"
     AI_HOVER = "#6D28D9"
 
-    # Status & Alerts
     SUCCESS = "#047857"
     SUCCESS_BG = "#D1FAE5"
     WARNING = "#B45309"
@@ -18,7 +15,6 @@ class Colors:
     ERROR = "#B91C1C"
     ERROR_BG = "#FEE2E2"
 
-    # Ssubject groups
     SUBJECT_MATH_BG = "#DBEAFE"
     SUBJECT_MATH_BORDER = "#93C5FD"
     SUBJECT_BIO_BG = "#D1FAE5"
@@ -28,13 +24,11 @@ class Colors:
     SUBJECT_FIXED_BG = "#F1F5F9"
     SUBJECT_FIXED_BORDER = "#CBD5E1"
 
-    # Surfaces
     BACKGROUND = "#F8FAFC"
     SURFACE = "#FFFFFF"
     SURFACE_HOVER = "#F1F5F9"
     BORDER = "#E2E8F0"
 
-    # Text
     TEXT_MAIN = "#0F172A"
     TEXT_MUTED = "#475569"
     TEXT_DISABLED = "#94A3B8"
@@ -73,22 +67,5 @@ QPushButton#PrimaryButton:hover {{
 
 QPushButton#PrimaryButton:pressed {{
     background-color: {Colors.PRIMARY_ACTIVE};
-}}
-
-QLabel#BadgeHighRisk {{
-    background-color: {Colors.ERROR_BG};
-    color: {Colors.ERROR};
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-}}
-
-QLabel#BadgeBurnoutAI {{
-    background-color: {Colors.AI_BG};
-    color: {Colors.AI_ACCENT};
-    font-weight: bold;
-    padding: 4px 8px;
-    border: 1px solid {Colors.AI_BORDER};
-    border-radius: 4px;
 }}
 """

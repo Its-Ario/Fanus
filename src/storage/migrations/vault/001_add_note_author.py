@@ -1,4 +1,3 @@
-"""Add author ownership metadata to confidential notes."""
 
 def migrate(migrator, database, **kwargs):
     if "counselornote" not in database.get_tables():
@@ -12,6 +11,4 @@ def migrate(migrator, database, **kwargs):
 
 
 def rollback(migrator, database, **kwargs):
-    # SQLite cannot safely drop a column on every supported version. The forward
-    # migration is additive and legacy records intentionally fail closed.
     return

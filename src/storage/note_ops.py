@@ -1,4 +1,3 @@
-"""Authorization-enforced operations for confidential counselor notes."""
 
 from __future__ import annotations
 
@@ -8,11 +7,11 @@ from src.storage.models import AuditLog, CounselorNote, User
 
 
 class NotePermissionError(PermissionError):
-    """Raised when an actor may not access confidential notes."""
+    pass
 
 
 class NoteValidationError(ValueError):
-    """Raised when a note payload is not suitable for storage."""
+    pass
 
 
 def _actor(actor):
@@ -44,7 +43,6 @@ def _payload(title: str, tags: str, content: str) -> tuple[str, str, str]:
 
 
 def _record_note_audit(actor, action: str, note: CounselorNote) -> None:
-    # No decrypted value, title, tag, or change diff is copied to the public audit DB.
     event = record_audit(actor, action, "CounselorNote", note.id)
     event.student_id = note.student_id
     event.save()

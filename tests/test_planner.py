@@ -19,7 +19,6 @@ SCHOOL_DAYS = catalog.DEFAULT_SCHOOL_DAYS
 SCHOOL_HOURS = ("07:30", "13:30")
 
 
-# --- pure units --------------------------------------------------------------
 
 
 def test_budget_fits_capacity_and_never_starves_a_graded_subject():
@@ -33,8 +32,8 @@ def test_budget_fits_capacity_and_never_starves_a_graded_subject():
     blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, capacity)
 
     assert sum(blocks.values()) <= max(capacity, n_required)
-    assert all(blocks[s] >= 1 for s in subjects)  # H5
-    assert blocks["ریاضی"] >= blocks["عربی"]  # priority ordering holds
+    assert all(blocks[s] >= 1 for s in subjects)
+    assert blocks["ریاضی"] >= blocks["عربی"]
 
 
 def test_budget_never_exceeds_grid_capacity():
@@ -55,7 +54,7 @@ def test_grid_removes_sleep_school_and_meal_windows():
     school_start, school_end = 7 * 60 + 30, 13 * 60 + 30
     lunch = (13 * 60 + 30, 14 * 60 + 30)
 
-    for start, end in windows[0]:  # Saturday = school day
+    for start, end in windows[0]:
         assert not (start < school_end and school_start < end)
         assert not (start < lunch[1] and lunch[0] < end)
         assert start >= 6 * 60 + 30 and end <= 23 * 60 + 30
@@ -105,11 +104,9 @@ def test_solver_is_deterministic():
 
 
 def test_improvement_sweep_never_worsens_greedy(monkeypatch):
-    """Filling every slot exactly disables the relocate-to-empty move, so any
-    penalty drop here comes from the pairwise swap. It must never regress."""
     subjects = ["ریاضی", "فیزیک", "شیمی", "زیست شناسی", "فارسی و نگارش", "عربی", "دین و زندگی"]
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
-    weaknesses = {s: 2.0 for s in subjects}  # all weak -> dense s4 interplay
+    weaknesses = {s: 2.0 for s in subjects}
     windows = grid.free_windows(SCHOOL_DAYS, SCHOOL_HOURS)
     slots = grid.possible_slots(windows, 90, SCHOOL_DAYS, daily_hours=[5.0] * 7)
     blocks = budget.weekly_blocks(subjects, coeffs, weaknesses, len(slots))
@@ -121,7 +118,7 @@ def test_improvement_sweep_never_worsens_greedy(monkeypatch):
         make_requests(), slots, SCHOOL_DAYS, catalog.DEFAULT_SOFT_WEIGHTS
     )
 
-    monkeypatch.setattr(solver, "_TIME_BUDGET_S", -1.0)  # skip the improvement sweep
+    monkeypatch.setattr(solver, "_TIME_BUDGET_S", -1.0)
     _, greedy_penalty, _ = solver.solve(
         make_requests(), slots, SCHOOL_DAYS, catalog.DEFAULT_SOFT_WEIGHTS
     )
@@ -129,7 +126,6 @@ def test_improvement_sweep_never_worsens_greedy(monkeypatch):
     assert swept_penalty <= greedy_penalty
 
 
-# --- end to end (real DB) --------------------------------------------------
 
 
 def _seed(tmp_path, *, daily_hours=5.0):
@@ -191,7 +187,6 @@ def test_generate_plan_end_to_end_is_valid(tmp_path):
         )
         assert errors == []
 
-        # S5 fixtures present
         types = {s.session_type for s in plan.sessions}
         assert "آزمون" in types and "مرور" in types
     finally:

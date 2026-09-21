@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from peewee import JOIN, Case, fn
 from PyQt5.QtWidgets import (
@@ -22,7 +22,6 @@ from src.storage.models import (
     Classroom,
     DailyCheckIn,
     Exam,
-    RiskLevel,
     SchoolProfile,
     Student,
     StudyPlan,
@@ -36,20 +35,7 @@ from src.views.components.line_chart import LineChartWidget
 from src.views.components.ui_kit import Card, Dropdown, SectionHeader
 from src.views.pages.dashboard_page import _week_start
 
-RISK_LEVELS = (RiskLevel.HIGH, RiskLevel.MEDIUM, RiskLevel.LOW)
-RISK_SERIES = (
-    (RiskLevel.HIGH, Colors.ERROR, "🔴 ریسک بالا"),
-    (RiskLevel.MEDIUM, Colors.WARNING, "🟡 ریسک متوسط"),
-    (RiskLevel.LOW, Colors.SUCCESS, "🟢 ریسک پایین"),
-)
 GPA_BANDS = (("زیر ۱۲", 0, 12), ("۱۲–۱۵", 12, 15), ("۱۵–۱۸", 15, 18), ("۱۸–۲۰", 18, 20.001))
-
-
-@dataclass(frozen=True)
-class RiskDistribution:
-    classes: Tuple[Tuple[str, Tuple[int, int, int]], ...]
-    collapsed: bool
-    student_count: int
 
 
 @dataclass(frozen=True)
@@ -73,7 +59,6 @@ class SubjectWorkload:
 
 @dataclass(frozen=True)
 class AnalyticsData:
-    panel1: RiskDistribution
     panel2: CompletionTrend
     panel3: Tuple[GpaBandData, ...]
     panel3_enough_data: bool
@@ -162,33 +147,9 @@ def _completion_trend(grade: Optional[int], major: Optional[str], today: date) -
 def load_analytics_data(
     grade: Optional[int] = None, major: Optional[str] = None, today: Optional[date] = None
 ) -> AnalyticsData:
-    """Load school-wide aggregates without materialising any student collection in Python."""
     today = today or date.today()
     conditions = _filter_conditions(grade, major)
     student_count = _filtered_students(grade, major).count()
-
-    risk_rows = (
-        Student.select(Classroom.name, Student.risk_level, fn.COUNT(Student.id).alias("count"))
-        .join(Classroom)
-        .where(*conditions)
-        .group_by(Classroom.name, Student.risk_level)
-        .dicts()
-    )
-    by_class: Dict[str, Dict[str, int]] = {}
-    for row in risk_rows:
-        by_class.setdefault(row["name"], {})[row["risk_level"]] = row["count"]
-    collapsed = grade is None and major is None and len(by_class) > 8
-    if collapsed:
-        totals = {
-            level: sum(values.get(level, 0) for values in by_class.values())
-            for level in RISK_LEVELS
-        }
-        class_data = (("کل مدرسه", tuple(totals[level] for level in RISK_LEVELS)),)
-    else:
-        class_data = tuple(
-            (name, tuple(values.get(level, 0) for level in RISK_LEVELS))
-            for name, values in sorted(by_class.items())
-        )
 
     gpa = (
         AcademicGrade.select(
@@ -259,7 +220,6 @@ def load_analytics_data(
         .dicts()
     )
     return AnalyticsData(
-        panel1=RiskDistribution(class_data, collapsed, student_count),
         panel2=_completion_trend(grade, major, today),
         panel3=panel3,
         panel3_enough_data=student_count >= 10,
@@ -288,7 +248,7 @@ class AnalyticsPage(QWidget):
 
         title = QLabel("تحلیل و آمار کلی مدرسه")
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
-        subtitle = QLabel("روندهای تحصیلی، ریسک و پایبندی به برنامه در سطح مدرسه")
+        subtitle = QLabel("روندهای تحصیلی و پایبندی به برنامه در سطح مدرسه")
         subtitle.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
         layout.addWidget(title)
         layout.addWidget(subtitle)
@@ -314,23 +274,15 @@ class AnalyticsPage(QWidget):
         grid = QGridLayout()
         grid.setHorizontalSpacing(18)
         grid.setVerticalSpacing(18)
-        self.risk_chart = BarChartWidget()
         self.trend_chart = LineChartWidget()
         self.gpa_chart = BarChartWidget()
         self.workload_chart = BarChartWidget(BarChartWidget.HORIZONTAL)
-        self.risk_note = QLabel()
-        self.risk_note.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
         grid.addWidget(
-            self._panel("پنل ۱: توزیع سطح ریسک به تفکیک کلاس", self.risk_chart, self.risk_note),
-            0,
-            0,
+            self._panel("پنل ۱: روند پایبندی به برنامه — ۸ هفته اخیر", self.trend_chart), 0, 0
         )
+        grid.addWidget(self._panel("پنل ۲: میانگین غیبت بر حسب بازه معدل", self.gpa_chart), 0, 1)
         grid.addWidget(
-            self._panel("پنل ۲: روند پایبندی به برنامه — ۸ هفته اخیر", self.trend_chart), 0, 1
-        )
-        grid.addWidget(self._panel("پنل ۳: میانگین غیبت بر حسب بازه معدل", self.gpa_chart), 1, 0)
-        grid.addWidget(
-            self._panel("پنل ۴: ساعت برنامه ریزی شده هفتگی به تفکیک درس", self.workload_chart), 1, 1
+            self._panel("پنل ۳: ساعت برنامه ریزی شده هفتگی به تفکیک درس", self.workload_chart), 1, 0
         )
         layout.addLayout(grid)
         layout.addStretch()
@@ -343,12 +295,10 @@ class AnalyticsPage(QWidget):
         return combo
 
     @staticmethod
-    def _panel(title: str, chart: QWidget, note: Optional[QLabel] = None) -> Card:
+    def _panel(title: str, chart: QWidget) -> Card:
         card = Card()
         card.setMinimumHeight(280)
         card.body_layout.addWidget(SectionHeader(title))
-        if note is not None:
-            card.body_layout.addWidget(note)
         card.body_layout.addWidget(chart, stretch=1)
         return card
 
@@ -363,29 +313,6 @@ class AnalyticsPage(QWidget):
         if not self.isVisible():
             return
         data = load_analytics_data(self.grade_combo.currentData(), self.major_combo.currentData())
-        self.risk_note.setText(
-            "🔴 ریسک بالا   |   🟡 ریسک متوسط   |   🟢 ریسک پایین"
-            + (
-                "\nنمای کل مدرسه — برای تفکیک کلاسی، پایه یا رشته را انتخاب کنید"
-                if data.panel1.collapsed
-                else ""
-            )
-        )
-        risk_groups = []
-        for class_name, counts in data.panel1.classes:
-            risk_groups.append(
-                (class_name, tuple((counts[i], RISK_SERIES[i][1], "") for i in range(3)))
-            )
-        if data.panel1.student_count == 0:
-            risk_overlay = "اطلاعاتی برای نمایش وجود ندارد"
-            risk_detail = None
-        elif data.panel1.student_count < 10:
-            risk_overlay = "داده کافی موجود نیست"
-            risk_detail = "حداقل ۱۰ دانش آموز برای محاسبه لازم است"
-        else:
-            risk_overlay = None
-            risk_detail = None
-        self.risk_chart.set_data(risk_groups, risk_overlay, risk_detail)
         self.trend_chart.set_data(
             data.panel2.points,
             "داده کافی موجود نیست" if data.panel2.check_in_count < 5 else None,

@@ -10,25 +10,19 @@ from PyQt5.QtWidgets import QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidg
 
 from src.storage.models import (
     AcademicGrade,
-    Classroom,
     DailyCheckIn,
     Exam,
     PlanStatus,
-    RiskLevel,
     Student,
     StudyPlan,
 )
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
-    AIInsightCard,
     Card,
     Divider,
     ProgressBar,
-    SecondaryButton,
-    SectionHeader,
     StatCard,
-    StudentRow,
 )
 
 
@@ -41,10 +35,8 @@ class SubjectAverage:
 @dataclass(frozen=True)
 class DashboardData:
     active_student_count: int
-    high_risk_student_count: int
     active_plan_count: int
     weekly_completion_rate: int
-    attention_students: Tuple[Student, ...]
     subject_averages: Tuple[SubjectAverage, ...]
 
 
@@ -57,9 +49,6 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
     week_start = _week_start(today)
 
     active_student_count = Student.select().where(Student.is_active).count()
-    high_risk_student_count = (
-        Student.select().where(Student.is_active, Student.risk_level == RiskLevel.HIGH).count()
-    )
     active_plan_count = (
         StudyPlan.select()
         .join(Student)
@@ -81,17 +70,6 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
         .scalar(as_tuple=True)
     )
     weekly_completion_rate = round((completed / total) * 100) if total else 0
-
-    attention_students = tuple(
-        Student.select(Student, Classroom)
-        .join(Classroom)
-        .where(
-            Student.is_active,
-            Student.risk_level.in_((RiskLevel.HIGH, RiskLevel.MEDIUM)),
-        )
-        .order_by(Student.risk_level, Student.burnout_score.desc())
-        .limit(4)
-    )
 
     subject_rows = (
         AcademicGrade.select(
@@ -116,10 +94,8 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
 
     return DashboardData(
         active_student_count=active_student_count,
-        high_risk_student_count=high_risk_student_count,
         active_plan_count=active_plan_count,
         weekly_completion_rate=weekly_completion_rate,
-        attention_students=attention_students,
         subject_averages=subject_averages,
     )
 
@@ -160,9 +136,6 @@ class DashboardPage(QWidget):
         stats_row = QHBoxLayout()
         stats_row.setSpacing(14)
         stats_row.addWidget(StatCard("کل دانش آموزان", data.active_student_count, "👥"))
-        stats_row.addWidget(
-            StatCard("ریسک بالا", data.high_risk_student_count, "⚠️", accent_color=Colors.ERROR)
-        )
         stats_row.addWidget(StatCard("برنامه های فعال", data.active_plan_count, "📚"))
         stats_row.addWidget(
             StatCard(
@@ -174,51 +147,8 @@ class DashboardPage(QWidget):
         )
         layout.addLayout(stats_row)
 
-        insight = (
-            f"{to_persian_digits(data.high_risk_student_count)} دانش آموز در وضعیت ریسک بالا هستند."
-            if data.high_risk_student_count
-            else "در حال حاضر دانش آموزی با وضعیت ریسک بالا ثبت نشده است."
-        )
-        layout.addWidget(AIInsightCard(insight))
-
-        columns = QHBoxLayout()
-        columns.setSpacing(18)
-        columns.addWidget(self._attention_card(data.attention_students), stretch=6)
-
-        side_column = QVBoxLayout()
-        side_column.setSpacing(18)
-        side_column.addWidget(self._subject_averages_card(data.subject_averages))
-        side_column.addWidget(self._quick_actions_card())
-        side_column.addStretch()
-        columns.addLayout(side_column, stretch=4)
-        layout.addLayout(columns)
+        layout.addWidget(self._subject_averages_card(data.subject_averages))
         layout.addStretch()
-
-    @staticmethod
-    def _attention_card(students: Tuple[Student, ...]) -> Card:
-        card = Card(padding=0)
-        card.body_layout.setSpacing(0)
-        card.body_layout.setContentsMargins(18, 14, 18, 8)
-        card.body_layout.addWidget(SectionHeader("نیازمند توجه"))
-
-        if not students:
-            label = QLabel("دانش آموزی با ریسک متوسط یا بالا ثبت نشده است.")
-            label.setWordWrap(True)
-            label.setStyleSheet(f"padding: 16px 0; font-size: 12px; color: {Colors.TEXT_MUTED};")
-            card.body_layout.addWidget(label)
-            return card
-
-        for student in students:
-            subtitle = f"{student.classroom.name} · {student.major}"
-            card.body_layout.addWidget(
-                StudentRow(
-                    student.full_name,
-                    subtitle,
-                    student.risk_level,
-                    on_click=lambda name=student.full_name: print(f"Open profile: {name}"),
-                )
-            )
-        return card
 
     @staticmethod
     def _subject_averages_card(subjects: Tuple[SubjectAverage, ...]) -> Card:
@@ -260,16 +190,4 @@ class DashboardPage(QWidget):
             row.addLayout(label_row)
             row.addWidget(ProgressBar(value=subject.percentage, color=color))
             card.body_layout.addLayout(row)
-        return card
-
-    @staticmethod
-    def _quick_actions_card() -> Card:
-        card = Card()
-        title = QLabel("اقدامات سریع")
-        title.setAlignment(Qt.AlignRight)
-        title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {Colors.TEXT_MAIN};")
-        card.body_layout.addWidget(title)
-        card.body_layout.addWidget(Divider())
-        card.body_layout.addWidget(SecondaryButton("ساخت برنامه مطالعاتی", icon="📅"))
-        card.body_layout.addWidget(SecondaryButton("خروجی گزارش هفتگی", icon="📄"))
         return card

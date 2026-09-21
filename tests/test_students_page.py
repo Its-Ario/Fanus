@@ -1,5 +1,5 @@
 from src.storage.db import DatabaseManager
-from src.storage.models import Classroom, RiskLevel, Student
+from src.storage.models import Classroom, Student
 from src.views.pages import students_page
 from src.views.pages.students_page import (
     PAGE_SIZE,
@@ -24,7 +24,6 @@ def test_student_page_searches_active_students_and_paginates(tmp_path):
                 first_name="سارا" if number == 0 else "دانش آموز",
                 last_name=f"نام{number:02d}",
                 classroom=classroom,
-                risk_level=RiskLevel.MEDIUM,
             )
         Student.create(
             national_id="9999999999",
@@ -61,22 +60,21 @@ def test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(tmp
 
         Student.create(
             national_id="1000000001", first_name="آرش", last_name="الف",
-            classroom=math_room, major="ریاضی فیزیک", risk_level=RiskLevel.HIGH,
+            classroom=math_room, major="ریاضی فیزیک",
         )
         Student.create(
             national_id="1000000002", first_name="بابک", last_name="ب",
-            classroom=math_room, major="ریاضی فیزیک", risk_level=RiskLevel.LOW,
+            classroom=math_room, major="ریاضی فیزیک",
         )
         Student.create(
             national_id="1000000003", first_name="پری", last_name="پ",
-            classroom=exp_room, major="علوم تجربی", risk_level=RiskLevel.MEDIUM,
+            classroom=exp_room, major="علوم تجربی",
         )
 
         by_major = load_students_page(major="ریاضی فیزیک")
         by_grade = load_students_page(grade_level=11)
         by_class = load_students_page(classroom_id=exp_room.id)
         by_id_desc = load_students_page(sort_key=1, sort_desc=True)
-        by_risk = load_students_page(sort_key=4)
 
         assert by_major.total == 2
         assert {s.national_id for s in by_major.students} == {"1000000001", "1000000002"}
@@ -84,10 +82,6 @@ def test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(tmp
         assert [s.national_id for s in by_class.students] == ["1000000003"]
         assert [s.national_id for s in by_id_desc.students] == [
             "1000000003", "1000000002", "1000000001",
-        ]
-        # risk ascending follows severity, not alphabetical order
-        assert [s.risk_level for s in by_risk.students] == [
-            RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH,
         ]
     finally:
         manager.close()
@@ -107,7 +101,7 @@ def test_major_selection_narrows_the_class_filter(qtbot, tmp_path):
         page = students_page.StudentsPage()
         qtbot.addWidget(page)
         page.reload()
-        assert page.class_filter.count() == 3  # «همه کلاس‌ها» + دو کلاس
+        assert page.class_filter.count() == 3
 
         page.major_filter.setCurrentIndex(page.major_filter.findData("ریاضی فیزیک"))
         rooms = [page.class_filter.itemText(i) for i in range(1, page.class_filter.count())]
@@ -137,7 +131,7 @@ def test_student_table_model_exposes_student_for_row_actions(qtbot, tmp_path):
 
         assert model.rowCount() == 1
         assert model.index(0, 0).data() == "رضا کریمی"
-        assert model.index(0, 0).data(256) is student  # Qt.UserRole
+        assert model.index(0, 0).data(256) is student
     finally:
         manager.close()
 

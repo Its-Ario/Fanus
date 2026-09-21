@@ -58,7 +58,6 @@ from src.views.components.ui_kit import (
     EmptyState,
     FormField,
     PrimaryButton,
-    RiskBadge,
     SecondaryButton,
 )
 from src.views.pages.settings.settings_page import SEGMENTED_STYLE
@@ -81,7 +80,6 @@ def _duration_minutes(start_time: str, end_time: str) -> int:
 
 
 class _DeleteRowButton(QToolButton):
-    """Compact destructive action for a table row, drawn as a bin icon."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -115,7 +113,6 @@ class _DeleteRowButton(QToolButton):
 def create_manual_plan(
     student, start_date: date, end_date: date, title="برنامه مطالعاتی دستی"
 ) -> StudyPlan:
-    """Create the single active counselor-owned plan, preserving the active-plan invariant."""
     if end_date < start_date:
         raise ValueError("تاریخ پایان نمی تواند قبل از تاریخ شروع باشد.")
     if (
@@ -136,7 +133,6 @@ def create_manual_plan(
 
 
 def save_plan_sessions(plan: StudyPlan, sessions: Iterable[dict]) -> None:
-    """Replace a plan's sessions from the editor's in-memory rows atomically."""
     normalized = []
     for session in sessions:
         day = int(session["day_of_week"])
@@ -169,8 +165,6 @@ def archive_plan(plan: StudyPlan) -> None:
 
 
 def regenerate_plan(student):
-    """Archive the active plan (if any) and build a fresh engine-generated one,
-    activated immediately as the counselor's own action. Returns (plan, warnings)."""
     active = StudyPlan.get_or_none(
         StudyPlan.student == student, StudyPlan.status == PlanStatus.ACTIVE
     )
@@ -220,22 +214,16 @@ class SummaryTab(QWidget):
         )
         gpa = student.calculate_gpa()
         values = (
-            ("سطح ریسک", student.risk_level_persian),
-            ("فرسودگی", f"{student.burnout_score:.0f}"),
-            ("افت مشارکت", f"{student.disengagement_score:.0f}"),
             ("معدل", "—" if not grade_rows else f"{gpa:.2f}"),
         )
         for index, (label, value) in enumerate(values):
             box = QVBoxLayout()
             heading = QLabel(label)
             heading.setStyleSheet(f"font-size:12px; color:{Colors.TEXT_MUTED};")
-            if label == "سطح ریسک":
-                value_widget = RiskBadge(student.risk_level)
-            else:
-                value_widget = QLabel(to_persian_digits(value))
-                value_widget.setStyleSheet(
-                    f"font-size:20px; font-weight:800; color:{Colors.TEXT_MAIN};"
-                )
+            value_widget = QLabel(to_persian_digits(value))
+            value_widget.setStyleSheet(
+                f"font-size:20px; font-weight:800; color:{Colors.TEXT_MAIN};"
+            )
             box.addWidget(heading)
             box.addWidget(value_widget)
             holder = QWidget()
@@ -263,6 +251,10 @@ class SummaryTab(QWidget):
         attendance.body_layout.addWidget(message)
         self.layout.addWidget(attendance)
 
+        user = self.panel.current_user
+        if user and user.role == "assistant":
+            self.layout.addStretch()
+            return
         history = Card()
         history.body_layout.addWidget(_section_title("تاریخچه برنامه ها"))
         rows = (
@@ -607,7 +599,7 @@ class PlanTab(QWidget):
             return
         try:
             _, warnings = regenerate_plan(self.panel.student)
-        except Exception as exc:  # engine failure must not take down the panel
+        except Exception as exc:
             QMessageBox.critical(self, "تولید برنامه", f"ساخت برنامه ناموفق بود: {exc}")
             return
         self.reload()
@@ -777,9 +769,14 @@ class StudentPanel(QWidget):
         self.summary = SummaryTab(self)
         self.plan = PlanTab(self)
         self.notes = NotesTab(self)
-        panels = (("خلاصه و سوابق", self.summary), ("برنامه مطالعاتی هفتگی", self.plan))
-        if current_user and current_user.role == "counselor":
-            panels += (("یادداشت ها", self.notes),)
+        role = current_user.role if current_user else None
+        panels = [("خلاصه و سوابق", self.summary)]
+        # ponytail: study plans hidden from assistants here; no shared ops layer
+        # exists to guard, and PlanTab is the only path that mutates them.
+        if role != "assistant":
+            panels.append(("برنامه مطالعاتی هفتگی", self.plan))
+        if role == "counselor":
+            panels.append(("یادداشت ها", self.notes))
         for index, (text, widget) in enumerate(panels):
             button = QPushButton(text)
             button.setObjectName("SegItem")
@@ -805,13 +802,15 @@ class StudentPanel(QWidget):
             f"پرونده تحصیلی: {student.full_name} — پایه {ordinal} {student.major} (کد ملی: {to_persian_digits(student.national_id)})"
         )
         self.reload()
-        self.group.button(1).setChecked(True)
-        self.stack.setCurrentIndex(1)
+        default = self.stack.indexOf(self._tab_viewports[self.plan]) if self.plan in self._tab_viewports else 0
+        self.group.button(default).setChecked(True)
+        self.stack.setCurrentIndex(default)
 
     def reload(self):
         if self.student:
             self.summary.reload()
-            self.plan.reload()
+            if self.plan in self._tab_viewports:
+                self.plan.reload()
             if self.notes in self._tab_viewports:
                 self.notes.reload()
 
@@ -830,7 +829,6 @@ def _section_title(text):
 
 
 def _scrollable_tab(widget):
-    """Keep student navigation fixed while each long tab scrolls independently."""
     scroll = QScrollArea()
     scroll.setObjectName("StudentTabScroll")
     scroll.setWidgetResizable(True)

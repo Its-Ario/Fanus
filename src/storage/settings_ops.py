@@ -153,7 +153,7 @@ def save_user(
                 can_manage_users=bool(can_manage_users),
                 password_hash=hash_password(password) if password else None,
             )
-            user.save()
+            user.save(force_insert=True)
             return user
         user = User.get_by_id(user.id)
         is_self = user.id == fresh.id

@@ -3,28 +3,31 @@ from __future__ import annotations
 from dataclasses import dataclass
 from math import ceil
 
-from peewee import Case, IntegrityError
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QRectF, Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QColor, QPainter
+from peewee import IntegrityError
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, QTimer, pyqtSignal
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QDialog,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
-    QStyledItemDelegate,
+    QMessageBox,
     QTableView,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
+from src.storage.audit import record_audit
 from src.storage.models import (
     GRADE_ORDINALS,
     AcademicMajor,
     Classroom,
-    RiskLevel,
     Student,
 )
+from src.storage.student_ops import bulk_create_students, read_roster, write_roster
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
@@ -38,18 +41,11 @@ from src.views.components.ui_kit import (
 
 PAGE_SIZE = 25
 
-# One order-by expression per table column; risk sorts by severity, not alphabetically.
-_RISK_ORDER = Case(
-    Student.risk_level,
-    ((RiskLevel.LOW, 0), (RiskLevel.MEDIUM, 1), (RiskLevel.HIGH, 2)),
-    3,
-)
 SORT_COLUMNS = (
     (Student.last_name, Student.first_name),
     (Student.national_id,),
     (Classroom.grade_level, Classroom.name),
     (Student.major,),
-    (_RISK_ORDER,),
     (Student.is_active,),
 )
 
@@ -60,18 +56,15 @@ class StudentPage:
     total: int
 
 
-def load_students_page(
+def _filtered_student_query(
     query: str = "",
-    page: int = 0,
-    page_size: int = PAGE_SIZE,
     *,
     major: str = "",
     grade_level=None,
     classroom_id=None,
     sort_key: int = 0,
     sort_desc: bool = False,
-) -> StudentPage:
-    """Read only the requested active-student slice from the local database."""
+):
     query_builder = Student.select(Student, Classroom).join(Classroom).where(Student.is_active)
     normalized = query.strip()
     if normalized:
@@ -86,16 +79,41 @@ def load_students_page(
         query_builder = query_builder.where(Classroom.grade_level == grade_level)
     if classroom_id is not None:
         query_builder = query_builder.where(Student.classroom == classroom_id)
-
-    total = query_builder.count()
     columns = SORT_COLUMNS[sort_key] if 0 <= sort_key < len(SORT_COLUMNS) else SORT_COLUMNS[0]
     order = [column.desc() if sort_desc else column for column in columns]
-    students = tuple(query_builder.order_by(*order).paginate(page + 1, page_size))
+    return query_builder.order_by(*order)
+
+
+def load_students_page(
+    query: str = "",
+    page: int = 0,
+    page_size: int = PAGE_SIZE,
+    *,
+    major: str = "",
+    grade_level=None,
+    classroom_id=None,
+    sort_key: int = 0,
+    sort_desc: bool = False,
+) -> StudentPage:
+    query_builder = _filtered_student_query(
+        query,
+        major=major,
+        grade_level=grade_level,
+        classroom_id=classroom_id,
+        sort_key=sort_key,
+        sort_desc=sort_desc,
+    )
+    total = query_builder.count()
+    students = tuple(query_builder.paginate(page + 1, page_size))
     return StudentPage(students=students, total=total)
 
 
+def load_all_students(query: str = "", **filters) -> tuple[Student, ...]:
+    return tuple(_filtered_student_query(query, **filters))
+
+
 class StudentTableModel(QAbstractTableModel):
-    HEADERS = ("نام دانش آموز", "کد ملی", "کلاس", "رشته", "ریسک", "وضعیت")
+    HEADERS = ("نام دانش آموز", "کد ملی", "کلاس", "رشته", "وضعیت")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -126,7 +144,6 @@ class StudentTableModel(QAbstractTableModel):
             student.national_id,
             student.classroom.name,
             student.major,
-            student.risk_level,
             "فعال" if student.is_active else "غیرفعال",
         )
         if role == Qt.DisplayRole:
@@ -136,27 +153,6 @@ class StudentTableModel(QAbstractTableModel):
         if role == Qt.UserRole:
             return student
         return None
-
-
-class RiskBadgeDelegate(QStyledItemDelegate):
-    COLORS = {
-        "Low": (Colors.SUCCESS_BG, Colors.SUCCESS, "کم"),
-        "Medium": (Colors.WARNING_BG, Colors.WARNING, "متوسط"),
-        "High": (Colors.ERROR_BG, Colors.ERROR, "زیاد"),
-    }
-
-    def paint(self, painter, option, index):
-        level = index.data(Qt.DisplayRole)
-        background, foreground, label = self.COLORS.get(level, self.COLORS["Low"])
-        rect = option.rect.adjusted(12, 9, -12, -9)
-        painter.save()
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(background))
-        painter.drawRoundedRect(QRectF(rect), 10, 10)
-        painter.setPen(QColor(foreground))
-        painter.drawText(rect, Qt.AlignCenter, label)
-        painter.restore()
 
 
 class NewStudentDialog(QDialog):
@@ -232,6 +228,50 @@ class NewStudentDialog(QDialog):
         self.accept()
 
 
+class ImportPreviewDialog(QDialog):
+
+    def __init__(self, result, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("پیش‌نمایش ورود دانش آموزان")
+        self.setMinimumWidth(460)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 22, 24, 20)
+        layout.setSpacing(12)
+
+        summary = QLabel(
+            f"{to_persian_digits(result.created)} افزوده می‌شود · "
+            f"{to_persian_digits(len(result.skipped))} رد شده · "
+            f"{to_persian_digits(len(result.errors))} خطا"
+        )
+        summary.setStyleSheet(f"font-size: 13px; font-weight: 700; color: {Colors.TEXT_MAIN};")
+        layout.addWidget(summary)
+
+        problems = list(result.errors) + list(result.skipped)
+        if problems:
+            table = QTableWidget(len(problems), 3, self)
+            table.setHorizontalHeaderLabels(("ردیف", "کد ملی", "دلیل"))
+            table.verticalHeader().setVisible(False)
+            table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            table.horizontalHeader().setStretchLastSection(True)
+            for row, item in enumerate(problems):
+                table.setItem(row, 0, QTableWidgetItem(to_persian_digits(item.line)))
+                table.setItem(row, 1, QTableWidgetItem(to_persian_digits(item.national_id or "—")))
+                table.setItem(row, 2, QTableWidgetItem(item.reason))
+            table.setMinimumHeight(180)
+            layout.addWidget(table)
+
+        actions = QHBoxLayout()
+        cancel = SecondaryButton("انصراف")
+        cancel.clicked.connect(self.reject)
+        confirm = PrimaryButton("افزودن")
+        confirm.clicked.connect(self.accept)
+        confirm.setEnabled(result.created > 0)
+        actions.addWidget(cancel)
+        actions.addStretch()
+        actions.addWidget(confirm)
+        layout.addLayout(actions)
+
+
 class StudentsPage(QWidget):
     student_opened = pyqtSignal(object)
     open_grade_entry = pyqtSignal()
@@ -274,6 +314,12 @@ class StudentsPage(QWidget):
         attendance_button = SecondaryButton("حضور و غیاب", icon="🗓")
         attendance_button.clicked.connect(self.open_attendance.emit)
         header.addWidget(attendance_button)
+        import_button = SecondaryButton("ورود از فایل", icon="⬆")
+        import_button.clicked.connect(self._open_import)
+        header.addWidget(import_button)
+        export_button = SecondaryButton("خروجی فایل", icon="⬇")
+        export_button.clicked.connect(self._export_roster)
+        header.addWidget(export_button)
         add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
@@ -333,7 +379,6 @@ class StudentsPage(QWidget):
         self.table = QTableView()
         self.model = StudentTableModel(self)
         self.table.setModel(self.model)
-        self.table.setItemDelegateForColumn(4, RiskBadgeDelegate(self.table))
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -439,7 +484,6 @@ class StudentsPage(QWidget):
             candidate.setVisible(candidate is state)
 
     def _ensure_scope_options(self):
-        """Load classrooms and grades once, tolerating an unavailable database."""
         if self._scope_loaded:
             return
         try:
@@ -455,7 +499,6 @@ class StudentsPage(QWidget):
         self._rebuild_class_options()
 
     def _rebuild_class_options(self):
-        """Show only classrooms matching the selected major and grade; keep the pick if still valid."""
         major = self.major_filter.currentData()
         grade = self.grade_filter.currentData()
         current = self.class_filter.currentData()
@@ -567,3 +610,78 @@ class StudentsPage(QWidget):
             self.search_input.blockSignals(False)
             self._reset_filters()
             self.reload()
+
+    def _current_filters(self) -> dict:
+        return dict(
+            major=self.major_filter.currentData(),
+            grade_level=self.grade_filter.currentData(),
+            classroom_id=self.class_filter.currentData(),
+            sort_key=self._sort_key,
+            sort_desc=self._sort_desc,
+        )
+
+    def _export_roster(self):
+        path, chosen = QFileDialog.getSaveFileName(
+            self, "خروجی فهرست دانش آموزان", "دانش‌آموزان.xlsx", "Excel (*.xlsx);;CSV (*.csv)"
+        )
+        if not path:
+            return
+        if not path.lower().endswith((".xlsx", ".csv")):
+            path += ".csv" if "csv" in chosen.lower() else ".xlsx"
+        try:
+            students = load_all_students(self._query, **self._current_filters())
+            write_roster(path, students)
+        except Exception:
+            QMessageBox.critical(self, "خطا", "خروجی گرفته نشد؛ دوباره تلاش کنید.")
+            return
+        self.result_label.setText(f"{to_persian_digits(len(students))} دانش آموز خروجی گرفته شد")
+
+    def _open_import(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "ورود دانش آموزان از فایل", "", "Excel/CSV (*.xlsx *.csv)"
+        )
+        if not path:
+            return
+        try:
+            rows = read_roster(path)
+        except (ValueError, OSError) as exc:
+            QMessageBox.critical(self, "فایل نامعتبر", str(exc))
+            return
+        if not rows:
+            QMessageBox.information(self, "فایل خالی", "هیچ ردیفی در فایل پیدا نشد.")
+            return
+        try:
+            preview = bulk_create_students(rows, commit=False)
+        except Exception:
+            QMessageBox.critical(self, "خطا", "پردازش فایل ممکن نشد.")
+            return
+        if ImportPreviewDialog(preview, self).exec_() != QDialog.Accepted:
+            return
+        try:
+            result = bulk_create_students(rows, commit=True, actor=self.current_user)
+        except Exception:
+            QMessageBox.critical(
+                self, "خطا", "ثبت دانش آموزان ممکن نشد؛ هیچ رکوردی اضافه نشد."
+            )
+            return
+        if self.current_user is not None:
+            record_audit(
+                self.current_user,
+                "student.bulk_import",
+                "Student",
+                None,
+                details=(
+                    f"{result.created} افزوده، {len(result.skipped)} رد، "
+                    f"{len(result.errors)} خطا"
+                ),
+            )
+        self._page = 0
+        self._query = ""
+        self.search_input.blockSignals(True)
+        self.search_input.clear()
+        self.search_input.blockSignals(False)
+        self._reset_filters()
+        self.reload()
+        QMessageBox.information(
+            self, "ورود انجام شد", f"{to_persian_digits(result.created)} دانش آموز اضافه شد."
+        )

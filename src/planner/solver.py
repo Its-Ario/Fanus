@@ -24,7 +24,6 @@ def _adjacent(a: Slot, b: Slot) -> bool:
     return hi.start - lo.end <= catalog.MIN_BREAK_MINUTES
 
 
-# Hard constraint
 def _is_good(req: dict, slot: Slot, assigned: Dict[int, dict], slots_by_day) -> bool:
     if slot.index in assigned:
         return False
@@ -43,7 +42,6 @@ def _pair_gap_hours(day_a, start_a, day_b, start_b) -> float:
     return abs((day_a * 24 * 60 + start_a) - (day_b * 24 * 60 + start_b)) / 60.0
 
 
-# Soft constraints
 def score(assigned: Dict[int, dict], slots: Sequence[Slot], weights: Dict[str, int]) -> int:
     slot_idx = {s.index: s for s in slots}
     placed = [(slot_idx[i], req) for i, req in assigned.items()]
@@ -103,7 +101,6 @@ def solve(
     assigned: Dict[int, dict] = {}
     unplaced: List[dict] = []
 
-    # greedy fill
     for req in requests:
         best = None
         for slot in slots:
@@ -141,7 +138,6 @@ def solve(
         if improved:
             continue
 
-        # pairwise swap: exchange two placed blocks if it lowers the score
         indices = list(assigned)
         for a in range(len(indices)):
             ia = indices[a]

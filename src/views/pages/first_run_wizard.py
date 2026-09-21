@@ -1,5 +1,3 @@
-"""First-run setup dialog for establishing the first Fanus workspace."""
-
 import base64
 import os
 
@@ -39,7 +37,6 @@ from src.views.components.ui_kit import (
 
 
 class FirstRunWizard(QDialog):
-    """Three focused steps that create the initial school and administrator."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -293,7 +290,6 @@ class FirstRunWizard(QDialog):
 
     @staticmethod
     def _centered_page(card):
-        """Keep each setup step as one complete, non-scrollable form."""
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -350,7 +346,6 @@ class FirstRunWizard(QDialog):
         self._refresh_layout()
 
     def _refresh_layout(self):
-        """Apply dynamic visibility and validation geometry without a window resize."""
         for index in range(self.pages.count()):
             page = self.pages.widget(index)
             if page.layout():
@@ -475,8 +470,6 @@ class FirstRunWizard(QDialog):
 
     def _complete_setup(self):
         role = self._selected_role()
-        # The vault database always needs a key. Non-counselor accounts never use it,
-        # so their first-run key is random and only lives for this application session.
         vault_pin = (
             self.vault_pin.text()
             if role == "counselor"

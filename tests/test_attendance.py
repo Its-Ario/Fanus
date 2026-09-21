@@ -66,11 +66,11 @@ def test_bulk_create_then_update_in_place(tmp_path):
         DAY,
         [
             _entry(students[0], AttendanceStatus.EXCUSED, "بیماری"),
-            _entry(students[1], AttendanceStatus.LATE),  # unchanged -> not counted
+            _entry(students[1], AttendanceStatus.LATE),
         ],
     )
     assert result == (0, 1)
-    assert AttendanceRecord.select().count() == 2  # no duplicate row
+    assert AttendanceRecord.select().count() == 2
     row = AttendanceRecord.get(AttendanceRecord.student == students[0])
     assert row.status == AttendanceStatus.EXCUSED
     assert row.reason == "بیماری"
@@ -126,4 +126,4 @@ def test_page_save_writes_changed_row(tmp_path, qtbot):
     marked = page._rows[0]["student"]
     row = AttendanceRecord.get(AttendanceRecord.student == marked)
     assert row.status == AttendanceStatus.ABSENT
-    assert not page.has_unsaved_changes()  # rebaselined after save
+    assert not page.has_unsaved_changes()

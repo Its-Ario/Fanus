@@ -1,12 +1,7 @@
-"""Add durable actor and student identifiers to audit events."""
-
 from peewee import UUIDField
 
 
 def _tables(database):
-    # peewee_migrate replays applied migrations with fake=True, which mocks
-    # execute_sql; get_tables() then raises on the Mock cursor. Treat that as
-    # "nothing to introspect" so the fake replay is a clean no-op.
     try:
         return set(database.get_tables())
     except (TypeError, AttributeError):

@@ -22,8 +22,10 @@ ACTION_LABELS = {
     "exam.create": "ایجاد آزمون",
     "grade.bulk_save": "ثبت گروهی نمرات",
     "attendance.bulk_save": "ثبت گروهی حضور و غیاب",
-    "backup.create": "ساخت نسخهٔ پشتیبان",
-    "backup.restore": "بازیابی از نسخهٔ پشتیبان",
+    "student.bulk_import": "ورود گروهی دانش‌آموزان",
+    "backup.create": "ساخت نسخه پشتیبان",
+    "backup.restore": "بازیابی از نسخه پشتیبان",
+    "school.year_rollover": "شروع سال تحصیلی جدید",
 }
 
 

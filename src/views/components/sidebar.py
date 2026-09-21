@@ -40,7 +40,6 @@ class UserFooter(QFrame):
 
 
 class NavItem(QPushButton):
-    """A sidebar button that collapses cleanly to icon-only mode."""
 
     def __init__(self, icon_emoji: str, label: str):
         super().__init__()

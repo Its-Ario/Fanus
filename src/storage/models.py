@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 class EncryptedTextField(TextField):
-    """TextField with AES-256GCM"""
 
     def db_value(self, value):
         if value is None:
@@ -61,7 +60,7 @@ class GradeTerm:
 MOADEL_TERMS = (GradeTerm.NOBAT_1, GradeTerm.NOBAT_2)
 _TERM_RANK = {GradeTerm.NOBAT_1: 1, GradeTerm.NOBAT_2: 2}
 PASS_MARK = 10.0
-GPA_ROUNDING = "truncate"  # ponytail: school کارنامه truncates; flip to half_up for a school that rounds
+GPA_ROUNDING = "truncate"
 
 
 class GradeValidationError(ValueError):
@@ -290,7 +289,6 @@ HIGH_SCHOOL_SUBJECTS = {
 
 
 def subject_options(grade_level: int, major: str = AcademicMajor.GENERAL) -> tuple:
-    """Return the supplied curriculum subjects for a grade and academic major."""
     if grade_level in SUBJECTS_BY_GRADE:
         return SUBJECTS_BY_GRADE[grade_level]
     return HIGH_SCHOOL_SUBJECTS.get((grade_level, major), ())
@@ -334,14 +332,6 @@ class StudyPeriod:
     MORNING = "صبح"
 
 
-class RiskLevel:
-    LOW = "Low"
-    MEDIUM = "Medium"
-    HIGH = "High"
-
-    PERSIAN_MAP = {LOW: "کم 🟢", MEDIUM: "متوسط 🟡", HIGH: "زیاد 🔴"}
-
-
 class PlanStatus:
     DRAFT = "Draft"
     ACTIVE = "Active"
@@ -352,13 +342,13 @@ class PlanStatus:
 
 
 class DayOfWeek:
-    SATURDAY = 0  # شنبه
-    SUNDAY = 1  # یکشنبه
-    MONDAY = 2  # دوشنبه
-    TUESDAY = 3  # سه شنبه
-    WEDNESDAY = 4  # چهارشنبه
-    THURSDAY = 5  # پنج شنبه
-    FRIDAY = 6  # جمعه
+    SATURDAY = 0
+    SUNDAY = 1
+    MONDAY = 2
+    TUESDAY = 3
+    WEDNESDAY = 4
+    THURSDAY = 5
+    FRIDAY = 6
 
     PERSIAN_NAMES = {
         0: "شنبه",
@@ -431,7 +421,6 @@ class SchoolProfile(Model):
 
 
 class PlannerSettings(Model):
-    """Singleton tuning knobs for the study-plan engine (soft-constraint weights)."""
 
     id = IntegerField(primary_key=True, default=1)
     block_minutes = IntegerField(default=90)
@@ -519,14 +508,8 @@ class Student(BaseModel):
 
     daily_active_hours = DoubleField(default=5.0)
     sleep_hours = DoubleField(default=7.0)
-    tutoring_hours = DoubleField(default=0.0)  # Outside classes
+    tutoring_hours = DoubleField(default=0.0)
     preferred_study_period = CharField(max_length=20, default=StudyPeriod.EVENING)
-
-    # ML Data
-    risk_level = CharField(max_length=10, default=RiskLevel.LOW, index=True)
-    burnout_score = DoubleField(default=0.0)
-    disengagement_score = DoubleField(default=0.0)
-    risk_factors_json = TextField(default="[]")  # json
 
     class Meta:
         table_name = "students"
@@ -535,13 +518,7 @@ class Student(BaseModel):
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
-    @property
-    def risk_level_persian(self) -> str:
-        return RiskLevel.PERSIAN_MAP.get(self.risk_level, "-")
-
     def calculate_gpa(self) -> float:
-        # One row per (subject, exam) enforced by AcademicGrade's unique index; when the
-        # same subject appears in several معدل exams the latest/highest term wins.
         latest = {}
         rows = sorted(
             (
@@ -568,9 +545,6 @@ class Student(BaseModel):
 
 class CounselorNote(VaultBaseModel):
     student_id = UUIDField(index=True)
-    # The public User table is deliberately not a foreign key: notes are kept in the
-    # separately encrypted vault database.  Missing owners on legacy records fail
-    # closed in note_ops and are never shown to a counselor.
     author_id = UUIDField(null=True, index=True)
     title = CharField(max_length=100, default="یادداشت مشاوره")
     content = EncryptedTextField()
@@ -582,15 +556,13 @@ class CounselorNote(VaultBaseModel):
 
 
 class Exam(BaseModel):
-    """A teacher-defined assessment: one نوبت/date/سقف نمره over one or more classes and subjects."""
-
     name = CharField(max_length=100)
     exam_date = DateField(index=True)
     term = CharField(max_length=30)
-    max_score = DoubleField(default=20.0)  # one ceiling for every subject column
+    max_score = DoubleField(default=20.0)
     grade_level = IntegerField()
     major = CharField(max_length=50)
-    subjects_json = TextField(default="[]")  # ordered list of subject_name strings
+    subjects_json = TextField(default="[]")
 
     @property
     def subjects(self) -> list[str]:
@@ -610,8 +582,8 @@ class Exam(BaseModel):
             raise GradeValidationError("حداقل یک درس برای آزمون لازم است.")
         if self.term not in GradeTerm.VALUES:
             raise GradeValidationError("نوبت نامعتبر است.")
-        if not (0 < self.max_score <= 20):
-            raise GradeValidationError("سقف نمره باید بین ۰ تا ۲۰ باشد.")
+        if not (0 < self.max_score <= 100):
+            raise GradeValidationError("سقف نمره باید بین ۰ تا ۱۰۰ باشد.")
         if self.exam_date is None:
             raise GradeValidationError("تاریخ آزمون لازم است.")
         self.name = self.name.strip()
@@ -619,7 +591,6 @@ class Exam(BaseModel):
 
 
 class ExamClassroom(BaseModel):
-    """One row per class an exam covers -> one tab in the grade grid."""
 
     exam = ForeignKeyField(Exam, backref="exam_classrooms", on_delete="CASCADE")
     classroom = ForeignKeyField(Classroom, on_delete="CASCADE")
@@ -632,8 +603,8 @@ class AcademicGrade(BaseModel):
     student = ForeignKeyField(Student, backref="grades", on_delete="CASCADE")
     exam = ForeignKeyField(Exam, backref="grades", null=True, on_delete="CASCADE")
     subject_name = CharField(max_length=50, index=True)
-    score = DoubleField(null=True)  # NULL = absent/exempt; never written as 0
-    weight = DoubleField(default=1.0)  # معدل weighting escape hatch, still unexposed in the UI
+    score = DoubleField(null=True)
+    weight = DoubleField(default=1.0)
 
     class Meta:
         indexes = ((("exam", "student", "subject_name"), True),)
@@ -696,15 +667,14 @@ class StudyPlan(BaseModel):
         table_name = "study_plans"
 
     def get_active_sessions(self):
-        """Return this plan's sessions in the order used by the weekly record."""
         return self.sessions.order_by(StudySession.start_time, StudySession.end_time)
 
 
 class StudySession(BaseModel):
     plan = ForeignKeyField(StudyPlan, backref="sessions", on_delete="CASCADE")
     day_of_week = IntegerField(choices=[(i, DayOfWeek.PERSIAN_NAMES[i]) for i in range(7)])
-    start_time = CharField(max_length=5, default="16:00")  # HH:MM
-    end_time = CharField(max_length=5, default="17:30")  # HH:MM
+    start_time = CharField(max_length=5, default="16:00")
+    end_time = CharField(max_length=5, default="17:30")
     subject_name = CharField(max_length=50)
     session_type = CharField(max_length=30, default="مطالعه")
     duration_minutes = IntegerField(default=90)

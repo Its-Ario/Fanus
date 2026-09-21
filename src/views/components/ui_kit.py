@@ -27,7 +27,6 @@ from src.utils.profile_color import generate_profile_color
 
 
 def apply_soft_shadow(widget, blur=18, y_offset=3, alpha=25):
-    """Adds a subtle drop shadow. Safe to use on cards (not the main frameless window)."""
     shadow = QGraphicsDropShadowEffect(widget)
     shadow.setBlurRadius(blur)
     shadow.setOffset(0, y_offset)
@@ -125,33 +124,6 @@ class StatCard(QFrame):
         layout.addStretch()
 
 
-class RiskBadge(QLabel):
-    def __init__(self, level: str = "Low"):
-        super().__init__()
-        self.setAlignment(Qt.AlignCenter)
-        self.set_level(level)
-
-    def set_level(self, level: str):
-        level = level.capitalize()
-        config = {
-            "Low": (Colors.SUCCESS_BG, Colors.SUCCESS, "🟢 کم"),
-            "Medium": (Colors.WARNING_BG, Colors.WARNING, "🟡 متوسط"),
-            "High": (Colors.ERROR_BG, Colors.ERROR, "🔴 زیاد"),
-        }
-        bg, text_color, label = config.get(level, config["Low"])
-
-        self.setText(label)
-        self.setStyleSheet(f"""
-            background-color: {bg};
-            color: {text_color};
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 10px;
-        """)
-        self.setFixedHeight(24)
-
-
 class AIInsightCard(QFrame):
     def __init__(self, message: str, on_review=None):
         super().__init__()
@@ -218,51 +190,6 @@ class Avatar(QLabel):
         """)
 
 
-class StudentRow(QFrame):
-    def __init__(self, name: str, subtitle: str, risk_level: str, on_click=None):
-        super().__init__()
-        self.setCursor(Qt.PointingHandCursor)
-        self.setObjectName("StudentRow")
-        self.setStyleSheet(f"""
-            QFrame#StudentRow {{
-                background-color: {Colors.SURFACE};
-                border-bottom: 1px solid {Colors.BORDER};
-            }}
-            QFrame#StudentRow:hover {{
-                background-color: {Colors.SURFACE_HOVER};
-            }}
-        """)
-        self.setFixedHeight(64)
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 8, 16, 8)
-        layout.setSpacing(12)
-
-        avatar = Avatar(name, size=38)
-
-        text_box = QVBoxLayout()
-        text_box.setSpacing(1)
-        name_label = QLabel(name)
-        name_label.setStyleSheet(f"font-size: 13px; font-weight: 600; color: {Colors.TEXT_MAIN};")
-        sub_label = QLabel(subtitle)
-        sub_label.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
-        text_box.addWidget(name_label)
-        text_box.addWidget(sub_label)
-
-        badge = RiskBadge(risk_level)
-
-        layout.addWidget(avatar)
-        layout.addLayout(text_box, stretch=1)
-        layout.addWidget(badge)
-
-        self._on_click = on_click
-
-    def mousePressEvent(self, event):
-        if self._on_click:
-            self._on_click()
-        super().mousePressEvent(event)
-
-
 class EmptyState(QWidget):
     def __init__(
         self,
@@ -323,7 +250,6 @@ class SearchInput(QLineEdit):
 
 
 class Dropdown(QComboBox):
-    """Shared RTL-aware dropdown with a styled popup and a drawn disclosure chevron."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -394,7 +320,6 @@ class Dropdown(QComboBox):
 
 
 class FormField(QWidget):
-    """A labelled text field shared by focused forms such as setup and settings."""
 
     def __init__(
         self,
@@ -436,8 +361,6 @@ class FormField(QWidget):
         self.message = QLabel()
         self.message.setWordWrap(True)
         self.message.setStyleSheet(f"font-size: 11px; color: {Colors.TEXT_MUTED};")
-        # Placeholders provide the default guidance. This area is reserved for
-        # validation feedback, keeping compact forms from growing at rest.
         self.message.setVisible(False)
 
         layout.addWidget(self.label)
@@ -503,7 +426,6 @@ class FormField(QWidget):
         self._refresh_geometry()
 
     def _refresh_geometry(self):
-        """Propagate changed helper text size through parent layouts immediately."""
         self.layout().invalidate()
         self.updateGeometry()
 
@@ -521,7 +443,6 @@ class FormField(QWidget):
 
 
 class ProgressBar(QWidget):
-    """Custom-painted RTL progress bar. Fills from RIGHT to LEFT."""
 
     def __init__(self, value: int = 0, color: str | None = None):
         super().__init__()
@@ -538,7 +459,7 @@ class ProgressBar(QWidget):
         painter.drawRoundedRect(self.rect(), 4, 4)
 
         fill_width = int(self.width() * (self.value / 100))
-        x_start = self.width() - fill_width  # Manual RTL fill direction
+        x_start = self.width() - fill_width
 
         painter.setBrush(QColor(self.color))
         painter.drawRoundedRect(x_start, 0, fill_width, self.height(), 4, 4)
@@ -668,7 +589,6 @@ class DataTable(QTableView):
 
 
 class Card(QFrame):
-    """Generic white card container with border + soft shadow. Use as a wrapper for custom sections."""
 
     def __init__(self, padding: int = 18):
         super().__init__()

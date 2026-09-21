@@ -123,7 +123,6 @@ def test_gpa_uses_latest_highest_term_and_weights(tmp_path):
         AcademicGrade.create(student=student, exam=kelasi, subject_name="زیست", score=1)
         AcademicGrade.create(student=student, exam=azmayeshi, subject_name="عربی", score=1)
 
-        # نوبت دوم (16) beats نوبت اول (12) for ریاضی; فیزیک only نوبت اول, weight 2
         assert student.calculate_gpa() == 15.33
         assert student.is_passing
     finally:
@@ -154,7 +153,6 @@ def test_recent_ratio_weakness_map_skips_null_scores(tmp_path):
         AcademicGrade.create(student=student, exam=absent, subject_name="ریاضی", score=None)
 
         weaknesses = _weakness_map(student, ("ریاضی",), ())
-        # last three non-null ratios (1.0, 0.5, 0.9) average 0.8 -> weight 1.5
         assert weaknesses["ریاضی"] == 1.5
     finally:
         manager.close()
@@ -167,7 +165,6 @@ def test_weakness_map_rewards_strong_result_on_a_brutal_exam(tmp_path):
         AcademicGrade.create(student=student, exam=exam, subject_name="فیزیک", score=7)
         _add_peers(classroom, exam, "فیزیک", (8, 6, 6, 5, 5, 4, 4))
 
-        # 35% against a 40% class top is an 87.5% effective ratio.
         assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.0
     finally:
         manager.close()
@@ -184,7 +181,6 @@ def test_weakness_map_uses_raw_score_for_small_or_absent_cohorts(tmp_path):
         )
         AcademicGrade.create(student=absent, exam=exam, subject_name="فیزیک", score=None)
 
-        # Seven valid scores (the absent student is excluded) keep the raw 35% result.
         assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 2.0
     finally:
         manager.close()
@@ -197,7 +193,6 @@ def test_weakness_map_keeps_everyone_failed_floor(tmp_path):
         AcademicGrade.create(student=student, exam=exam, subject_name="فیزیک", score=3)
         _add_peers(classroom, exam, "فیزیک", (3, 3, 2, 2, 2, 1, 1))
 
-        # The 15% top score is floored to 50%, so 15% remains a weak 30% result.
         assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 2.0
     finally:
         manager.close()
@@ -215,7 +210,6 @@ def test_weakness_map_isolates_multi_class_exam_cohorts(tmp_path):
         _add_peers(classroom, exam, "فیزیک", (8, 6, 6, 5, 5, 4, 4))
         _add_peers(other_classroom, exam, "فیزیک", (20,) * 8, start=7000000000)
 
-        # A perfect-scoring second class must not lower this class's effective ratio.
         assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.0
     finally:
         manager.close()

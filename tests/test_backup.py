@@ -196,14 +196,14 @@ def test_rollback_on_swap_failure(env, monkeypatch):
     manager.unlock_vault(DatabaseCredentials.from_vault_pin("1234", tmp / "database_salts.json"))
     dest = tmp / "v.fanusbak"
     backup_ops.create_backup(dest, actor, include_vault=True)
-    Student.delete().execute()  # will be rolled back to 5
+    Student.delete().execute()
 
     real = os.replace
     calls = {"n": 0}
 
     def flaky(src, dst):
         calls["n"] += 1
-        if calls["n"] == 3:  # first vault-file rename, after fanus.db is fully swapped
+        if calls["n"] == 3:
             raise OSError("boom")
         return real(src, dst)
 
@@ -216,7 +216,7 @@ def test_rollback_on_swap_failure(env, monkeypatch):
     reopened = DatabaseManager(**_paths(tmp))
     reopened.initialize_public()
     try:
-        assert Student.select().count() == 0  # the pre-restore state, restored
+        assert Student.select().count() == 0
     finally:
         reopened.close()
 
@@ -228,7 +228,7 @@ def test_stale_wal_removed(env):
     backup_ops.create_backup(dest, actor)
     Student.delete().execute()
 
-    manager.close()  # release the OS lock on the WAL sidecars
+    manager.close()
     (tmp / "fanus.db-wal").write_bytes(b"garbage")
     (tmp / "fanus.db-shm").write_bytes(b"garbage")
 
@@ -270,7 +270,7 @@ def test_marker_not_left_on_failure(env, monkeypatch):
 
     def flaky(src, dst):
         calls["n"] += 1
-        if calls["n"] == 7:  # the .restore_pending activation, after all 3 db files swapped
+        if calls["n"] == 7:
             raise OSError("boom")
         return real(src, dst)
 

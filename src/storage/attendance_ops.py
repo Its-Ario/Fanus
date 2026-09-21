@@ -1,8 +1,3 @@
-"""Validated write operations for daily student attendance.
-
-Kept UI-free so every entry surface shares one validation boundary (mirrors
-``grade_ops``).
-"""
 
 from collections import namedtuple
 from datetime import date as _date
@@ -14,15 +9,6 @@ SaveResult = namedtuple("SaveResult", ("created", "updated"))
 
 
 def save_attendance_bulk(record_date: _date, entries, *, actor=None) -> SaveResult:
-    """Write one day's changed attendance rows in a single transaction.
-
-    ``entries`` is an iterable of ``{student, status, reason}``. The row key is
-    ``(student, record_date)`` — the unique index the model already carries.
-
-    A ``present`` status with no reason and no existing row writes nothing (that is
-    the default state). Any model ``AttendanceValidationError`` rolls the whole
-    batch back. ``actor`` is accepted for symmetry; auditing is the caller's job.
-    """
     created = updated = 0
     students = [e["student"] for e in list(entries) if e.get("student") is not None]
     existing = {

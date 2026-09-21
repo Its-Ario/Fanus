@@ -57,7 +57,7 @@ from src.views.components.ui_kit import (
 )
 
 _LABEL_CSS = f"font-size: 12px; font-weight: 600; color: {Colors.TEXT_MAIN};"
-SCORE_COL_START = 2  # ردیف · دانش‌آموز · then one column per subject
+SCORE_COL_START = 2
 
 
 def _field(placeholder: str = "") -> QLineEdit:
@@ -93,15 +93,7 @@ _GRID_CSS = (
     f"QTableWidget::item {{ padding: 6px; }}"
 )
 
-
-# --------------------------------------------------------------------------- #
-# score entry                                                                 #
-# --------------------------------------------------------------------------- #
-
-
 class _PersianNumberValidator(QValidator):
-    """Rewrite Persian numpad digits to ASCII as they are typed; reject non-numbers."""
-
     def validate(self, text, pos):
         ascii_text = to_ascii_digits(text)
         if ascii_text != text:
@@ -112,13 +104,7 @@ class _PersianNumberValidator(QValidator):
 
 
 class _ScoreDelegate(QStyledItemDelegate):
-    """Centered numeric editor; a keypress commits and moves the cursor in 2-D.
-
-    ponytail: QTableWidget + delegate keyboard flow; fall back to a per-cell VBox grid
-    only if it fights fast entry.
-    """
-
-    move = pyqtSignal(int, int)  # (row_step, col_step)
+    move = pyqtSignal(int, int)
 
     def createEditor(self, parent, option, index):
         editor = QLineEdit(parent)
@@ -136,7 +122,7 @@ class _ScoreDelegate(QStyledItemDelegate):
                 step = (1, 0)
             elif key == Qt.Key_Up:
                 step = (-1, 0)
-            elif key in (Qt.Key_Tab, Qt.Key_Left):  # RTL: Left = forward
+            elif key in (Qt.Key_Tab, Qt.Key_Left):
                 step = (0, 1)
             elif key in (Qt.Key_Backtab, Qt.Key_Right):
                 step = (0, -1)
@@ -149,7 +135,6 @@ class _ScoreDelegate(QStyledItemDelegate):
 
 
 class _ScoreGrid(QTableWidget):
-    """One class tab: ردیف · دانش‌آموز · one score column per exam subject."""
 
     changed = pyqtSignal()
 
@@ -160,7 +145,7 @@ class _ScoreGrid(QTableWidget):
         self.room = room
         self.read_only = read_only
         self.score_cols = range(SCORE_COL_START, SCORE_COL_START + len(self.subjects))
-        self.rows_model: list[dict] = []  # {student, cells: {subject: loaded_str}}
+        self.rows_model: list[dict] = []
         self._loading = False
 
         self.setHorizontalHeaderLabels(["ردیف", "دانش‌آموز", *self.subjects])
@@ -194,7 +179,6 @@ class _ScoreGrid(QTableWidget):
         self.itemChanged.connect(self._on_item_changed)
         self._load()
 
-    # -- data ------------------------------------------------------------- #
 
     def _load(self):
         self._loading = True
@@ -242,7 +226,6 @@ class _ScoreGrid(QTableWidget):
         if self.rowCount() and not self.read_only:
             self.setCurrentCell(0, SCORE_COL_START)
 
-    # -- keyboard ------------------------------------------------------- #
 
     def keyPressEvent(self, event):
         if (
@@ -257,10 +240,6 @@ class _ScoreGrid(QTableWidget):
         super().keyPressEvent(event)
 
     def _move_cursor(self, row_step: int, col_step: int):
-        """Move `step` and open that score cell, deferred a tick so the old editor tears down.
-
-        Moves clamp at the grid's edges — no wrap, no crossing into another tab.
-        """
         row = self.currentRow() + row_step
         col = self.currentColumn() + col_step
         if not 0 <= row < self.rowCount():
@@ -275,8 +254,6 @@ class _ScoreGrid(QTableWidget):
                 self.editItem(item)
 
         QTimer.singleShot(0, open_target)
-
-    # -- validation / dirty ------------------------------------------- #
 
     def _on_item_changed(self, item):
         if self._loading or item.column() not in self.score_cols:
@@ -352,9 +329,6 @@ class _ScoreGrid(QTableWidget):
             model["cells"][subject] = raw
 
 
-# --------------------------------------------------------------------------- #
-# grid view                                                                   #
-# --------------------------------------------------------------------------- #
 
 
 class ExamGridView(QWidget):
@@ -430,7 +404,6 @@ class ExamGridView(QWidget):
         self._refresh()
         self._on_tab(self.tabs.currentIndex())
 
-    # -- behaviour --------------------------------------------------- #
 
     def _on_tab(self, index):
         widget = self.tabs.widget(index)
@@ -471,7 +444,7 @@ class ExamGridView(QWidget):
             return
         try:
             result = grade_ops.save_grades_bulk(self.exam, entries, actor=self.current_user)
-        except Exception as error:  # GradeValidationError or db failure -> keep typed values
+        except Exception as error:
             self._banner(f"ثبت نشد: {error}")
             return
 
@@ -503,9 +476,6 @@ class ExamGridView(QWidget):
         self.saved.emit()
 
 
-# --------------------------------------------------------------------------- #
-# exam list                                                                   #
-# --------------------------------------------------------------------------- #
 
 
 class _ExamTableModel(QAbstractTableModel):
@@ -513,7 +483,7 @@ class _ExamTableModel(QAbstractTableModel):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.rows: list[tuple[Exam, str]] = []  # (exam, progress_text)
+        self.rows: list[tuple[Exam, str]] = []
 
     def set_rows(self, rows):
         self.beginResetModel()
@@ -643,9 +613,6 @@ class ExamListView(QWidget):
             self.exam_opened.emit(exam)
 
 
-# --------------------------------------------------------------------------- #
-# new exam dialog                                                             #
-# --------------------------------------------------------------------------- #
 
 
 class NewExamDialog(QDialog):
@@ -707,7 +674,6 @@ class NewExamDialog(QDialog):
         actions.addWidget(save)
         layout.addLayout(actions)
 
-    # -- class / subject gating ------------------------------------- #
 
     def _checked_rooms(self) -> list[Classroom]:
         rooms = []
@@ -765,7 +731,6 @@ class NewExamDialog(QDialog):
             if self.subjects.item(i).checkState() == Qt.Checked
         ]
 
-    # -- save ----------------------------------------------------- #
 
     def _show_error(self, message: str):
         self.error.setText(message)
@@ -789,8 +754,8 @@ class NewExamDialog(QDialog):
         if not subjects:
             self._show_error("حداقل یک درس را انتخاب کنید.")
             return
-        if max_score is None or not 0 < max_score <= 20:
-            self._show_error("سقف نمره باید بین ۰ تا ۲۰ باشد.")
+        if max_score is None or not 0 < max_score <= 100:
+            self._show_error("سقف نمره باید بین ۰ تا ۱۰۰ باشد.")
             return
 
         try:
@@ -827,13 +792,9 @@ class NewExamDialog(QDialog):
         self.accept()
 
 
-# --------------------------------------------------------------------------- #
-# page shell                                                                  #
-# --------------------------------------------------------------------------- #
 
 
 class GradeEntryPage(QWidget):
-    """Exams list + tabbed multi-subject grade grid. See specs/grade-entry-ui.md."""
 
     back_requested = pyqtSignal()
 
@@ -853,7 +814,6 @@ class GradeEntryPage(QWidget):
         self.stack.addWidget(self.list_view)
         self.grid_view: ExamGridView | None = None
 
-    # -- navigation ------------------------------------------------- #
 
     def _open_grid(self, exam: Exam):
         if not self.confirm_navigation_away():
@@ -880,7 +840,6 @@ class GradeEntryPage(QWidget):
         if dialog.exec_() == QDialog.Accepted and dialog.exam is not None:
             self._mount_grid(dialog.exam)
 
-    # -- unsaved-changes guard (spans every tab of the open exam) --- #
 
     def has_unsaved_changes(self) -> bool:
         return (

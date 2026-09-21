@@ -23,7 +23,6 @@ _WEIGHT_FIELDS = (
 
 
 class PlannerPanel(QWidget):
-    """Tuning knobs for the study-plan engine: block length + soft-rule weights."""
 
     def __init__(self, actor, editable, parent=None):
         super().__init__(parent)

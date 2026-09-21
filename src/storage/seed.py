@@ -9,7 +9,6 @@ from src.storage.models import (
     Exam,
     ExamClassroom,
     GradeTerm,
-    RiskLevel,
     Student,
     StudyPeriod,
     subject_options,
@@ -24,26 +23,26 @@ MOCK_CLASSROOMS = (
 
 
 MOCK_STUDENTS = (
-    ("0010000001", "سارا", "احمدی", 0, RiskLevel.HIGH, 3.5, 6.0, 2.0, StudyPeriod.EVENING),
-    ("0010000002", "محمد", "رضایی", 0, RiskLevel.LOW, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
-    ("0010000003", "نگار", "موسوی", 0, RiskLevel.MEDIUM, 4.5, 6.5, 1.0, StudyPeriod.EVENING),
-    ("0010000004", "علی", "کریمی", 0, RiskLevel.LOW, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
-    ("0010000005", "مهسا", "حسینی", 0, RiskLevel.MEDIUM, 4.0, 6.5, 1.5, StudyPeriod.EVENING),
-    ("0010000006", "پارسا", "اکبری", 1, RiskLevel.LOW, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
-    ("0010000007", "مریم", "قاسمی", 1, RiskLevel.MEDIUM, 4.5, 6.5, 1.0, StudyPeriod.EVENING),
-    ("0010000008", "امیر", "جعفری", 1, RiskLevel.HIGH, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
-    ("0010000009", "یاسمن", "مرادی", 1, RiskLevel.LOW, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
-    ("0010000010", "کیان", "نوری", 1, RiskLevel.MEDIUM, 5.0, 6.5, 1.0, StudyPeriod.EVENING),
-    ("0010000011", "زهرا", "صادقی", 2, RiskLevel.LOW, 6.5, 7.0, 0.0, StudyPeriod.MORNING),
-    ("0010000012", "حسین", "کاظمی", 2, RiskLevel.MEDIUM, 4.5, 6.0, 1.0, StudyPeriod.EVENING),
-    ("0010000013", "روناک", "طاهری", 2, RiskLevel.HIGH, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
-    ("0010000014", "رضا", "محمدی", 2, RiskLevel.LOW, 6.0, 7.5, 0.0, StudyPeriod.MORNING),
-    ("0010000015", "نازنین", "بابایی", 2, RiskLevel.MEDIUM, 5.0, 6.5, 1.5, StudyPeriod.EVENING),
-    ("0010000016", "آرمان", "زارعی", 3, RiskLevel.LOW, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
-    ("0010000017", "هانیه", "رحیمی", 3, RiskLevel.MEDIUM, 4.5, 6.0, 1.0, StudyPeriod.EVENING),
-    ("0010000018", "سام", "نجفی", 3, RiskLevel.HIGH, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
-    ("0010000019", "ترانه", "یوسفی", 3, RiskLevel.LOW, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
-    ("0010000020", "میلاد", "عباسی", 3, RiskLevel.MEDIUM, 5.0, 6.5, 1.0, StudyPeriod.EVENING),
+    ("0010000001", "سارا", "احمدی", 0, 3.5, 6.0, 2.0, StudyPeriod.EVENING),
+    ("0010000002", "محمد", "رضایی", 0, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
+    ("0010000003", "نگار", "موسوی", 0, 4.5, 6.5, 1.0, StudyPeriod.EVENING),
+    ("0010000004", "علی", "کریمی", 0, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
+    ("0010000005", "مهسا", "حسینی", 0, 4.0, 6.5, 1.5, StudyPeriod.EVENING),
+    ("0010000006", "پارسا", "اکبری", 1, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
+    ("0010000007", "مریم", "قاسمی", 1, 4.5, 6.5, 1.0, StudyPeriod.EVENING),
+    ("0010000008", "امیر", "جعفری", 1, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
+    ("0010000009", "یاسمن", "مرادی", 1, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
+    ("0010000010", "کیان", "نوری", 1, 5.0, 6.5, 1.0, StudyPeriod.EVENING),
+    ("0010000011", "زهرا", "صادقی", 2, 6.5, 7.0, 0.0, StudyPeriod.MORNING),
+    ("0010000012", "حسین", "کاظمی", 2, 4.5, 6.0, 1.0, StudyPeriod.EVENING),
+    ("0010000013", "روناک", "طاهری", 2, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
+    ("0010000014", "رضا", "محمدی", 2, 6.0, 7.5, 0.0, StudyPeriod.MORNING),
+    ("0010000015", "نازنین", "بابایی", 2, 5.0, 6.5, 1.5, StudyPeriod.EVENING),
+    ("0010000016", "آرمان", "زارعی", 3, 6.5, 7.5, 0.0, StudyPeriod.MORNING),
+    ("0010000017", "هانیه", "رحیمی", 3, 4.5, 6.0, 1.0, StudyPeriod.EVENING),
+    ("0010000018", "سام", "نجفی", 3, 3.0, 5.5, 2.0, StudyPeriod.EVENING),
+    ("0010000019", "ترانه", "یوسفی", 3, 6.0, 7.0, 0.0, StudyPeriod.MORNING),
+    ("0010000020", "میلاد", "عباسی", 3, 5.0, 6.5, 1.0, StudyPeriod.EVENING),
 )
 
 
@@ -67,7 +66,6 @@ def seed_students(academic_year="1405-1406"):
             first_name,
             last_name,
             classroom_index,
-            risk_level,
             daily_active_hours,
             sleep_hours,
             tutoring_hours,
@@ -81,7 +79,6 @@ def seed_students(academic_year="1405-1406"):
                     "last_name": last_name,
                     "classroom": classroom,
                     "major": classroom.major,
-                    "risk_level": risk_level,
                     "daily_active_hours": daily_active_hours,
                     "sleep_hours": sleep_hours,
                     "tutoring_hours": tutoring_hours,
@@ -93,7 +90,6 @@ def seed_students(academic_year="1405-1406"):
                 student.last_name = last_name
                 student.classroom = classroom
                 student.major = classroom.major
-                student.risk_level = risk_level
                 student.daily_active_hours = daily_active_hours
                 student.sleep_hours = sleep_hours
                 student.tutoring_hours = tutoring_hours
@@ -126,17 +122,13 @@ def _make_exam(classroom, name, term, subjects, *, days_ago, max_score=20.0):
 
 
 def _seed_exams(classroom, students, band_index):
-    """A varied current-year snapshot per class: term exams, class quizzes, mock exams.
-
-    ponytail: mock distribution hand-tuned for band spread, not real data (carried over).
-    """
     rng = random.Random(f"{classroom.grade_level}-{classroom.major}-{classroom.code}")
     subjects = list(subject_options(classroom.grade_level, classroom.major))
     if not subjects:
         return
     band_bases = (10.5, 13.5, 16.5, 19.0)
 
-    exams: list[tuple[Exam, float]] = []  # (exam, per-exam noise scale)
+    exams: list[tuple[Exam, float]] = []
     exams.append((_make_exam(classroom, "نوبت اول", GradeTerm.NOBAT_1, subjects, days_ago=70), 0.9))
     if rng.random() < 0.7:
         exams.append(
@@ -170,7 +162,7 @@ def _seed_exams(classroom, students, band_index):
         base = band_bases[band_index[student.id] % len(band_bases)]
         for exam, noise in exams:
             for subject in exam.subjects:
-                if rng.random() < 0.05:  # ~5% absent -> NULL, exercises the null path
+                if rng.random() < 0.05:
                     score = None
                 else:
                     ratio = max(0.0, min(1.0, (base + rng.uniform(-noise, noise)) / 20.0))

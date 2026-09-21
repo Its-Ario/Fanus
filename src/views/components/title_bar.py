@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton
 
 
 class TitleBar(QFrame):
-    """Custom title bar replacing the native OS bar. Fully draggable."""
 
     def __init__(self, parent_window, title="فانوس"):
         super().__init__()

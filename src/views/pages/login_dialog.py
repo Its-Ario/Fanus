@@ -28,7 +28,6 @@ ROLE_LABELS = {
 
 
 class AccountChoice(QFrame):
-    """Keyboard-accessible account entry used in the chooser list."""
 
     def __init__(self, user, on_choose):
         super().__init__()
@@ -85,7 +84,6 @@ class AccountChoice(QFrame):
 
 
 class LoginDialog(QDialog):
-    """Select an active account and verify its optional login password."""
 
     def __init__(self, users, parent=None):
         super().__init__(parent)

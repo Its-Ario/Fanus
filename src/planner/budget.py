@@ -25,7 +25,6 @@ def weekly_blocks(
     capacity = max(int(capacity), 0)
 
     blocks = {sub: 0 for sub in subjects}
-    # larget remainder
     if total_w > 0 and capacity > 0:
         raw = {s: capacity * (weights[s] / total_w) for s in subjects}
         blocks = {s: int(v) for s, v in raw.items()}

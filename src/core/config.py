@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class AppConfig:
     version: int = 1
     is_configured: bool = False
-    operation_mode: str = "STANDALONE"  # Future proofing for LAN
-    hub: dict = field(default_factory=dict)  # Future proofing for LAN
+    operation_mode: str = "STANDALONE"
+    hub: dict = field(default_factory=dict)
     signature: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
@@ -27,7 +27,6 @@ class AppConfig:
 
 
 class ConfigManager:
-    """Manages loading, saving and verifying config.json"""
 
     @staticmethod
     def get_app_dir() -> Path:
@@ -49,7 +48,6 @@ class ConfigManager:
 
     @staticmethod
     def compute_signature(config_dict: Dict[str, Any]) -> str:
-        """Computes a Base64 HMAC-SHA256 signature"""
 
         payload = {k: v for k, v in config_dict.items() if k != "signature"}
 
@@ -72,7 +70,6 @@ class ConfigManager:
 
     @classmethod
     def load(cls) -> AppConfig:
-        """Loads config.json from disk"""
 
         config_path = cls.get_config_path()
 
@@ -108,7 +105,6 @@ class ConfigManager:
 
     @classmethod
     def save(cls, config: AppConfig) -> bool:
-        """Saves config using atomic writing"""
 
         config_path = cls.get_config_path()
         temp_path = config_path.with_name(f"{config_path.name}.{os.getpid()}.tmp")
@@ -116,7 +112,6 @@ class ConfigManager:
             config_dict = config.to_dict()
             config_dict["signature"] = cls.compute_signature(config_dict)
 
-            # ATOMIC WRITING
             with open(temp_path, "w", encoding="utf-8") as f:
                 json.dump(config_dict, f, ensure_ascii=False, indent=2)
                 f.flush()

@@ -33,7 +33,6 @@ _vault_state_key: Optional[bytes] = None
 
 
 def set_vault_cipher_key(key_hex: Optional[str]) -> None:
-    """Set (or clear) subkeys from the vault key."""
     global _vault_cipher_key, _vault_state_key
     if not key_hex:
         _vault_cipher_key = None
@@ -45,7 +44,6 @@ def set_vault_cipher_key(key_hex: Optional[str]) -> None:
 
 
 def _derive_subkey(master_key: bytes, context: bytes) -> bytes:
-    """Keep encryption and integrity keys cryptographically independent."""
     return HKDF(algorithm=hashes.SHA256(), length=32, salt=None, info=context).derive(master_key)
 
 
@@ -66,23 +64,23 @@ def decrypt_vault_value(stored: str) -> str:
 
 
 class DatabaseError(RuntimeError):
-    """Base class for errors safe to present to the application layer."""
+    pass
 
 
 class DatabaseConfigurationError(DatabaseError):
-    """Raised when database encryption cannot be configured."""
+    pass
 
 
 class DatabaseConnectionError(DatabaseError):
-    """Raised when a database cannot be opened."""
+    pass
 
 
 class DatabaseMigrationError(DatabaseError):
-    """Raised when the on-disk schema cannot be brought to the new version."""
+    pass
 
 
 class VaultIntegrityError(DatabaseError):
-    """Raised when the vault does not match its Windows-protected state anchor."""
+    pass
 
 
 class WindowsDpapiAnchor:
@@ -188,7 +186,6 @@ class WindowsDpapiAnchor:
 
 @dataclass(frozen=True)
 class DatabaseCredentials:
-    """Key material for encrypted vault fields."""
 
     vault_key: str
 
@@ -210,7 +207,6 @@ class DatabaseCredentials:
 
 
 class DatabaseManager:
-    """Owns both databases, schema setup, connections, and transactions."""
 
     def __init__(
         self,
@@ -249,7 +245,6 @@ class DatabaseManager:
             self.unlock_vault(self._credentials)
 
     def initialize_public(self) -> None:
-        """Open and migrate only the public application database."""
         if self._public_initialized:
             return
 
@@ -274,7 +269,6 @@ class DatabaseManager:
         logger.info("Fanus public database initialized")
 
     def unlock_vault(self, credentials: DatabaseCredentials) -> None:
-        """Open and migrate the encrypted vault after its PIN is provided."""
         if self._vault_initialized:
             return
 
@@ -305,12 +299,8 @@ class DatabaseManager:
         logger.info("Fanus confidential vault unlocked")
 
     def _verify_or_initialize_vault_anchor(self) -> None:
-        """Fail closed when a Windows-protected anchor disagrees with vault state."""
         restore_marker = self.vault_path.with_name(".restore_pending")
         if restore_marker.exists():
-            # The vault DB was just replaced by a restore; any local anchor is
-            # stale or from another machine. Rebuild it, bound to this machine,
-            # from the freshly restored vault state.
             if self.state_anchor.available:
                 try:
                     self.state_anchor.path.unlink()
@@ -477,19 +467,12 @@ class DatabaseManager:
             raise
 
     def _commit_vault_state(self) -> None:
-        """Advance the locally protected state after a committed vault mutation."""
         if not self.state_anchor.available:
             return
         self._vault_generation += 1
         self.state_anchor.store(self._vault_generation, self._vault_state_commitment())
 
     def rotate_vault_pin(self, old_pin: str, new_pin: str) -> None:
-        """Re-encrypt every vault record under ``new_pin`` after verifying ``old_pin``.
-
-        This deliberately owns the key switching order.  The caller records its public
-        audit event only after this method returns, because the two databases cannot
-        share a transaction.
-        """
         if not self._vault_initialized:
             raise DatabaseConfigurationError("The confidential vault must be unlocked first.")
         old_credentials = DatabaseCredentials.from_vault_pin(old_pin)
@@ -534,7 +517,6 @@ class DatabaseManager:
         self._vault_initialized = False
 
     def lock_vault(self) -> None:
-        """Close the confidential database and discard derived keys from this process."""
         if self._vault_initialized:
             self._close_database(vault_db)
         set_vault_cipher_key(None)
@@ -559,7 +541,6 @@ _manager: Optional[DatabaseManager] = None
 def configure_database_manager(
     credentials: Optional[DatabaseCredentials] = None,
 ) -> DatabaseManager:
-    """Configure the application-wide manager exactly once per process."""
     global _manager
     if _manager is not None and _manager.initialized:
         raise DatabaseConfigurationError("DatabaseManager is already initialized for this process.")
@@ -574,7 +555,6 @@ def get_database_manager() -> DatabaseManager:
 
 
 def _default_vault_anchor_path(vault_path: Path) -> Path:
-    """Keep the DPAPI-protected anchor outside portable database files."""
     from src.core.config import ConfigManager
 
     vault_id = hashlib.sha256(str(Path(vault_path).resolve()).encode("utf-8")).hexdigest()
@@ -582,7 +562,6 @@ def _default_vault_anchor_path(vault_path: Path) -> Path:
 
 
 def _derive_key(password: str, salt: bytes) -> str:
-    # 32-byte key
     return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 600_000).hex()
 
 

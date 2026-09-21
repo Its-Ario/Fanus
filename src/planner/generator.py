@@ -16,10 +16,7 @@ from src.storage.models import (
     subject_options,
 )
 
-
-# A relative score is meaningful only with a reasonably sized peer group.
 MIN_RELATIVE_COHORT_SIZE = 8
-# Do not treat a universally failed exam as mastery merely because it has a low top score.
 RELATIVE_SCORE_FLOOR = 0.50
 
 

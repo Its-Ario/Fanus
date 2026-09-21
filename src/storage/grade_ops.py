@@ -1,9 +1,3 @@
-"""Validated write operations for student grades.
-
-This module intentionally has no UI dependency so future entry/import surfaces use
-the same validation boundary as the current application.
-"""
-
 from collections import namedtuple
 
 from src.storage.db import db
@@ -18,7 +12,6 @@ def _number(value) -> float:
 
 
 def _score(value):
-    """A blank/None score means absent -> stored as NULL, never 0."""
     if value is None or str(value).strip() == "":
         return None
     return _number(value)
@@ -62,16 +55,6 @@ def delete_grade(grade_id) -> None:
 
 
 def save_grades_bulk(exam: Exam, entries, *, actor=None) -> SaveResult:
-    """Write an exam's changed grade cells in one transaction.
-
-    ``entries`` is an iterable of ``{student, subject_name, score}``:
-        score number (incl. 0.0) -> create or update the (exam, student, subject_name) row
-        score None               -> if a row exists, set score = NULL; else skip
-
-    A ``GradeValidationError`` from the model rolls the whole batch back; nothing
-    persists. ``actor`` is accepted for symmetry but auditing is the caller's job so
-    this module stays UI-free.
-    """
     created = updated = cleared = 0
     existing = {
         (row.student_id, row.subject_name): row

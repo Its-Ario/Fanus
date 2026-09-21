@@ -13,7 +13,6 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 @pytest.fixture(scope="session")
 def in_memory_db():
-    """Provides an isolated, fast, in-memory SQLite database for testing."""
     test_db = SqliteDatabase(":memory:")
     test_db.connect()
     yield test_db

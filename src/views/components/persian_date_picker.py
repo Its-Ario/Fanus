@@ -25,7 +25,6 @@ def _days_in_month(jy: int, jm: int) -> int:
 
 
 class PersianDatePicker(QWidget):
-    """Jalali year/month/day picker. Reads and writes Gregorian ``datetime.date``."""
 
     changed = pyqtSignal()
 
@@ -79,7 +78,6 @@ class PersianDatePicker(QWidget):
         self.month.currentIndexChanged.connect(self._on_ym_changed)
         self.day.currentIndexChanged.connect(self._on_changed)
 
-    # -- day list keeps pace with the month and leap year --------- #
 
     def _rebuild_days(self):
         jy, jm = self.year.currentData(), self.month.currentData()
@@ -102,7 +100,6 @@ class PersianDatePicker(QWidget):
         self.clear_error()
         self.changed.emit()
 
-    # -- value --------------------------------------------------- #
 
     def date(self) -> date:
         return jdatetime.date(
@@ -116,7 +113,6 @@ class PersianDatePicker(QWidget):
         self._rebuild_days()
         self.day.setCurrentIndex(self.day.findData(jalali.day))
 
-    # -- error display (mirrors ui_kit.FormField) ---------------- #
 
     def set_error(self, message: str):
         self.message.setText(message)

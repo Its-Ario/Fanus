@@ -56,7 +56,6 @@ QPushButton#SegItem:checked {{
 
 
 class UnsavedChangesDialog(QDialog):
-    """Ask for an explicit discard decision without platform-default actions."""
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -155,7 +154,6 @@ class SettingsPage(QWidget):
         self.stack.setCurrentIndex(index)
 
     def confirm_navigation_away(self) -> bool:
-        """Confirm discarding Tab 1 edits before any page-level navigation."""
         if not self.school._dirty:
             return True
         if UnsavedChangesDialog(self).exec_() != QDialog.Accepted:

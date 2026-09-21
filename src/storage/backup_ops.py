@@ -1,18 +1,3 @@
-"""Full-backup packaging and restore for the ``.fanusbak`` format.
-
-A ``.fanusbak`` file is::
-
-    b"FNSBAK01" || salt(16) || nonce(12) || AES-256-GCM(zip_bytes)
-
-The plaintext is an uncompressed ZIP of ``manifest.json`` + ``fanus.db`` and,
-when a counselor opts in, ``counselor_vault.db`` + ``database_salts.json``.
-
-Design and rationale live in ``specs/fanusbak-backup.md``. Key points enforced
-here: all validation happens before any live file is touched; the swap is
-journalled with ``.pre-restore`` rollback copies; an interrupted swap is rolled
-back on next startup by :func:`heal_interrupted_restore`.
-"""
-
 from __future__ import annotations
 
 import hashlib
@@ -40,12 +25,6 @@ from src.utils.persian_utils import to_persian_digits
 
 logger = logging.getLogger(__name__)
 
-# Obfuscation key, identical in every install and recoverable from the binary.
-# `fanus.db` inside an archive is therefore NOT confidential against anyone
-# holding a FANUS build; the counselor vault stays protected by its per-field
-# encryption under the counselor PIN. This trade is deliberate — see the spec.
-# Derived from a fixed label (not stored as a raw key blob) so it is stable and
-# obvious; secrecy is explicitly not a property of this value.
 APP_BACKUP_KEY = hashlib.sha256(b"fanus/fanusbak/app-key/v1").digest()
 MAGIC = b"FNSBAK01"
 _HKDF_INFO = b"fanus/backup/v1"
@@ -59,11 +38,11 @@ ALLOWED_ARCHIVE_FILES = {
 _VAULT_FILES = {"counselor_vault.db", "database_salts.json"}
 
 _CORRUPT = "بسته پشتیبان آسیب‌دیده یا نامعتبر است."
-_TOO_NEW = "این پشتیبان با نسخهٔ جدیدتر فانوس ساخته شده و قابل بازیابی نیست."
+_TOO_NEW = "این پشتیبان با نسخه جدیدتر فانوس ساخته شده و قابل بازیابی نیست."
 
 
 class BackupError(RuntimeError):
-    """A restore/backup failure with a Persian message safe to show the user."""
+    pass
 
 
 @dataclass(frozen=True)
@@ -73,10 +52,6 @@ class BackupInfo:
     school_name: str
     includes_vault: bool
 
-
-# --------------------------------------------------------------------------- #
-# paths & guards                                                             #
-# --------------------------------------------------------------------------- #
 
 def _paths():
     manager = get_database_manager()
@@ -108,11 +83,6 @@ def _require_admin(actor):
         raise BackupError("برای بازیابی به دسترسی «مدیریت کاربران» نیاز دارید.")
     return fresh
 
-
-# --------------------------------------------------------------------------- #
-# crypto helpers                                                             #
-# --------------------------------------------------------------------------- #
-
 def _derive(salt: bytes) -> bytes:
     return HKDF(
         algorithm=hashes.SHA256(), length=32, salt=salt, info=_HKDF_INFO
@@ -140,13 +110,7 @@ def _unseal(raw: bytes) -> bytes:
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
-
-# --------------------------------------------------------------------------- #
-# create                                                                     #
-# --------------------------------------------------------------------------- #
-
 def _sqlite_snapshot(src_path: Path, dest_path: Path) -> None:
-    """Consistent, WAL-safe copy of a live SQLite file."""
     dest_path.unlink(missing_ok=True)
     src = sqlite3.connect(str(src_path))
     try:
@@ -184,7 +148,6 @@ def _build_manifest(members: dict, include_vault: bool) -> dict:
 
 
 def create_backup(dest_path, actor, include_vault: bool = False) -> None:
-    """Write a ``.fanusbak`` at ``dest_path``. Read-only against the live DBs."""
     _require_active(actor)
     manager, data_dir, fanus, vault, salts = _paths()
     if include_vault and not manager.vault_unlocked:
@@ -230,11 +193,6 @@ def create_backup(dest_path, actor, include_vault: bool = False) -> None:
         actor, "backup.create", "Backup", None,
         "پشتیبان با گاوصندوق ساخته شد" if include_vault else "پشتیبان بدون گاوصندوق ساخته شد",
     )
-
-
-# --------------------------------------------------------------------------- #
-# inspect                                                                    #
-# --------------------------------------------------------------------------- #
 
 def _parse_version(value):
     try:
@@ -292,7 +250,6 @@ def _info(manifest: dict) -> BackupInfo:
 
 
 def inspect_backup(src_path) -> BackupInfo:
-    """Decrypt and validate the manifest only. No writes, needs no open DB."""
     blob = _unseal(Path(src_path).read_bytes())
     try:
         with zipfile.ZipFile(io.BytesIO(blob)) as zf:
@@ -300,18 +257,7 @@ def inspect_backup(src_path) -> BackupInfo:
     except zipfile.BadZipFile as exc:
         raise BackupError(_CORRUPT) from exc
 
-
-# --------------------------------------------------------------------------- #
-# restore                                                                    #
-# --------------------------------------------------------------------------- #
-
 def _close_databases(manager) -> None:
-    """Release every OS handle on the live DBs before swapping their files.
-
-    Closes the peewee proxies directly (peewee autoconnect can reopen one after
-    ``manager.close()`` thinks it is done) and then the manager for bookkeeping.
-    No peewee query may run between here and the file swaps, or it reconnects.
-    """
     from src.storage.db import db, set_vault_cipher_key, vault_db
 
     for proxy in (db, vault_db):
@@ -328,12 +274,11 @@ def _close_databases(manager) -> None:
 
 
 def _apply_restore(manager, data_dir: Path, staged: dict, includes_vault: bool) -> None:
-    """Journalled swap of every staged ``.incoming`` onto its live file."""
     journal = data_dir / ".restore_journal"
     journal.write_text(
         json.dumps({"targets": [str(p) for p in staged]}), encoding="utf-8"
     )
-    done = []  # (live_path, existed_before)
+    done = []
     try:
         _close_databases(manager)
 
@@ -363,9 +308,8 @@ def _apply_restore(manager, data_dir: Path, staged: dict, includes_vault: bool) 
 
 
 def _write_restore_audit(actor, includes_vault: bool, fanus_path: Path) -> None:
-    """Best-effort audit row into the freshly restored DB (ORM engine is down)."""
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
-    details = "بازیابی از نسخهٔ پشتیبان" + (" (با گاوصندوق)" if includes_vault else "")
+    details = "بازیابی از نسخه پشتیبان" + (" (با گاوصندوق)" if includes_vault else "")
     try:
         conn = sqlite3.connect(str(fanus_path))
         try:
@@ -389,7 +333,6 @@ def _write_restore_audit(actor, includes_vault: bool, fanus_path: Path) -> None:
 
 
 def restore_backup(src_path, actor) -> BackupInfo:
-    """Verify a ``.fanusbak`` completely, then swap it in. Caller then quits."""
     _require_admin(actor)
     manager, data_dir, fanus, vault, salts = _paths()
     blob = _unseal(Path(src_path).read_bytes())
@@ -403,7 +346,7 @@ def restore_backup(src_path, actor) -> BackupInfo:
             for name, meta in manifest["files"].items():
                 content = zf.read(name)
                 if _sha256_bytes(content) != meta.get("sha256"):
-                    raise BackupError(f"فایل «{name}» در بستهٔ پشتیبان خراب است.")
+                    raise BackupError(f"فایل «{name}» در بسته پشتیبان خراب است.")
                 live = name_to_live[name]
                 incoming = live.with_name(live.name + ".incoming")
                 incoming.write_bytes(content)
@@ -428,11 +371,6 @@ def restore_backup(src_path, actor) -> BackupInfo:
 
 
 def heal_interrupted_restore(data_dir=None) -> None:
-    """Roll an interrupted restore back to its ``.pre-restore`` state.
-
-    Called from startup before any database is opened. If the journal exists the
-    restore is never trusted — always roll back; the user re-runs Restore.
-    """
     if data_dir is None:
         try:
             data_dir = Path(get_database_manager().fanus_path).parent

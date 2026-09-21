@@ -1,6 +1,30 @@
-from PyQt5.QtCore import Qt
+from types import SimpleNamespace
 
-from src.views.components.ui_kit import AIInsightCard, Dropdown, RiskBadge, StatCard, StudentRow
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QPushButton
+
+from src.views.components.ui_kit import AIInsightCard, Dropdown, StatCard
+from src.views.pages.student_panel import StudentPanel
+
+
+def _tab_labels(panel):
+    return {b.text() for b in panel.findChildren(QPushButton) if b.objectName() == "SegItem"}
+
+
+def test_assistant_cannot_see_study_plan_tab(qtbot):
+    panel = StudentPanel(current_user=SimpleNamespace(role="assistant"))
+    qtbot.addWidget(panel)
+
+    assert "برنامه مطالعاتی هفتگی" not in _tab_labels(panel)
+    assert panel.plan not in panel._tab_viewports
+
+
+def test_counselor_keeps_study_plan_tab(qtbot):
+    panel = StudentPanel(current_user=SimpleNamespace(role="counselor"))
+    qtbot.addWidget(panel)
+
+    assert "برنامه مطالعاتی هفتگی" in _tab_labels(panel)
+    assert panel.plan in panel._tab_viewports
 
 
 def test_dropdown_supports_selection_and_keyboard_navigation(qtbot):
@@ -17,7 +41,6 @@ def test_dropdown_supports_selection_and_keyboard_navigation(qtbot):
 
 
 def test_stat_card_instantiation_and_persian_digits(qtbot):
-    """Test StatCard converts numerical value to Persian digits on creation."""
     card = StatCard(title="کل دانش آموزان", value=312, icon_emoji="👥")
     qtbot.addWidget(card)
 
@@ -25,35 +48,7 @@ def test_stat_card_instantiation_and_persian_digits(qtbot):
     assert card.isVisible() is False
 
 
-def test_risk_badge_levels(qtbot):
-    """Test RiskBadge updates styles and Persian text based on level."""
-    badge = RiskBadge(level="High")
-    qtbot.addWidget(badge)
-
-    assert "زیاد" in badge.text()
-
-    badge.set_level("Low")
-    assert "کم" in badge.text()
-
-
-def test_student_row_click_callback(qtbot):
-    """Test that clicking a StudentRow triggers its callback."""
-    clicked = False
-
-    def on_click():
-        nonlocal clicked
-        clicked = True
-
-    row = StudentRow("رضا کریمی", "پایه یازدهم", "Medium", on_click=on_click)
-    qtbot.addWidget(row)
-
-    # Simulate mouse click on the row
-    qtbot.mouseClick(row, 1)  # Qt.LeftButton = 1
-    assert clicked is True
-
-
 def test_ai_insight_card_action_button(qtbot):
-    """Test AI Insight Card trigger callback."""
     reviewed = False
 
     def on_review():
@@ -63,7 +58,6 @@ def test_ai_insight_card_action_button(qtbot):
     card = AIInsightCard("هشدار فرسودگی تحصیلی", on_review=on_review)
     qtbot.addWidget(card)
 
-    # Find the 'بررسی' button inside the card and click it
     from PyQt5.QtWidgets import QPushButton
 
     button = card.findChild(QPushButton)

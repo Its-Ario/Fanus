@@ -49,18 +49,13 @@ def _labelled(text: str, widget: QWidget) -> QWidget:
 
 
 class AttendancePage(QWidget):
-    """Daily roll-call: pick a class and date, mark the exceptions.
-
-    Entered by the assistant; the principal and counselor open it read-only.
-    """
-
     back_requested = pyqtSignal()
 
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
         self.current_user = current_user
         self.read_only = bool(current_user and current_user.role != "assistant")
-        self._rows: list[dict] = []  # {student, status, reason} baseline per grid row
+        self._rows: list[dict] = []
         self._loading = False
 
         layout = QVBoxLayout(self)
@@ -94,7 +89,7 @@ class AttendancePage(QWidget):
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels(("ردیف", "دانش‌آموز", "وضعیت", "توضیح"))
         self.table.verticalHeader().setVisible(False)
-        self.table.verticalHeader().setDefaultSectionSize(46)  # fit the 38px status Dropdown
+        self.table.verticalHeader().setDefaultSectionSize(46)
         self.table.setLayoutDirection(Qt.RightToLeft)
         self.table.setSelectionBehavior(QAbstractItemView.SelectItems)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -133,7 +128,6 @@ class AttendancePage(QWidget):
         self.date_picker.changed.connect(self._on_selector_changed)
         self._reload()
 
-    # -- data ------------------------------------------------------------ #
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -215,7 +209,6 @@ class AttendancePage(QWidget):
         self._loading = False
         self._refresh()
 
-    # -- dirty / validation ------------------------------------------- #
 
     def _row_values(self, index: int) -> tuple[str, str]:
         combo = self.table.cellWidget(index, STATUS_COL)
@@ -274,7 +267,6 @@ class AttendancePage(QWidget):
             return
         self._reload()
 
-    # -- save --------------------------------------------------------- #
 
     def _banner(self, text: str, ok: bool = False):
         fg, bg = (Colors.SUCCESS, Colors.SUCCESS_BG) if ok else (Colors.ERROR, Colors.ERROR_BG)
