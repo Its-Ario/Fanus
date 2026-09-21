@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
     def __init__(self, current_user=None):
         super().__init__()
         self.current_user = current_user
+        self.setWindowTitle("فانوس")
         self.setWindowFlag(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.resize(1200, 750)

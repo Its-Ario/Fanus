@@ -1,5 +1,6 @@
 import logging
 import sys
+from pathlib import Path
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QFontDatabase
@@ -17,13 +18,38 @@ from src.views.pages.login_dialog import LoginDialog
 
 logger = logging.getLogger(__name__)
 
+APP_NAME = "Fanus"
+APP_DISPLAY_NAME = "فانوس"
+APP_USER_MODEL_ID = "ir.itsario.fanus"
+
+
+def _app_asset_path(filename: str) -> Path:
+    base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return base_dir / "assets" / filename
+
+
+def _set_windows_app_identity():
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+    except (AttributeError, OSError):
+        logger.debug("Windows application identity could not be set.", exc_info=True)
+
 
 def main():
     setup_logging()
 
     app = QApplication(sys.argv)
+    app.setApplicationName(APP_NAME)
+    app.setApplicationDisplayName(APP_DISPLAY_NAME)
+    app.setOrganizationName(APP_NAME)
+    _set_windows_app_identity()
 
-    font_id = QFontDatabase.addApplicationFont("assets/fonts/Vazir.ttf")
+
+    font_id = QFontDatabase.addApplicationFont(str(_app_asset_path("fonts/Vazir.ttf")))
     if font_id != -1:
         families = QFontDatabase.applicationFontFamilies(font_id)
         if families:
