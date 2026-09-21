@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMessageBox,
+    QStyledItemDelegate,
     QTableView,
     QTableWidget,
     QTableWidgetItem,
@@ -47,7 +48,6 @@ SORT_COLUMNS = (
     (Student.national_id,),
     (Classroom.grade_level, Classroom.name),
     (Student.major,),
-    (Student.is_active,),
 )
 
 
@@ -114,7 +114,7 @@ def load_all_students(query: str = "", **filters) -> tuple[Student, ...]:
 
 
 class StudentTableModel(QAbstractTableModel):
-    HEADERS = ("نام دانش آموز", "کد ملی", "کلاس", "رشته", "وضعیت")
+    HEADERS = ("نام دانش آموز", "کد ملی", "کلاس", "رشته")
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -145,7 +145,6 @@ class StudentTableModel(QAbstractTableModel):
             student.national_id,
             student.classroom.name,
             student.major,
-            "فعال" if student.is_active else "غیرفعال",
         )
         if role == Qt.DisplayRole:
             return values[index.column()]
@@ -154,6 +153,13 @@ class StudentTableModel(QAbstractTableModel):
         if role == Qt.UserRole:
             return student
         return None
+
+
+class _RtlTableDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        option.direction = Qt.LeftToRight
+        option.displayAlignment = Qt.AlignRight | Qt.AlignVCenter
 
 
 class NewStudentDialog(QDialog):
@@ -377,8 +383,10 @@ class StudentsPage(QWidget):
         layout.addWidget(self.error_banner)
 
         self.table = QTableView()
+        self.table.setLayoutDirection(Qt.RightToLeft)
         self.model = StudentTableModel(self)
         self.table.setModel(self.model)
+        self.table.setItemDelegate(_RtlTableDelegate(self.table))
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SingleSelection)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -389,6 +397,8 @@ class StudentsPage(QWidget):
         header_view.setStretchLastSection(True)
         header_view.setSectionsClickable(True)
         header_view.setSortIndicatorShown(True)
+        # header_view.setLayoutDirection(Qt.RightToLeft)
+        header_view.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         header_view.setSortIndicator(self._sort_key, Qt.AscendingOrder)
         header_view.sectionClicked.connect(self._sort_by_section)
         self.table.setStyleSheet(
@@ -396,7 +406,7 @@ class StudentsPage(QWidget):
             f"border-radius: 10px; gridline-color: {Colors.BORDER}; color: {Colors.TEXT_MAIN}; }}"
             f"QHeaderView::section {{ background: {Colors.SURFACE_HOVER}; border: none; "
             f"border-bottom: 1px solid {Colors.BORDER}; padding: 10px; font-weight: 700; color: {Colors.TEXT_MUTED}; }}"
-            f"QTableView::item {{ padding: 8px; border-bottom: 1px solid {Colors.BORDER}; }}"
+            f"QTableView::item {{ padding: 8px; border-bottom: 1px solid {Colors.BORDER}; text-align: right; }}"
             f"QTableView::item:selected {{ background: {Colors.PRIMARY}18; color: {Colors.TEXT_MAIN}; }}"
         )
         self.table.doubleClicked.connect(self._open_selected_student)
