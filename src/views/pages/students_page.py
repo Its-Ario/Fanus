@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QMessageBox,
     QTableView,
     QTableWidget,
@@ -274,8 +275,6 @@ class ImportPreviewDialog(QDialog):
 
 class StudentsPage(QWidget):
     student_opened = pyqtSignal(object)
-    open_grade_entry = pyqtSignal()
-    open_attendance = pyqtSignal()
 
     def __init__(self, current_user=None, parent=None):
         super().__init__(parent)
@@ -297,39 +296,33 @@ class StudentsPage(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 24, 28, 28)
         layout.setSpacing(18)
+
         header = QHBoxLayout()
         titles = QVBoxLayout()
         titles.setSpacing(2)
         title = QLabel("دانش آموزان")
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
-        subtitle = QLabel("فهرست دانش آموزان فعال مدرسه")
+        subtitle = QLabel("مدیریت و مشاهده اطلاعات دانش‌آموزان")
         subtitle.setStyleSheet(f"font-size: 13px; color: {Colors.TEXT_MUTED};")
         titles.addWidget(title)
         titles.addWidget(subtitle)
         header.addLayout(titles)
         header.addStretch()
-        grades_button = SecondaryButton("ثبت نمرات", icon="📝")
-        grades_button.clicked.connect(self.open_grade_entry.emit)
-        header.addWidget(grades_button)
-        attendance_button = SecondaryButton("حضور و غیاب", icon="🗓")
-        attendance_button.clicked.connect(self.open_attendance.emit)
-        header.addWidget(attendance_button)
-        import_button = SecondaryButton("ورود از فایل", icon="⬆")
-        import_button.clicked.connect(self._open_import)
-        header.addWidget(import_button)
-        export_button = SecondaryButton("خروجی فایل", icon="⬇")
-        export_button.clicked.connect(self._export_roster)
-        header.addWidget(export_button)
         add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
+        operations_button = SecondaryButton("عملیات", icon="⋮")
+        operations_menu = QMenu(operations_button)
+        operations_menu.addAction("ورود از Excel", self._open_import)
+        operations_menu.addAction("خروجی به Excel", self._export_roster)
+        operations_button.setMenu(operations_menu)
+        header.addWidget(operations_button)
         layout.addLayout(header)
 
         controls = QHBoxLayout()
-        self.result_label = QLabel("در حال آماده سازی فهرست")
-        self.result_label.setStyleSheet(f"font-size: 12px; color: {Colors.TEXT_MUTED};")
-        self.search_input = SearchInput("نام یا کد ملی را جستجو کنید")
-        self.search_input.setMinimumWidth(300)
+        controls.setSpacing(10)
+        self.search_input = SearchInput("جستجو بر اساس نام، کد ملی...")
+        self.search_input.setFixedWidth(280)
         self.search_input.textChanged.connect(self._schedule_search)
 
         self.major_filter = Dropdown()
@@ -349,12 +342,21 @@ class StudentsPage(QWidget):
         self.class_filter.addItem("همه کلاس‌ها", None)
         self.class_filter.currentIndexChanged.connect(self._apply_filters)
 
-        controls.addWidget(self.result_label)
-        controls.addStretch()
-        controls.addWidget(self.major_filter)
-        controls.addWidget(self.grade_filter)
-        controls.addWidget(self.class_filter)
         controls.addWidget(self.search_input)
+        controls.addWidget(self.grade_filter)
+        controls.addWidget(self.major_filter)
+        controls.addWidget(self.class_filter)
+        controls.addStretch()
+        self.clear_filters_button = SecondaryButton("پاک کردن فیلترها")
+        self.clear_filters_button.clicked.connect(self._clear_filters)
+        controls.addWidget(self.clear_filters_button)
+        self.result_label = QLabel("تعداد: — نفر")
+        self.result_label.setStyleSheet(
+            f"background: {Colors.SURFACE_HOVER}; color: {Colors.TEXT_MUTED}; "
+            f"border: 1px solid {Colors.BORDER}; border-radius: 12px; "
+            "padding: 6px 10px; font-size: 12px; font-weight: 600;"
+        )
+        controls.addWidget(self.result_label)
         layout.addLayout(controls)
 
         self.error_banner = QFrame()
@@ -580,7 +582,8 @@ class StudentsPage(QWidget):
         self.page_label.setText(
             f"صفحه {to_persian_digits(self._page + 1)} از {to_persian_digits(self.page_count)}"
         )
-        self.result_label.setText(f"{to_persian_digits(self._total)} دانش آموز فعال")
+        self.result_label.setText(f"تعداد: {to_persian_digits(self._total)} نفر")
+        self.clear_filters_button.setEnabled(self._has_filters())
 
     def _reset_filters(self):
         for combo in (self.major_filter, self.grade_filter, self.class_filter):
@@ -591,10 +594,15 @@ class StudentsPage(QWidget):
 
     def _clear_search(self):
         self.search_input.clear()
-        self._reset_filters()
+        self._clear_filters(reload=False)
         self._query = ""
         self._page = 0
         self.reload()
+
+    def _clear_filters(self, checked=False, reload=True):
+        self._reset_filters()
+        if reload:
+            self._apply_filters()
 
     def _open_selected_student(self, index):
         student = index.data(Qt.UserRole)
@@ -634,7 +642,9 @@ class StudentsPage(QWidget):
         except Exception:
             QMessageBox.critical(self, "خطا", "خروجی گرفته نشد؛ دوباره تلاش کنید.")
             return
-        self.result_label.setText(f"{to_persian_digits(len(students))} دانش آموز خروجی گرفته شد")
+        QMessageBox.information(
+            self, "خروجی انجام شد", f"{to_persian_digits(len(students))} دانش آموز خروجی گرفته شد."
+        )
 
     def _open_import(self):
         path, _ = QFileDialog.getOpenFileName(

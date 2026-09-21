@@ -89,28 +89,35 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self.attendance_page)
 
         students_page.student_opened.connect(self._open_student_panel)
-        students_page.open_grade_entry.connect(self._open_grade_entry)
-        students_page.open_attendance.connect(self._open_attendance)
         self.student_panel.back_requested.connect(lambda: self._navigate_to(1))
-        self.grade_entry_page.back_requested.connect(lambda: self._navigate_to(1))
-        self.attendance_page.back_requested.connect(lambda: self._navigate_to(1))
+        self.grade_entry_page.back_requested.connect(lambda: self._navigate_to(0))
+        self.attendance_page.back_requested.connect(lambda: self._navigate_to(0))
 
-        self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
-        self.sidebar.add_nav_item("👥", "دانش آموزان", lambda: self._navigate_to(1))
-        self.sidebar.add_nav_item("📊", "آمار", lambda: self._navigate_to(2))
-        self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(3))
+        self.dashboard_nav_item = self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
+        self.students_nav_item = self.sidebar.add_nav_item("👥", "دانش آموزان", lambda: self._navigate_to(1))
+        self.grades_nav_item = self.sidebar.add_nav_item(
+            "📝", "آزمون‌ها و نمرات", lambda: self._navigate_to(self.pages.indexOf(self.grade_entry_page))
+        )
+        self.attendance_nav_item = self.sidebar.add_nav_item(
+            "🗓", "حضور و غیاب", lambda: self._navigate_to(self.pages.indexOf(self.attendance_page))
+        )
+        self.analytics_nav_item = self.sidebar.add_nav_item("📊", "آمار", lambda: self._navigate_to(2))
+        self.settings_nav_item = self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(3))
+        self._nav_by_page = {
+            dashboard_page: self.dashboard_nav_item,
+            students_page: self.students_nav_item,
+            self.student_panel: self.students_nav_item,
+            self.grade_entry_page: self.grades_nav_item,
+            self.attendance_page: self.attendance_nav_item,
+            analytics_page: self.analytics_nav_item,
+            self.settings_page: self.settings_nav_item,
+        }
 
         self.sidebar.finalize()
 
     def _open_student_panel(self, student) -> None:
         self.student_panel.load(student)
         self._navigate_to(self.pages.indexOf(self.student_panel))
-
-    def _open_grade_entry(self) -> None:
-        self._navigate_to(self.pages.indexOf(self.grade_entry_page))
-
-    def _open_attendance(self) -> None:
-        self._navigate_to(self.pages.indexOf(self.attendance_page))
 
     def _navigate_to(self, index: int) -> None:
         settings_index = self.pages.indexOf(self.settings_page)
@@ -119,7 +126,7 @@ class MainWindow(QMainWindow):
             and index != settings_index
             and not self.settings_page.confirm_navigation_away()
         ):
-            self.sidebar.nav_items[settings_index].setChecked(True)
+            self._restore_current_nav_item()
             return
         for page in (self.grade_entry_page, self.attendance_page):
             if (
@@ -127,11 +134,17 @@ class MainWindow(QMainWindow):
                 and index != self.pages.indexOf(page)
                 and not page.confirm_navigation_away()
             ):
+                self._restore_current_nav_item()
                 return
         if self.pages.currentWidget() is self.student_panel and index != self.pages.indexOf(self.student_panel):
             if self.student_panel.notes.unlocked:
                 self.student_panel.notes.lock()
         self.pages.setCurrentIndex(index)
+
+    def _restore_current_nav_item(self) -> None:
+        item = self._nav_by_page.get(self.pages.currentWidget())
+        if item:
+            item.setChecked(True)
 
     def closeEvent(self, event) -> None:
         current = self.pages.currentWidget()
