@@ -1,7 +1,8 @@
-from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, Qt, pyqtProperty
+from PyQt5.QtCore import QEasingCurve, QPropertyAnimation, QSize, Qt, pyqtProperty
 from PyQt5.QtWidgets import QButtonGroup, QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
 
-from src.views.components.ui_kit import Avatar
+from src.styles.theme import Colors
+from src.views.components.ui_kit import Avatar, svg_icon
 
 ROLE_LABELS = {
     "counselor": "مشاور",
@@ -41,10 +42,13 @@ class UserFooter(QFrame):
 
 class NavItem(QPushButton):
 
-    def __init__(self, icon_emoji: str, label: str):
+    def __init__(self, icon_name: str, label: str):
         super().__init__()
-        self.icon_emoji = icon_emoji
+        self.icon_name = icon_name
         self.label_text = label
+        self.setIcon(svg_icon(icon_name, Colors.TEXT_MAIN))
+        self.setIconSize(QSize(19, 19))
+        self.setToolTip(label)
         self.setProperty("class", "NavItem")
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
@@ -53,10 +57,10 @@ class NavItem(QPushButton):
 
     def set_expanded(self, expanded: bool):
         if expanded:
-            self.setText(f"{self.icon_emoji}   {self.label_text}")
+            self.setText(self.label_text)
             self.setProperty("collapsed", "false")
         else:
-            self.setText(self.icon_emoji)
+            self.setText("")
             self.setProperty("collapsed", "true")
 
         self.style().unpolish(self)
@@ -83,7 +87,10 @@ class Sidebar(QFrame):
         layout.setContentsMargins(10, 14, 10, 14)
         layout.setSpacing(6)
 
-        self.toggle_btn = QPushButton("☰")
+        self.toggle_btn = QPushButton()
+        self.toggle_btn.setIcon(svg_icon("menu", Colors.TEXT_MAIN))
+        self.toggle_btn.setIconSize(QSize(19, 19))
+        self.toggle_btn.setToolTip("باز و بسته کردن نوار کناری")
         self.toggle_btn.setObjectName("ToggleBtn")
         self.toggle_btn.setFixedHeight(36)
         self.toggle_btn.setCursor(Qt.PointingHandCursor)

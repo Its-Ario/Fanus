@@ -314,7 +314,7 @@ class StudentsPage(QWidget):
         titles.addWidget(subtitle)
         header.addLayout(titles)
         header.addStretch()
-        add_button = PrimaryButton("دانش آموز جدید", icon="+")
+        add_button = PrimaryButton("دانش آموز جدید", icon="plus")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
         operations_button = ActionDropdown()

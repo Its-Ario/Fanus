@@ -1,5 +1,8 @@
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton
+
+from src.styles.theme import Colors
+from src.views.components.ui_kit import svg_icon
 
 
 class TitleBar(QFrame):
@@ -16,15 +19,20 @@ class TitleBar(QFrame):
         layout.setContentsMargins(16, 0, 10, 0)
         layout.setSpacing(8)
 
-        title_label = QLabel(f"{title}  🏮")
+        title_label = QLabel(title)
         title_label.setObjectName("AppTitle")
+        title_icon = QLabel()
+        title_icon.setPixmap(svg_icon("lamp", Colors.TEXT_MAIN, 18).pixmap(QSize(18, 18)))
 
         layout.addWidget(title_label)
+        layout.addWidget(title_icon)
         layout.addStretch()
 
         self.btn_min = self._make_btn("─", "MinBtn")
         self.btn_max = self._make_btn("□", "MaxBtn")
-        self.btn_close = self._make_btn("✕", "CloseBtn")
+        self.btn_close = self._make_btn("", "CloseBtn")
+        self.btn_close.setIcon(svg_icon("x", Colors.TEXT_MAIN))
+        self.btn_close.setIconSize(QSize(16, 16))
 
         self.btn_min.clicked.connect(self.parent_window.showMinimized)
         self.btn_max.clicked.connect(self.toggle_maximize)

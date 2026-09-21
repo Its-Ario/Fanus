@@ -347,7 +347,7 @@ class ExamGridView(QWidget):
         layout.setSpacing(14)
 
         header = QHBoxLayout()
-        back = SecondaryButton("بازگشت", icon="←")
+        back = SecondaryButton("بازگشت", icon="arrow-right")
         back.clicked.connect(self.back_requested.emit)
         title = QLabel(exam.name)
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
@@ -538,7 +538,7 @@ class ExamListView(QWidget):
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
         header.addWidget(title)
         header.addStretch()
-        self.new_button = PrimaryButton("آزمون جدید", icon="+")
+        self.new_button = PrimaryButton("آزمون جدید", icon="plus")
         self.new_button.clicked.connect(self.new_exam_requested.emit)
         if not read_only:
             header.addWidget(self.new_button)

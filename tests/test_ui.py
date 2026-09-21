@@ -41,7 +41,7 @@ def test_dropdown_supports_selection_and_keyboard_navigation(qtbot):
 
 
 def test_stat_card_instantiation_and_persian_digits(qtbot):
-    card = StatCard(title="کل دانش آموزان", value=312, icon_emoji="👥")
+    card = StatCard(title="کل دانش آموزان", value=312, icon_name="users")
     qtbot.addWidget(card)
 
     _labels = card.findChildren(type(card.findChild(type(None))))

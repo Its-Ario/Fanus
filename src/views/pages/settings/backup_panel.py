@@ -60,7 +60,7 @@ class BackupPanel(QWidget):
         )
         create_card.body_layout.addWidget(self.include_vault)
         create_card.body_layout.addWidget(self.vault_hint)
-        make = PrimaryButton("ساخت نسخه پشتیبان", icon="💾")
+        make = PrimaryButton("ساخت نسخه پشتیبان", icon="archive")
         make.clicked.connect(self._create)
         create_card.body_layout.addWidget(make)
 
@@ -74,7 +74,7 @@ class BackupPanel(QWidget):
             )
             warning.setStyleSheet(f"font-size:12px; color:{Colors.ERROR};")
             restore_card.body_layout.addWidget(warning)
-            restore = SecondaryButton("انتخاب فایل و بازیابی", icon="↩")
+            restore = SecondaryButton("انتخاب فایل و بازیابی", icon="rotate-ccw")
             restore.clicked.connect(self._restore)
             restore_card.body_layout.addWidget(restore)
 
@@ -94,7 +94,7 @@ class BackupPanel(QWidget):
             )
             ro_warning.setStyleSheet(f"font-size:12px; color:{Colors.ERROR};")
             rollover_card.body_layout.addWidget(ro_warning)
-            rollover = SecondaryButton("پشتیبان‌گیری و شروع سال نو", icon="🎓")
+            rollover = SecondaryButton("پشتیبان‌گیری و شروع سال نو", icon="graduation-cap")
             rollover.clicked.connect(self._roll_over)
             rollover_card.body_layout.addWidget(rollover)
 

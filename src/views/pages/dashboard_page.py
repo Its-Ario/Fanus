@@ -135,13 +135,13 @@ class DashboardPage(QWidget):
 
         stats_row = QHBoxLayout()
         stats_row.setSpacing(14)
-        stats_row.addWidget(StatCard("کل دانش آموزان", data.active_student_count, "👥"))
-        stats_row.addWidget(StatCard("برنامه های فعال", data.active_plan_count, "📚"))
+        stats_row.addWidget(StatCard("کل دانش آموزان", data.active_student_count, "users"))
+        stats_row.addWidget(StatCard("برنامه های فعال", data.active_plan_count, "book-open"))
         stats_row.addWidget(
             StatCard(
                 "نرخ تکمیل هفتگی",
                 f"{data.weekly_completion_rate}٪",
-                "✅",
+                "circle-check",
                 accent_color=Colors.SUCCESS,
             )
         )

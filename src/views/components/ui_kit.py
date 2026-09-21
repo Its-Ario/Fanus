@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from PyQt5.QtCore import QPoint, QRectF, Qt
-from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QRegion
+from pathlib import Path
+
+from PyQt5.QtCore import QPoint, QRectF, QSize, Qt
+from PyQt5.QtGui import QColor, QIcon, QImage, QPainter, QPainterPath, QPen, QPixmap, QRegion
+from PyQt5.QtSvg import QSvgRenderer
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -25,6 +28,23 @@ from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.utils.profile_color import generate_profile_color
 
+_ICON_DIRECTORY = Path(__file__).resolve().parents[3] / "assets" / "icons"
+
+
+def svg_icon(name: str, color: str, size: int = 20) -> QIcon:
+    icon_path = _ICON_DIRECTORY / f"{name}.svg"
+    if not icon_path.is_file():
+        return QIcon()
+
+    image = QImage(size, size, QImage.Format_ARGB32_Premultiplied)
+    image.fill(Qt.transparent)
+    painter = QPainter(image)
+    QSvgRenderer(str(icon_path)).render(painter)
+    painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+    painter.fillRect(image.rect(), QColor(color))
+    painter.end()
+    return QIcon(QPixmap.fromImage(image))
+
 
 def apply_soft_shadow(widget, blur=18, y_offset=3, alpha=25):
     shadow = QGraphicsDropShadowEffect(widget)
@@ -36,8 +56,10 @@ def apply_soft_shadow(widget, blur=18, y_offset=3, alpha=25):
 
 class PrimaryButton(QPushButton):
     def __init__(self, text: str, icon: str | None = None):
-        label = f"{icon}  {text}" if icon else text
-        super().__init__(label)
+        super().__init__(text)
+        if icon:
+            self.setIcon(svg_icon(icon, "white"))
+            self.setIconSize(QSize(17, 17))
         self.setCursor(Qt.PointingHandCursor)
         self.setFixedHeight(38)
         self.setStyleSheet(f"""
@@ -58,8 +80,10 @@ class PrimaryButton(QPushButton):
 
 class SecondaryButton(QPushButton):
     def __init__(self, text: str, icon: str | None = None):
-        label = f"{icon}  {text}" if icon else text
-        super().__init__(label)
+        super().__init__(text)
+        if icon:
+            self.setIcon(svg_icon(icon, Colors.TEXT_MAIN))
+            self.setIconSize(QSize(17, 17))
         self.setCursor(Qt.PointingHandCursor)
         self.setFixedHeight(38)
         self.setStyleSheet(f"""
@@ -195,7 +219,7 @@ class ActionDropdown(QPushButton):
 
 
 class StatCard(QFrame):
-    def __init__(self, title: str, value, icon_emoji: str = "📊", accent_color: str | None = None):
+    def __init__(self, title: str, value, icon_name: str = "chart-no-axes-combined", accent_color: str | None = None):
         super().__init__()
         accent = accent_color or Colors.PRIMARY
         self.setFixedHeight(100)
@@ -212,9 +236,10 @@ class StatCard(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 16)
 
-        icon_bubble = QLabel(icon_emoji)
+        icon_bubble = QLabel()
         icon_bubble.setFixedSize(44, 44)
         icon_bubble.setAlignment(Qt.AlignCenter)
+        icon_bubble.setPixmap(svg_icon(icon_name, accent, 20).pixmap(QSize(20, 20)))
         icon_bubble.setStyleSheet(f"""
             background-color: {accent}20;
             border-radius: 22px;
@@ -257,8 +282,8 @@ class AIInsightCard(QFrame):
         layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(10)
 
-        icon = QLabel("✨")
-        icon.setStyleSheet("font-size: 18px;")
+        icon = QLabel()
+        icon.setPixmap(svg_icon("sparkles", Colors.AI_ACCENT, 18).pixmap(QSize(18, 18)))
 
         text = QLabel(message)
         text.setWordWrap(True)
@@ -310,7 +335,7 @@ class Avatar(QLabel):
 class EmptyState(QWidget):
     def __init__(
         self,
-        icon_emoji: str,
+        icon_name: str,
         title: str,
         subtitle: str,
         cta_text: str | None = None,
@@ -321,9 +346,12 @@ class EmptyState(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(6)
 
-        icon = QLabel(icon_emoji)
+        icon = QLabel()
         icon.setAlignment(Qt.AlignCenter)
-        icon.setStyleSheet("font-size: 40px;")
+        if icon_name:
+            icon.setPixmap(svg_icon(icon_name, Colors.TEXT_MUTED, 40).pixmap(QSize(40, 40)))
+        else:
+            icon.setFixedHeight(0)
 
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
@@ -349,7 +377,8 @@ class EmptyState(QWidget):
 class SearchInput(QLineEdit):
     def __init__(self, placeholder="جستجوی دانش آموزان..."):
         super().__init__()
-        self.setPlaceholderText(f"🔍  {placeholder}")
+        self.setPlaceholderText(placeholder)
+        self.addAction(svg_icon("search", Colors.TEXT_MUTED), QLineEdit.LeadingPosition)
         self.setFixedHeight(38)
         self.setStyleSheet(f"""
             QLineEdit {{

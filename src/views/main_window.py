@@ -93,16 +93,16 @@ class MainWindow(QMainWindow):
         self.grade_entry_page.back_requested.connect(lambda: self._navigate_to(0))
         self.attendance_page.back_requested.connect(lambda: self._navigate_to(0))
 
-        self.dashboard_nav_item = self.sidebar.add_nav_item("🏠", "داشبورد", lambda: self._navigate_to(0))
-        self.students_nav_item = self.sidebar.add_nav_item("👥", "دانش آموزان", lambda: self._navigate_to(1))
+        self.dashboard_nav_item = self.sidebar.add_nav_item("house", "داشبورد", lambda: self._navigate_to(0))
+        self.students_nav_item = self.sidebar.add_nav_item("users", "دانش آموزان", lambda: self._navigate_to(1))
         self.grades_nav_item = self.sidebar.add_nav_item(
-            "📝", "آزمون‌ها و نمرات", lambda: self._navigate_to(self.pages.indexOf(self.grade_entry_page))
+            "notebook-pen", "آزمون‌ها و نمرات", lambda: self._navigate_to(self.pages.indexOf(self.grade_entry_page))
         )
         self.attendance_nav_item = self.sidebar.add_nav_item(
-            "🗓", "حضور و غیاب", lambda: self._navigate_to(self.pages.indexOf(self.attendance_page))
+            "calendar-check", "حضور و غیاب", lambda: self._navigate_to(self.pages.indexOf(self.attendance_page))
         )
-        self.analytics_nav_item = self.sidebar.add_nav_item("📊", "آمار", lambda: self._navigate_to(2))
-        self.settings_nav_item = self.sidebar.add_nav_item("⚙️", "تنظیمات", lambda: self._navigate_to(3))
+        self.analytics_nav_item = self.sidebar.add_nav_item("chart-no-axes-combined", "آمار", lambda: self._navigate_to(2))
+        self.settings_nav_item = self.sidebar.add_nav_item("settings", "تنظیمات", lambda: self._navigate_to(3))
         self._nav_by_page = {
             dashboard_page: self.dashboard_nav_item,
             students_page: self.students_nav_item,

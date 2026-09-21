@@ -63,7 +63,7 @@ class AttendancePage(QWidget):
         layout.setSpacing(14)
 
         header = QHBoxLayout()
-        back = SecondaryButton("بازگشت", icon="←")
+        back = SecondaryButton("بازگشت", icon="arrow-right")
         back.clicked.connect(self._on_back)
         title = QLabel("حضور و غیاب")
         title.setStyleSheet(f"font-size: 20px; font-weight: 800; color: {Colors.TEXT_MAIN};")
@@ -118,7 +118,7 @@ class AttendancePage(QWidget):
         self.table.itemChanged.connect(self._on_changed)
         layout.addWidget(self.table, stretch=1)
 
-        self.empty = EmptyState("🗓", "دانش‌آموزی در این کلاس نیست", "")
+        self.empty = EmptyState("calendar-check", "دانش‌آموزی در این کلاس نیست", "")
         self.empty.hide()
         layout.addWidget(self.empty, stretch=1)
 
