@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPainter, QPen
+from PyQt5.QtCore import QPoint, QRectF, Qt
+from PyQt5.QtGui import QColor, QPainter, QPainterPath, QPen, QRegion
 from PyQt5.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -75,6 +75,123 @@ class SecondaryButton(QPushButton):
             QPushButton:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
             QPushButton:focus {{ border: 2px solid {Colors.PRIMARY}; }}
         """)
+
+
+class _ActionPopup(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.Popup | Qt.FramelessWindowHint)
+        self.setObjectName("ActionPopup")
+        self.setLayoutDirection(Qt.RightToLeft)
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(5, 5, 5, 5)
+        self._layout.setSpacing(2)
+        self._content_width = 132
+        self.setStyleSheet(f"""
+            QFrame#ActionPopup {{
+                background-color: {Colors.SURFACE};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+            }}
+            QPushButton {{
+                background: transparent;
+                color: {Colors.TEXT_MAIN};
+                border: none;
+                border-radius: 5px;
+                min-height: 34px;
+                padding: 0 10px;
+                text-align: left;
+                font-size: 13px;
+            }}
+            QPushButton:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QPushButton:focus {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QPushButton:disabled {{ color: {Colors.TEXT_DISABLED}; }}
+        """)
+
+    def resizeEvent(self, event):
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()), 8, 8)
+        self.setMask(QRegion(path.toFillPolygon().toPolygon()))
+        super().resizeEvent(event)
+
+    def add_action(self, text: str, callback=None):
+        action = QPushButton(text, self)
+        action.setCursor(Qt.PointingHandCursor)
+        action.setLayoutDirection(Qt.RightToLeft)
+
+        def trigger():
+            self.hide()
+            if callback is not None:
+                callback()
+
+        action.clicked.connect(trigger)
+        self._layout.addWidget(action)
+        self._content_width = max(self._content_width, action.fontMetrics().horizontalAdvance(text) + 38)
+        return action
+
+    def add_separator(self):
+        separator = QFrame(self)
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet(f"background: {Colors.BORDER}; margin: 4px 7px;")
+        self._layout.addWidget(separator)
+        return separator
+
+    def show_for(self, owner):
+        width = min(max(self._content_width, owner.width()), 200)
+        self.setFixedWidth(width)
+        self.adjustSize()
+        window = owner.window()
+        window_origin = window.mapToGlobal(QPoint(0, 0))
+        left, top = window_origin.x() + 4, window_origin.y() + 4
+        right, bottom = left + window.width() - 8, top + window.height() - 8
+        x = owner.mapToGlobal(QPoint(owner.width() - self.width(), owner.height() + 5)).x()
+        y = owner.mapToGlobal(QPoint(0, owner.height() + 5)).y()
+        x = max(left, min(x, right - self.width()))
+        if y + self.height() > bottom:
+            y = owner.mapToGlobal(QPoint(0, -self.height() - 5)).y()
+        y = max(top, min(y, bottom - self.height()))
+        self.move(x, y)
+        self.show()
+        buttons = self.findChildren(QPushButton)
+        if buttons:
+            buttons[0].setFocus()
+
+
+class ActionDropdown(QPushButton):
+    def __init__(self, text: str = "عملیات", parent=None):
+        super().__init__(f"{text}  ▾", parent)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFixedHeight(38)
+        self.setMinimumWidth(92)
+        self.setMaximumWidth(140)
+        self.setLayoutDirection(Qt.RightToLeft)
+        self.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Colors.SURFACE};
+                color: {Colors.TEXT_MAIN};
+                font-weight: 600;
+                font-size: 13px;
+                border: 1px solid {Colors.BORDER};
+                border-radius: 8px;
+                padding: 0 14px;
+            }}
+            QPushButton:hover {{ background-color: {Colors.SURFACE_HOVER}; }}
+            QPushButton:pressed {{ background-color: {Colors.BORDER}; }}
+            QPushButton:focus {{ border: 2px solid {Colors.PRIMARY}; }}
+        """)
+        self._popup = _ActionPopup(self)
+        self.clicked.connect(self._toggle_popup)
+
+    def add_action(self, text: str, callback=None):
+        return self._popup.add_action(text, callback)
+
+    def add_separator(self):
+        return self._popup.add_separator()
+
+    def _toggle_popup(self):
+        if self._popup.isVisible():
+            self._popup.hide()
+        else:
+            self._popup.show_for(self)
 
 
 class StatCard(QFrame):

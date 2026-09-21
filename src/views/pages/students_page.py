@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QMenu,
     QMessageBox,
     QTableView,
     QTableWidget,
@@ -32,6 +31,7 @@ from src.storage.student_ops import bulk_create_students, read_roster, write_ros
 from src.styles.theme import Colors
 from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import (
+    ActionDropdown,
     Dropdown,
     EmptyState,
     FormField,
@@ -311,11 +311,9 @@ class StudentsPage(QWidget):
         add_button = PrimaryButton("دانش آموز جدید", icon="+")
         add_button.clicked.connect(self._open_new_student)
         header.addWidget(add_button)
-        operations_button = SecondaryButton("عملیات", icon="⋮")
-        operations_menu = QMenu(operations_button)
-        operations_menu.addAction("ورود از Excel", self._open_import)
-        operations_menu.addAction("خروجی به Excel", self._export_roster)
-        operations_button.setMenu(operations_menu)
+        operations_button = ActionDropdown()
+        operations_button.add_action("ورود از فایل", self._open_import)
+        operations_button.add_action("خروجی فایل", self._export_roster)
         header.addWidget(operations_button)
         layout.addLayout(header)
 
