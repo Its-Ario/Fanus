@@ -74,9 +74,9 @@ def load_dashboard_data(today: Optional[date] = None) -> DashboardData:
     subject_rows = (
         AcademicGrade.select(
             AcademicGrade.subject_name,
-            (
-                fn.SUM(AcademicGrade.score) * 100.0 / fn.NULLIF(fn.SUM(Exam.max_score), 0)
-            ).alias("percentage"),
+            (fn.SUM(AcademicGrade.score) * 100.0 / fn.NULLIF(fn.SUM(Exam.max_score), 0)).alias(
+                "percentage"
+            ),
         )
         .join(Student)
         .switch(AcademicGrade)

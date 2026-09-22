@@ -6,7 +6,6 @@ from src.views.components.ui_kit import svg_icon
 
 
 class TitleBar(QFrame):
-
     def __init__(self, parent_window, title="فانوس"):
         super().__init__()
         self.setObjectName("TitleBar")

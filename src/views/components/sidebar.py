@@ -41,7 +41,6 @@ class UserFooter(QFrame):
 
 
 class NavItem(QPushButton):
-
     def __init__(self, icon_name: str, label: str):
         super().__init__()
         self.icon_name = icon_name

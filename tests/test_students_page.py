@@ -59,16 +59,25 @@ def test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(tmp
         exp_room = Classroom.create(name="یازدهم تجربی", grade_level=11, major="علوم تجربی")
 
         Student.create(
-            national_id="1000000001", first_name="آرش", last_name="الف",
-            classroom=math_room, major="ریاضی فیزیک",
+            national_id="1000000001",
+            first_name="آرش",
+            last_name="الف",
+            classroom=math_room,
+            major="ریاضی فیزیک",
         )
         Student.create(
-            national_id="1000000002", first_name="بابک", last_name="ب",
-            classroom=math_room, major="ریاضی فیزیک",
+            national_id="1000000002",
+            first_name="بابک",
+            last_name="ب",
+            classroom=math_room,
+            major="ریاضی فیزیک",
         )
         Student.create(
-            national_id="1000000003", first_name="پری", last_name="پ",
-            classroom=exp_room, major="علوم تجربی",
+            national_id="1000000003",
+            first_name="پری",
+            last_name="پ",
+            classroom=exp_room,
+            major="علوم تجربی",
         )
 
         by_major = load_students_page(major="ریاضی فیزیک")
@@ -81,7 +90,9 @@ def test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(tmp
         assert [s.national_id for s in by_grade.students] == ["1000000003"]
         assert [s.national_id for s in by_class.students] == ["1000000003"]
         assert [s.national_id for s in by_id_desc.students] == [
-            "1000000003", "1000000002", "1000000001",
+            "1000000003",
+            "1000000002",
+            "1000000001",
         ]
     finally:
         manager.close()

@@ -148,8 +148,12 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
             total_sessions=2,
         )
         exam = Exam(
-            name="نوبت اول", exam_date=today, term="نوبت اول", max_score=20.0,
-            grade_level=10, major=classroom.major,
+            name="نوبت اول",
+            exam_date=today,
+            term="نوبت اول",
+            max_score=20.0,
+            grade_level=10,
+            major=classroom.major,
         )
         exam.subjects = ["ریاضی", "فیزیک"]
         exam.save(force_insert=True)

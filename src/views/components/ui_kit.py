@@ -149,7 +149,9 @@ class _ActionPopup(QFrame):
 
         action.clicked.connect(trigger)
         self._layout.addWidget(action)
-        self._content_width = max(self._content_width, action.fontMetrics().horizontalAdvance(text) + 38)
+        self._content_width = max(
+            self._content_width, action.fontMetrics().horizontalAdvance(text) + 38
+        )
         return action
 
     def add_separator(self):
@@ -219,7 +221,13 @@ class ActionDropdown(QPushButton):
 
 
 class StatCard(QFrame):
-    def __init__(self, title: str, value, icon_name: str = "chart-no-axes-combined", accent_color: str | None = None):
+    def __init__(
+        self,
+        title: str,
+        value,
+        icon_name: str = "chart-no-axes-combined",
+        accent_color: str | None = None,
+    ):
         super().__init__()
         accent = accent_color or Colors.PRIMARY
         self.setFixedHeight(100)
@@ -396,7 +404,6 @@ class SearchInput(QLineEdit):
 
 
 class Dropdown(QComboBox):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setLayoutDirection(Qt.RightToLeft)
@@ -466,7 +473,6 @@ class Dropdown(QComboBox):
 
 
 class FormField(QWidget):
-
     def __init__(
         self,
         label: str,
@@ -589,7 +595,6 @@ class FormField(QWidget):
 
 
 class ProgressBar(QWidget):
-
     def __init__(self, value: int = 0, color: str | None = None):
         super().__init__()
         self.value = max(0, min(100, value))
@@ -735,7 +740,6 @@ class DataTable(QTableView):
 
 
 class Card(QFrame):
-
     def __init__(self, padding: int = 18):
         super().__init__()
         self.setObjectName("GenericCard")

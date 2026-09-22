@@ -1,4 +1,3 @@
-
 def migrate(migrator, database, **kwargs):
     if "counselornote" not in database.get_tables():
         return

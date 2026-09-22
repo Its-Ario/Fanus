@@ -14,7 +14,6 @@ BarGroup = Tuple[str, Sequence[BarSeries]]
 
 
 class BarChartWidget(QWidget):
-
     VERTICAL_GROUPED = "vertical_grouped"
     HORIZONTAL = "horizontal"
 

@@ -27,7 +27,6 @@ class AppConfig:
 
 
 class ConfigManager:
-
     @staticmethod
     def get_app_dir() -> Path:
         if sys.platform == "win32":

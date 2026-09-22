@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 class EncryptedTextField(TextField):
-
     def db_value(self, value):
         if value is None:
             return value
@@ -421,7 +420,6 @@ class SchoolProfile(Model):
 
 
 class PlannerSettings(Model):
-
     id = IntegerField(primary_key=True, default=1)
     block_minutes = IntegerField(default=90)
     weights_json = TextField(default="{}")
@@ -591,7 +589,6 @@ class Exam(BaseModel):
 
 
 class ExamClassroom(BaseModel):
-
     exam = ForeignKeyField(Exam, backref="exam_classrooms", on_delete="CASCADE")
     classroom = ForeignKeyField(Classroom, on_delete="CASCADE")
 

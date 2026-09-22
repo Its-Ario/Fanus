@@ -77,7 +77,7 @@ existing encrypted, vault-gated model with no UI today). No schema changes are r
   def _open_selected_student(self, index):
       student = index.data(Qt.UserRole)
       if student:
-          self.student_opened.emit(student)   # new signal
+          self.student_opened.emit(student)  # new signal
   ```
   `MainWindow` connects `students_page.student_opened` to
   `lambda s: (self.student_panel.load(s), self._navigate_to(student_panel_index))`.

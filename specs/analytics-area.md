@@ -104,13 +104,13 @@ Module-level loader in `analytics_page.py`, mirroring `load_dashboard_data`
 ```python
 @dataclass(frozen=True)
 class AnalyticsData:
-    panel1: ...   # per-class or school-wide risk counts + `collapsed: bool`
-    panel2: ...   # 8 weekly completion points (value or None for gap) + labels
-    panel3: ...   # per-band {avg_absences, n} + `enough_data: bool`
-    panel4: ...   # per-subject planned hours, descending
+    panel1: ...  # per-class or school-wide risk counts + `collapsed: bool`
+    panel2: ...  # 8 weekly completion points (value or None for gap) + labels
+    panel3: ...  # per-band {avg_absences, n} + `enough_data: bool`
+    panel4: ...  # per-subject planned hours, descending
 
-def load_analytics_data(grade: int | None = None, major: str | None = None) -> AnalyticsData:
-    ...
+
+def load_analytics_data(grade: int | None = None, major: str | None = None) -> AnalyticsData: ...
 ```
 
 - **Filter application:** every panel query does `.join(Classroom)` and applies

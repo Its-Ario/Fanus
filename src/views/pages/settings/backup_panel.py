@@ -36,7 +36,6 @@ def _muted(text: str) -> QLabel:
 
 
 class BackupPanel(QWidget):
-
     def __init__(self, actor, parent=None):
         super().__init__(parent)
         self.actor = actor
@@ -128,7 +127,9 @@ class BackupPanel(QWidget):
 
     def _create(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "ذخیره نسخه پشتیبان", self._default_name(),
+            self,
+            "ذخیره نسخه پشتیبان",
+            self._default_name(),
             "فایل پشتیبان فانوس (*.fanusbak)",
         )
         if not path:
@@ -177,14 +178,16 @@ class BackupPanel(QWidget):
             QMessageBox.critical(self, "بازیابی ناموفق بود", str(exc))
             return
         QMessageBox.information(
-            self, "بازیابی کامل شد",
+            self,
+            "بازیابی کامل شد",
             "داده‌ها بازیابی شدند. برنامه بسته می‌شود؛ لطفاً دوباره آن را باز کنید.",
         )
         QApplication.quit()
 
     def _roll_over(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "ذخیره نسخه پشتیبان پیش از شروع سال نو",
+            self,
+            "ذخیره نسخه پشتیبان پیش از شروع سال نو",
             self._default_name().replace("_backup_", "_rollover_"),
             "فایل پشتیبان فانوس (*.fanusbak)",
         )
@@ -205,9 +208,7 @@ class BackupPanel(QWidget):
             return
 
         current = SchoolProfile.get_or_none(id=1)
-        dialog = RolloverConfirmDialog(
-            getattr(current, "academic_year", ""), wipe_vault, self
-        )
+        dialog = RolloverConfirmDialog(getattr(current, "academic_year", ""), wipe_vault, self)
         if dialog.exec_() != QDialog.Accepted:
             return
 
@@ -220,14 +221,16 @@ class BackupPanel(QWidget):
             )
         except Exception as exc:  # noqa: BLE001 - atomic() already rolled back
             QMessageBox.critical(
-                self, "شروع سال نو ناموفق بود",
+                self,
+                "شروع سال نو ناموفق بود",
                 f"هیچ داده‌ای پاک نشد.\n\n{exc}",
             )
             return
 
         removed = to_persian_digits(str(counts.get("Student", 0)))
         QMessageBox.information(
-            self, "سال تحصیلی جدید آغاز شد",
+            self,
+            "سال تحصیلی جدید آغاز شد",
             f"{removed} دانش‌آموز و داده‌های تحصیلی مرتبط پاک شدند. "
             "برنامه بسته می‌شود؛ لطفاً دوباره آن را باز کنید.",
         )
@@ -235,7 +238,6 @@ class BackupPanel(QWidget):
 
 
 class RolloverConfirmDialog(QDialog):
-
     def __init__(self, current_year: str, wipe_vault: bool, parent=None):
         super().__init__(parent)
         self.setWindowTitle("شروع سال تحصیلی جدید")
@@ -262,9 +264,7 @@ class RolloverConfirmDialog(QDialog):
         layout.addWidget(warning)
 
         if not wipe_vault:
-            layout.addWidget(
-                _muted("یادداشت‌های محرمانه پاک نمی‌شوند چون گاوصندوق قفل است.")
-            )
+            layout.addWidget(_muted("یادداشت‌های محرمانه پاک نمی‌شوند چون گاوصندوق قفل است."))
 
         buttons = QDialogButtonBox()
         self.ok_button = buttons.addButton("شروع سال نو", QDialogButtonBox.AcceptRole)

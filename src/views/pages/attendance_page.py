@@ -141,7 +141,6 @@ class AttendancePage(QWidget):
         self.date_picker.changed.connect(self._on_selector_changed)
         self._reload()
 
-
     def showEvent(self, event):
         super().showEvent(event)
         if not self._loading and not self.has_unsaved_changes():
@@ -186,13 +185,17 @@ class AttendancePage(QWidget):
             if room is not None
             else []
         )
-        existing = {
-            r.student_id: r
-            for r in AttendanceRecord.select().where(
-                AttendanceRecord.date == record_date,
-                AttendanceRecord.student << [s.id for s in students],
-            )
-        } if students else {}
+        existing = (
+            {
+                r.student_id: r
+                for r in AttendanceRecord.select().where(
+                    AttendanceRecord.date == record_date,
+                    AttendanceRecord.student << [s.id for s in students],
+                )
+            }
+            if students
+            else {}
+        )
 
         self.table.setVisible(bool(students))
         self.empty.setVisible(room is not None and not students)
@@ -221,7 +224,6 @@ class AttendancePage(QWidget):
 
         self._loading = False
         self._refresh()
-
 
     def _row_values(self, index: int) -> tuple[str, str]:
         combo = self.table.cellWidget(index, STATUS_COL)
@@ -279,7 +281,6 @@ class AttendancePage(QWidget):
         if self.has_unsaved_changes() and not self.confirm_navigation_away():
             return
         self._reload()
-
 
     def _banner(self, text: str, ok: bool = False):
         fg, bg = (Colors.SUCCESS, Colors.SUCCESS_BG) if ok else (Colors.ERROR, Colors.ERROR_BG)

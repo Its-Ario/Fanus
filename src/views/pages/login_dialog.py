@@ -28,7 +28,6 @@ ROLE_LABELS = {
 
 
 class AccountChoice(QFrame):
-
     def __init__(self, user, on_choose):
         super().__init__()
         self.user = user
@@ -84,7 +83,6 @@ class AccountChoice(QFrame):
 
 
 class LoginDialog(QDialog):
-
     def __init__(self, users, parent=None):
         super().__init__(parent)
         self._users = list(users)

@@ -51,8 +51,12 @@ def _seed():
         national_id="2000000001", first_name="ف", last_name="خ", classroom=room
     )
     exam = Exam.create(
-        name="امتحان", exam_date=date(2025, 10, 1), term="نوبت اول",
-        grade_level=10, major="عمومی", subjects_json='["ریاضی"]',
+        name="امتحان",
+        exam_date=date(2025, 10, 1),
+        term="نوبت اول",
+        grade_level=10,
+        major="عمومی",
+        subjects_json='["ریاضی"]',
     )
     ExamClassroom.create(exam=exam, classroom=room)
     AcademicGrade.create(student=student, exam=exam, subject_name="ریاضی", score=18.0)
@@ -80,21 +84,15 @@ def test_keep_classrooms(env):
 
 
 def test_drop_classrooms(env):
-    rollover_ops.roll_over_year(
-        "1405-1406", keep_classrooms=False, wipe_vault=False, actor=ACTOR
-    )
+    rollover_ops.roll_over_year("1405-1406", keep_classrooms=False, wipe_vault=False, actor=ACTOR)
     assert Classroom.select().count() == 0
 
 
 def test_vault_wiped_only_when_requested(env):
-    rollover_ops.roll_over_year(
-        "1405-1406", keep_classrooms=True, wipe_vault=False, actor=ACTOR
-    )
+    rollover_ops.roll_over_year("1405-1406", keep_classrooms=True, wipe_vault=False, actor=ACTOR)
     assert CounselorNote.select().count() == 1
 
-    rollover_ops.roll_over_year(
-        "1406-1407", keep_classrooms=True, wipe_vault=True, actor=ACTOR
-    )
+    rollover_ops.roll_over_year("1406-1407", keep_classrooms=True, wipe_vault=True, actor=ACTOR)
     assert CounselorNote.select().count() == 0
 
 

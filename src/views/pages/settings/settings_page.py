@@ -56,7 +56,6 @@ QPushButton#SegItem:checked {{
 
 
 class UnsavedChangesDialog(QDialog):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("تغییرات ذخیره نشده")
@@ -136,7 +135,12 @@ class SettingsPage(QWidget):
         self.security = SecurityPanel(current_user)
         self.backup = BackupPanel(current_user)
         for panel in (
-            self.school, self.classes, self.users, self.planner, self.security, self.backup,
+            self.school,
+            self.classes,
+            self.users,
+            self.planner,
+            self.security,
+            self.backup,
         ):
             self.stack.addWidget(panel)
         layout.addWidget(self.stack, 1)

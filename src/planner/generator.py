@@ -95,7 +95,9 @@ def _weakness_map(
             rows_by_subject.setdefault(row.subject_name, []).append(row)
 
     cohort_ratios: Dict[Tuple[int, str], List[float]] = {}
-    exam_max_scores = {row.exam_id: row.exam.max_score for rows in rows_by_subject.values() for row in rows}
+    exam_max_scores = {
+        row.exam_id: row.exam.max_score for rows in rows_by_subject.values() for row in rows
+    }
     if exam_max_scores:
         peer_grades = (
             AcademicGrade.select(AcademicGrade, Student)

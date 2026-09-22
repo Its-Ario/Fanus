@@ -46,6 +46,7 @@ def subjects(self) -> list[str]:
     except (ValueError, TypeError):
         return []
 
+
 @subjects.setter
 def subjects(self, value):
     self.subjects_json = json.dumps(list(value or []), ensure_ascii=False)
@@ -82,7 +83,7 @@ def save(self, *args, **kwargs):
 
 ```python
 class Meta:
-    indexes = ((("exam", "classroom"), True),)   # unique
+    indexes = ((("exam", "classroom"), True),)  # unique
 ```
 
 One row per class the exam covers → one tab in the grid. A real FK (not JSON) because a
@@ -317,7 +318,7 @@ class _PersianNumberValidator(QValidator):
     def validate(self, text, pos):
         ascii_text = to_ascii_digits(text)
         if ascii_text != text:
-            return (QValidator.Acceptable, ascii_text, pos)   # rewrite in place
+            return (QValidator.Acceptable, ascii_text, pos)  # rewrite in place
         if ascii_text == "" or re.fullmatch(r"\d*\.?\d*", ascii_text):
             return (QValidator.Acceptable, ascii_text, pos)
         return (QValidator.Invalid, text, pos)
@@ -352,6 +353,7 @@ the footer counter and the §3 navigation guard.
 ```python
 SaveResult = namedtuple("SaveResult", ("created", "updated", "cleared"))
 
+
 def save_grades_bulk(exam, entries, *, actor=None) -> SaveResult:
     """entries: iterable of {student, subject_name, score}
         score: float (incl. 0.0)  -> create or update the (exam, student, subject_name) row
@@ -380,7 +382,10 @@ then on success writes one audit entry:
 
 ```python
 record_audit(
-    current_user, "grade.bulk_save", "AcademicGrade", target_id=exam.id,
+    current_user,
+    "grade.bulk_save",
+    "AcademicGrade",
+    target_id=exam.id,
     details="{} · {} ثبت، {} ویرایش، {} غایب".format(
         exam.name,
         to_persian_digits(result.created),

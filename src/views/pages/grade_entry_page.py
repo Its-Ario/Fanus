@@ -93,6 +93,7 @@ _GRID_CSS = (
     f"QTableWidget::item {{ padding: 6px; }}"
 )
 
+
 class _PersianNumberValidator(QValidator):
     def validate(self, text, pos):
         ascii_text = to_ascii_digits(text)
@@ -135,7 +136,6 @@ class _ScoreDelegate(QStyledItemDelegate):
 
 
 class _ScoreGrid(QTableWidget):
-
     changed = pyqtSignal()
 
     def __init__(self, exam: Exam, room: Classroom, read_only: bool, parent=None):
@@ -178,7 +178,6 @@ class _ScoreGrid(QTableWidget):
 
         self.itemChanged.connect(self._on_item_changed)
         self._load()
-
 
     def _load(self):
         self._loading = True
@@ -225,7 +224,6 @@ class _ScoreGrid(QTableWidget):
         self._loading = False
         if self.rowCount() and not self.read_only:
             self.setCurrentCell(0, SCORE_COL_START)
-
 
     def keyPressEvent(self, event):
         if (
@@ -319,16 +317,12 @@ class _ScoreGrid(QTableWidget):
         for model, subject, raw in self._iter_cells():
             if raw == model["cells"][subject]:
                 continue
-            out.append(
-                {"student": model["student"], "subject_name": subject, "score": raw or None}
-            )
+            out.append({"student": model["student"], "subject_name": subject, "score": raw or None})
         return out
 
     def rebaseline(self):
         for model, subject, raw in self._iter_cells():
             model["cells"][subject] = raw
-
-
 
 
 class ExamGridView(QWidget):
@@ -376,9 +370,7 @@ class ExamGridView(QWidget):
         for room in rooms:
             grid = _ScoreGrid(exam, room, read_only)
             if grid.rowCount() == 0:
-                self.tabs.addTab(
-                    EmptyState("", "دانش‌آموزی در این کلاس نیست", ""), room.name
-                )
+                self.tabs.addTab(EmptyState("", "دانش‌آموزی در این کلاس نیست", ""), room.name)
                 continue
             grid.changed.connect(self._refresh)
             self._grids.append(grid)
@@ -404,7 +396,6 @@ class ExamGridView(QWidget):
         self._refresh()
         self._on_tab(self.tabs.currentIndex())
 
-
     def _on_tab(self, index):
         widget = self.tabs.widget(index)
         if isinstance(widget, _ScoreGrid) and widget.rowCount() and not self.read_only:
@@ -415,9 +406,7 @@ class ExamGridView(QWidget):
         total = sum(g.total_count() for g in self._grids)
         invalid = sum(g.apply_validation() for g in self._grids)
         self.counter.setText(
-            "{} از {} نمره وارد شده".format(
-                to_persian_digits(filled), to_persian_digits(total)
-            )
+            "{} از {} نمره وارد شده".format(to_persian_digits(filled), to_persian_digits(total))
         )
         self.save_button.setEnabled(not self.read_only and invalid == 0)
 
@@ -474,8 +463,6 @@ class ExamGridView(QWidget):
             ok=True,
         )
         self.saved.emit()
-
-
 
 
 class _ExamTableModel(QAbstractTableModel):
@@ -585,9 +572,7 @@ class ExamListView(QWidget):
             room_ids = [ec.classroom_id for ec in exam.exam_classrooms]
             exam.classroom_count = len(room_ids)
             students = (
-                Student.select()
-                .where(Student.classroom << room_ids, Student.is_active)
-                .count()
+                Student.select().where(Student.classroom << room_ids, Student.is_active).count()
                 if room_ids
                 else 0
             )
@@ -611,8 +596,6 @@ class ExamListView(QWidget):
         exam = index.data(Qt.UserRole)
         if exam is not None:
             self.exam_opened.emit(exam)
-
-
 
 
 class NewExamDialog(QDialog):
@@ -640,9 +623,7 @@ class NewExamDialog(QDialog):
         self.subjects = QListWidget()
         self.subjects.setFixedHeight(120)
         self.subjects.setEnabled(False)
-        self._rooms = list(
-            Classroom.select().order_by(Classroom.grade_level, Classroom.name)
-        )
+        self._rooms = list(Classroom.select().order_by(Classroom.grade_level, Classroom.name))
         for room in self._rooms:
             item = QListWidgetItem(room.name)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
@@ -674,7 +655,6 @@ class NewExamDialog(QDialog):
         actions.addWidget(save)
         layout.addLayout(actions)
 
-
     def _checked_rooms(self) -> list[Classroom]:
         rooms = []
         for index in range(self.classes.count()):
@@ -693,9 +673,7 @@ class NewExamDialog(QDialog):
                 room = item.data(Qt.UserRole)
                 match = (room.grade_level, room.major) == gate
                 item.setFlags(
-                    item.flags() | Qt.ItemIsEnabled
-                    if match
-                    else item.flags() & ~Qt.ItemIsEnabled
+                    item.flags() | Qt.ItemIsEnabled if match else item.flags() & ~Qt.ItemIsEnabled
                 )
         else:
             for index in range(self.classes.count()):
@@ -730,7 +708,6 @@ class NewExamDialog(QDialog):
             for i in range(self.subjects.count())
             if self.subjects.item(i).checkState() == Qt.Checked
         ]
-
 
     def _show_error(self, message: str):
         self.error.setText(message)
@@ -792,10 +769,7 @@ class NewExamDialog(QDialog):
         self.accept()
 
 
-
-
 class GradeEntryPage(QWidget):
-
     back_requested = pyqtSignal()
 
     def __init__(self, current_user=None, parent=None):
@@ -813,7 +787,6 @@ class GradeEntryPage(QWidget):
         self.list_view.new_exam_requested.connect(self._new_exam)
         self.stack.addWidget(self.list_view)
         self.grid_view: ExamGridView | None = None
-
 
     def _open_grid(self, exam: Exam):
         if not self.confirm_navigation_away():
@@ -839,7 +812,6 @@ class GradeEntryPage(QWidget):
         dialog = NewExamDialog(self.current_user, self)
         if dialog.exec_() == QDialog.Accepted and dialog.exam is not None:
             self._mount_grid(dialog.exam)
-
 
     def has_unsaved_changes(self) -> bool:
         return (

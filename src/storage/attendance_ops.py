@@ -1,4 +1,3 @@
-
 from collections import namedtuple
 from datetime import date as _date
 
@@ -11,13 +10,17 @@ SaveResult = namedtuple("SaveResult", ("created", "updated"))
 def save_attendance_bulk(record_date: _date, entries, *, actor=None) -> SaveResult:
     created = updated = 0
     students = [e["student"] for e in list(entries) if e.get("student") is not None]
-    existing = {
-        row.student_id: row
-        for row in AttendanceRecord.select().where(
-            AttendanceRecord.date == record_date,
-            AttendanceRecord.student << [s.id for s in students],
-        )
-    } if students else {}
+    existing = (
+        {
+            row.student_id: row
+            for row in AttendanceRecord.select().where(
+                AttendanceRecord.date == record_date,
+                AttendanceRecord.student << [s.id for s in students],
+            )
+        }
+        if students
+        else {}
+    )
 
     with db.atomic():
         for entry in entries:

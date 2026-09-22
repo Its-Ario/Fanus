@@ -235,7 +235,7 @@ At the top of `DatabaseManager._verify_or_initialize_vault_anchor`:
 restore_marker = self.vault_path.with_name(".restore_pending")
 if restore_marker.exists():
     if self.state_anchor.available:
-        self.state_anchor.path.unlink(missing_ok=True)   # stale / foreign machine anchor
+        self.state_anchor.path.unlink(missing_ok=True)  # stale / foreign machine anchor
     self.state_anchor.store(0, self._vault_state_commitment())
     self._vault_generation = 0
     restore_marker.unlink()
@@ -264,7 +264,7 @@ for raw in json.loads(journal.read_text(encoding="utf-8"))["targets"]:
     target = Path(raw)
     pre = target.with_name(target.name + ".pre-restore")
     if pre.exists():
-        os.replace(pre, target)                       # deterministic: back to pre-restore state
+        os.replace(pre, target)  # deterministic: back to pre-restore state
     for suffix in ("-wal", "-shm"):
         target.with_name(target.name + suffix).unlink(missing_ok=True)
     target.with_name(target.name + ".incoming").unlink(missing_ok=True)

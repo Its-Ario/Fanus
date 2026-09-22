@@ -47,15 +47,16 @@ planner-integration contract. **Deferred:** grade-entry UI, Excel import, multi-
 
 ```python
 class GradeTerm:
-    NOBAT_1   = "نوبت اول"
-    NOBAT_2   = "نوبت دوم"
-    MOSTAMAR  = "مستمر"
-    KELASI    = "امتحان کلاسی"      # frequent weekly/daily in-school exams, non-official
-    AZMAYESHI = "آزمون آزمایشی"     # external konkoor mocks
+    NOBAT_1 = "نوبت اول"
+    NOBAT_2 = "نوبت دوم"
+    MOSTAMAR = "مستمر"
+    KELASI = "امتحان کلاسی"  # frequent weekly/daily in-school exams, non-official
+    AZMAYESHI = "آزمون آزمایشی"  # external konkoor mocks
     VALUES = (NOBAT_1, NOBAT_2, MOSTAMAR, KELASI, AZMAYESHI)
 
-MOADEL_TERMS = (GradeTerm.NOBAT_1, GradeTerm.NOBAT_2)   # only these feed معدل
-_TERM_RANK   = {GradeTerm.NOBAT_1: 1, GradeTerm.NOBAT_2: 2}
+
+MOADEL_TERMS = (GradeTerm.NOBAT_1, GradeTerm.NOBAT_2)  # only these feed معدل
+_TERM_RANK = {GradeTerm.NOBAT_1: 1, GradeTerm.NOBAT_2: 2}
 ```
 
 Everything outside `MOADEL_TERMS` is **tracking-only**: stored, displayed, fed to the
@@ -76,7 +77,10 @@ Zero-arg, returns a **running معدل**:
 4. **Truncate** to 2 decimals. No rows → `0.0`.
 
 ```python
-GPA_ROUNDING = "truncate"   # ponytail: school کارنامه truncates; flip to "half_up" for a school that rounds
+GPA_ROUNDING = (
+    "truncate"  # ponytail: school کارنامه truncates; flip to "half_up" for a school that rounds
+)
+
 
 def _round2(x: float) -> float:
     if GPA_ROUNDING == "half_up":
@@ -133,6 +137,7 @@ Per-subject معدل (§4) stays on raw `score` — its row set is `MOADEL_TERMS
 class GradeValidationError(ValueError):
     pass
 
+
 def save(self, *args, **kwargs):
     if not (self.subject_name or "").strip():
         raise GradeValidationError("نام درس نمی‌تواند خالی باشد.")
@@ -167,6 +172,8 @@ Each write path normalizes Persian digits (`float()` after conversion) and lets
 
 ```python
 _FA_TO_EN = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+
+
 def to_ascii_digits(value) -> str:
     return str(value).translate(_FA_TO_EN)
 ```
@@ -194,7 +201,8 @@ No new charts. `GPA_BANDS` tuple at `analytics_page.py:43` unchanged.
 ## 9. Migration `005` (`src/storage/migrations/fanus/005_grade_system.py`)
 
 ```python
-migrator.add_fields("academicgrade",
+migrator.add_fields(
+    "academicgrade",
     term=CharField(max_length=30, default="مستمر"),
     weight=DoubleField(default=1.0),
 )

@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from src.storage.audit import record_audit

@@ -61,8 +61,13 @@ def _add_peers(classroom, exam, subject, scores, *, start=8000000000):
 def test_exam_validation(tmp_path):
     manager, _, classroom = _student(tmp_path)
     try:
-        base = dict(exam_date=EXAM, term=GradeTerm.NOBAT_1, max_score=20.0,
-                    grade_level=10, major=AcademicMajor.MATH)
+        base = dict(
+            exam_date=EXAM,
+            term=GradeTerm.NOBAT_1,
+            max_score=20.0,
+            grade_level=10,
+            major=AcademicMajor.MATH,
+        )
         cases = (
             {**base, "name": "  ", "subjects_json": '["ریاضی ۱"]'},
             {**base, "name": "آ", "subjects_json": "[]"},
@@ -109,8 +114,7 @@ def test_gpa_uses_latest_highest_term_and_weights(tmp_path):
     try:
         subjects = ["ریاضی", "فیزیک", "شیمی", "زیست", "عربی"]
         n1 = _exam(classroom, subjects, term=GradeTerm.NOBAT_1, exam_date=EXAM)
-        n2 = _exam(classroom, subjects, term=GradeTerm.NOBAT_2,
-                   exam_date=EXAM + timedelta(days=30))
+        n2 = _exam(classroom, subjects, term=GradeTerm.NOBAT_2, exam_date=EXAM + timedelta(days=30))
         mostamar = _exam(classroom, subjects, term=GradeTerm.MOSTAMAR)
         kelasi = _exam(classroom, subjects, term=GradeTerm.KELASI)
         azmayeshi = _exam(classroom, subjects, term=GradeTerm.AZMAYESHI)
@@ -144,12 +148,14 @@ def test_recent_ratio_weakness_map_skips_null_scores(tmp_path):
     try:
         for offset, score, maximum in ((1, 20, 20), (2, 10, 20), (3, 18, 20), (30, 0, 20)):
             exam = _exam(
-                classroom, ["ریاضی"], term=GradeTerm.AZMAYESHI, max_score=maximum,
+                classroom,
+                ["ریاضی"],
+                term=GradeTerm.AZMAYESHI,
+                max_score=maximum,
                 exam_date=date.today() - timedelta(days=offset),
             )
             AcademicGrade.create(student=student, exam=exam, subject_name="ریاضی", score=score)
-        absent = _exam(classroom, ["ریاضی"], term=GradeTerm.AZMAYESHI,
-                       exam_date=date.today())
+        absent = _exam(classroom, ["ریاضی"], term=GradeTerm.AZMAYESHI, exam_date=date.today())
         AcademicGrade.create(student=student, exam=absent, subject_name="ریاضی", score=None)
 
         weaknesses = _weakness_map(student, ("ریاضی",), ())
@@ -201,9 +207,7 @@ def test_weakness_map_keeps_everyone_failed_floor(tmp_path):
 def test_weakness_map_isolates_multi_class_exam_cohorts(tmp_path):
     manager, student, classroom = _student(tmp_path)
     try:
-        other_classroom = Classroom.create(
-            name="دهم ب", grade_level=10, major=AcademicMajor.MATH
-        )
+        other_classroom = Classroom.create(name="دهم ب", grade_level=10, major=AcademicMajor.MATH)
         exam = _exam(classroom, ["فیزیک"], max_score=20.0)
         ExamClassroom.create(exam=exam, classroom=other_classroom)
         AcademicGrade.create(student=student, exam=exam, subject_name="فیزیک", score=7)

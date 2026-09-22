@@ -82,7 +82,6 @@ def _duration_minutes(start_time: str, end_time: str) -> int:
 
 
 class _DeleteRowButton(QToolButton):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(28, 28)
@@ -215,9 +214,7 @@ class SummaryTab(QWidget):
             .count()
         )
         gpa = student.calculate_gpa()
-        values = (
-            ("معدل", "—" if not grade_rows else f"{gpa:.2f}"),
-        )
+        values = (("معدل", "—" if not grade_rows else f"{gpa:.2f}"),)
         for index, (label, value) in enumerate(values):
             box = QVBoxLayout()
             heading = QLabel(label)
@@ -643,7 +640,9 @@ class PlanTab(QWidget):
 
     def _export_weekly_plan(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "ذخیره برنامه هفتگی", f"برنامه-هفتگی-{self.panel.student.full_name}.pdf",
+            self,
+            "ذخیره برنامه هفتگی",
+            f"برنامه-هفتگی-{self.panel.student.full_name}.pdf",
             "PDF Files (*.pdf)",
         )
         if not path:
@@ -726,7 +725,9 @@ class NotesTab(QWidget):
             }
             for event in events[:10]:
                 self.layout.addWidget(
-                    QLabel(f"{event.created_at:%Y-%m-%d %H:%M} — {labels.get(event.action, event.action)}")
+                    QLabel(
+                        f"{event.created_at:%Y-%m-%d %H:%M} — {labels.get(event.action, event.action)}"
+                    )
                 )
         self.layout.addStretch()
 
@@ -759,7 +760,11 @@ class NotesTab(QWidget):
 
     def _save_note(self):
         try:
-            values = {"title": self.title.text(), "tags": self.tags.text(), "content": self.content.toPlainText()}
+            values = {
+                "title": self.title.text(),
+                "tags": self.tags.text(),
+                "content": self.content.toPlainText(),
+            }
             if self.editing_note_id:
                 update_note(self.panel.current_user, self.editing_note_id, **values)
             else:
@@ -838,7 +843,11 @@ class StudentPanel(QWidget):
             f"پرونده تحصیلی: {student.full_name} — پایه {ordinal} {student.major} (کد ملی: {to_persian_digits(student.national_id)})"
         )
         self.reload()
-        default = self.stack.indexOf(self._tab_viewports[self.plan]) if self.plan in self._tab_viewports else 0
+        default = (
+            self.stack.indexOf(self._tab_viewports[self.plan])
+            if self.plan in self._tab_viewports
+            else 0
+        )
         self.group.button(default).setChecked(True)
         self.stack.setCurrentIndex(default)
 
@@ -852,7 +861,9 @@ class StudentPanel(QWidget):
 
     def _select_tab(self, button):
         index = self.group.id(button)
-        if self.notes in self._tab_viewports and index != self.stack.indexOf(self._tab_viewports[self.notes]):
+        if self.notes in self._tab_viewports and index != self.stack.indexOf(
+            self._tab_viewports[self.notes]
+        ):
             if self.notes.unlocked:
                 self.notes.lock()
         self.stack.setCurrentIndex(index)

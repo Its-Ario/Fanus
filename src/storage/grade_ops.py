@@ -74,8 +74,11 @@ def save_grades_bulk(exam: Exam, entries, *, actor=None) -> SaveResult:
                 continue
             if row is None:
                 row = AcademicGrade(
-                    exam=exam, student=student, subject_name=subject_name,
-                    score=score, weight=1.0,
+                    exam=exam,
+                    student=student,
+                    subject_name=subject_name,
+                    score=score,
+                    weight=1.0,
                 )
                 row.save(force_insert=True)
                 existing[(student.id, subject_name)] = row
@@ -89,9 +92,7 @@ def save_grades_bulk(exam: Exam, entries, *, actor=None) -> SaveResult:
 
 def list_grades(student: Student, *, terms=None, subject=None, limit=None) -> list:
     query = (
-        AcademicGrade.select(AcademicGrade, Exam)
-        .join(Exam)
-        .where(AcademicGrade.student == student)
+        AcademicGrade.select(AcademicGrade, Exam).join(Exam).where(AcademicGrade.student == student)
     )
     if terms is not None:
         query = query.where(Exam.term << tuple(terms))

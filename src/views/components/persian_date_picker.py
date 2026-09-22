@@ -11,8 +11,18 @@ from src.utils.persian_utils import to_persian_digits
 from src.views.components.ui_kit import Dropdown
 
 _MONTH_NAMES = (
-    "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
-    "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند",
+    "فروردین",
+    "اردیبهشت",
+    "خرداد",
+    "تیر",
+    "مرداد",
+    "شهریور",
+    "مهر",
+    "آبان",
+    "آذر",
+    "دی",
+    "بهمن",
+    "اسفند",
 )
 
 
@@ -25,7 +35,6 @@ def _days_in_month(jy: int, jm: int) -> int:
 
 
 class PersianDatePicker(QWidget):
-
     changed = pyqtSignal()
 
     def __init__(self, label=None, default=None, min_year=None, max_year=None):
@@ -78,7 +87,6 @@ class PersianDatePicker(QWidget):
         self.month.currentIndexChanged.connect(self._on_ym_changed)
         self.day.currentIndexChanged.connect(self._on_changed)
 
-
     def _rebuild_days(self):
         jy, jm = self.year.currentData(), self.month.currentData()
         if jy is None or jm is None:
@@ -100,7 +108,6 @@ class PersianDatePicker(QWidget):
         self.clear_error()
         self.changed.emit()
 
-
     def date(self) -> date:
         return jdatetime.date(
             self.year.currentData(), self.month.currentData(), self.day.currentData()
@@ -112,7 +119,6 @@ class PersianDatePicker(QWidget):
         self.month.setCurrentIndex(self.month.findData(jalali.month))
         self._rebuild_days()
         self.day.setCurrentIndex(self.day.findData(jalali.day))
-
 
     def set_error(self, message: str):
         self.message.setText(message)

@@ -19,8 +19,6 @@ SCHOOL_DAYS = catalog.DEFAULT_SCHOOL_DAYS
 SCHOOL_HOURS = ("07:30", "13:30")
 
 
-
-
 def test_budget_fits_capacity_and_never_starves_a_graded_subject():
     subjects = ["ریاضی", "فیزیک", "شیمی", "زیست شناسی", "عربی", "دین و زندگی"]
     coeffs = {s: catalog.coefficient_for(s, AcademicMajor.EXPERIMENTAL) for s in subjects}
@@ -126,8 +124,6 @@ def test_improvement_sweep_never_worsens_greedy(monkeypatch):
     assert swept_penalty <= greedy_penalty
 
 
-
-
 def _seed(tmp_path, *, daily_hours=5.0):
     manager = DatabaseManager(
         fanus_path=tmp_path / "fanus.db",
@@ -149,8 +145,12 @@ def _seed(tmp_path, *, daily_hours=5.0):
     )
     rows = (("زیست شناسی ۲", 9.0), ("شیمی ۲", 11.0), ("ریاضی ۲", 8.0))
     exam = Exam(
-        name="نوبت اول", exam_date=date(2026, 1, 1), term="نوبت اول", max_score=20.0,
-        grade_level=11, major=AcademicMajor.EXPERIMENTAL,
+        name="نوبت اول",
+        exam_date=date(2026, 1, 1),
+        term="نوبت اول",
+        max_score=20.0,
+        grade_level=11,
+        major=AcademicMajor.EXPERIMENTAL,
     )
     exam.subjects = [subject for subject, _ in rows]
     exam.save(force_insert=True)

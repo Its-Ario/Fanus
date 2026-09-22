@@ -33,14 +33,15 @@ def _paths(tmp_path):
 @pytest.fixture
 def env(tmp_path):
     creds = DatabaseCredentials.from_vault_pin("1234", tmp_path / "database_salts.json")
-    manager = DatabaseManager(
-        creds, state_anchor_path=tmp_path / "anchor", **_paths(tmp_path)
-    )
+    manager = DatabaseManager(creds, state_anchor_path=tmp_path / "anchor", **_paths(tmp_path))
     manager.initialize_public()
     dbmod._manager = manager
     actor = User.create(
-        username="adm", full_name="مدیر", role="principal",
-        can_manage_users=True, is_active=True,
+        username="adm",
+        full_name="مدیر",
+        role="principal",
+        can_manage_users=True,
+        is_active=True,
     )
     try:
         yield manager, actor, tmp_path
@@ -72,6 +73,7 @@ def _make_fanusbak(members: dict, manifest_overrides=None) -> bytes:
         for name, data in members.items():
             zf.writestr(name, data)
     return backup_ops._seal(buf.getvalue())
+
 
 def test_round_trip_public_only(env):
     _, actor, tmp = env
@@ -110,7 +112,8 @@ def test_round_trip_with_vault_and_reanchor(env):
 
     reopened = DatabaseManager(
         DatabaseCredentials.from_vault_pin("1234", tmp / "database_salts.json"),
-        state_anchor_path=tmp / "anchor2", **_paths(tmp),
+        state_anchor_path=tmp / "anchor2",
+        **_paths(tmp),
     )
     reopened.initialize()
     try:
@@ -148,7 +151,9 @@ def test_checksum_mismatch_named(env):
     _, actor, tmp = env
     _seed()
     dest = tmp / "c.fanusbak"
-    dest.write_bytes(_make_fanusbak({"fanus.db": b"whatever"}, {"files": {"fanus.db": {"sha256": "00" * 32}}}))
+    dest.write_bytes(
+        _make_fanusbak({"fanus.db": b"whatever"}, {"files": {"fanus.db": {"sha256": "00" * 32}}})
+    )
     with pytest.raises(BackupError):
         backup_ops.restore_backup(dest, actor)
     assert Student.select().count() == 5
@@ -158,10 +163,18 @@ def test_zip_slip_rejected(env):
     _, actor, tmp = env
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
-        zf.writestr("manifest.json", json.dumps({
-            "format": "fanusbak", "format_version": 1, "fanus_version": "0.0.1",
-            "includes_vault": False, "files": {"../evil.txt": {"sha256": "x"}},
-        }))
+        zf.writestr(
+            "manifest.json",
+            json.dumps(
+                {
+                    "format": "fanusbak",
+                    "format_version": 1,
+                    "fanus_version": "0.0.1",
+                    "includes_vault": False,
+                    "files": {"../evil.txt": {"sha256": "x"}},
+                }
+            ),
+        )
         zf.writestr("../evil.txt", b"x")
     dest = tmp / "e.fanusbak"
     dest.write_bytes(backup_ops._seal(buf.getvalue()))
@@ -250,8 +263,11 @@ def test_restore_requires_admin(env):
     dest = tmp / "b.fanusbak"
     backup_ops.create_backup(dest, actor)
     weak = User.create(
-        username="asst", full_name="معاون", role="assistant",
-        can_manage_users=False, is_active=True,
+        username="asst",
+        full_name="معاون",
+        role="assistant",
+        can_manage_users=False,
+        is_active=True,
     )
     with pytest.raises(BackupError):
         backup_ops.restore_backup(dest, weak)
@@ -287,9 +303,9 @@ def test_heal_interrupted_restore(tmp_path):
     (data / "fanus.db-wal").write_bytes(b"x")
     (data / "counselor_vault.db.incoming").write_bytes(b"leftover")
     (data / ".restore_pending").write_bytes(b"")
-    (data / ".restore_journal").write_text(json.dumps(
-        {"targets": [str(data / "fanus.db"), str(data / "counselor_vault.db")]}
-    ))
+    (data / ".restore_journal").write_text(
+        json.dumps({"targets": [str(data / "fanus.db"), str(data / "counselor_vault.db")]})
+    )
 
     backup_ops.heal_interrupted_restore(data)
 

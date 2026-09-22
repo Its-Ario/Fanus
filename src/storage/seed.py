@@ -140,8 +140,12 @@ def _seed_exams(classroom, students, band_index):
         exams.append(
             (
                 _make_exam(
-                    classroom, f"امتحان کلاسی {i + 1}", GradeTerm.KELASI, picked,
-                    days_ago=rng.randint(1, 56), max_score=ceiling,
+                    classroom,
+                    f"امتحان کلاسی {i + 1}",
+                    GradeTerm.KELASI,
+                    picked,
+                    days_ago=rng.randint(1, 56),
+                    max_score=ceiling,
                 ),
                 1.6,
             )
@@ -151,7 +155,10 @@ def _seed_exams(classroom, students, band_index):
             exams.append(
                 (
                     _make_exam(
-                        classroom, f"آزمون آزمایشی {i + 1}", GradeTerm.AZMAYESHI, subjects,
+                        classroom,
+                        f"آزمون آزمایشی {i + 1}",
+                        GradeTerm.AZMAYESHI,
+                        subjects,
                         days_ago=rng.randint(3, 45),
                     ),
                     1.4,
@@ -167,9 +174,7 @@ def _seed_exams(classroom, students, band_index):
                 else:
                     ratio = max(0.0, min(1.0, (base + rng.uniform(-noise, noise)) / 20.0))
                     score = round(ratio * exam.max_score, 2)
-                AcademicGrade.create(
-                    student=student, exam=exam, subject_name=subject, score=score
-                )
+                AcademicGrade.create(student=student, exam=exam, subject_name=subject, score=score)
 
 
 def seed(academic_year="1405-1406"):

@@ -23,7 +23,6 @@ _WEIGHT_FIELDS = (
 
 
 class PlannerPanel(QWidget):
-
     def __init__(self, actor, editable, parent=None):
         super().__init__(parent)
         self.actor, self.editable = actor, editable

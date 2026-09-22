@@ -37,7 +37,6 @@ from src.views.components.ui_kit import (
 
 
 class FirstRunWizard(QDialog):
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlag(Qt.FramelessWindowHint)

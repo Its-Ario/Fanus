@@ -44,8 +44,10 @@ Four columns, Persian headers, this order:
 Sectioned like `grade_ops.py`: parse, write, commit. One file.
 
 ```python
-ImportRow    = namedtuple("ImportRow", ("line", "first_name", "last_name", "national_id", "classroom_name"))
-RowError     = namedtuple("RowError", ("line", "national_id", "reason"))   # reason: Persian str
+ImportRow = namedtuple(
+    "ImportRow", ("line", "first_name", "last_name", "national_id", "classroom_name")
+)
+RowError = namedtuple("RowError", ("line", "national_id", "reason"))  # reason: Persian str
 ImportResult = namedtuple("ImportResult", ("created", "skipped", "errors"))
 #   created: int                 -> rows written (or would-be-written when commit=False)
 #   skipped: list[RowError]      -> national_id already exists, or duplicate line within the file

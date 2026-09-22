@@ -48,7 +48,6 @@ def main():
     app.setOrganizationName(APP_NAME)
     _set_windows_app_identity()
 
-
     font_id = QFontDatabase.addApplicationFont(str(_app_asset_path("fonts/Vazir.ttf")))
     if font_id != -1:
         families = QFontDatabase.applicationFontFamilies(font_id)

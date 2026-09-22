@@ -28,18 +28,30 @@ def _seed(tmp_path):
     SchoolProfile.create(id=1, school_name="مدرسه نمونه", academic_year="1405-1406", type="high")
     room = Classroom.create(grade_level=12, major=AcademicMajor.EXPERIMENTAL, code="الف")
     student = Student.create(
-        national_id="1000000001", first_name="سارا", last_name="احمدی", classroom=room,
-        major=AcademicMajor.EXPERIMENTAL, daily_active_hours=4,
+        national_id="1000000001",
+        first_name="سارا",
+        last_name="احمدی",
+        classroom=room,
+        major=AcademicMajor.EXPERIMENTAL,
+        daily_active_hours=4,
     )
     first = Exam(
-        name="نوبت اول", exam_date=date(2026, 1, 1), term=GradeTerm.NOBAT_1,
-        max_score=20, grade_level=12, major=AcademicMajor.EXPERIMENTAL,
+        name="نوبت اول",
+        exam_date=date(2026, 1, 1),
+        term=GradeTerm.NOBAT_1,
+        max_score=20,
+        grade_level=12,
+        major=AcademicMajor.EXPERIMENTAL,
     )
     first.subjects = ["زیست"]
     first.save(force_insert=True)
     second = Exam(
-        name="آزمون آزمایشی", exam_date=date(2026, 2, 1), term=GradeTerm.AZMAYESHI,
-        max_score=100, grade_level=12, major=AcademicMajor.EXPERIMENTAL,
+        name="آزمون آزمایشی",
+        exam_date=date(2026, 2, 1),
+        term=GradeTerm.AZMAYESHI,
+        max_score=100,
+        grade_level=12,
+        major=AcademicMajor.EXPERIMENTAL,
     )
     second.subjects = ["زیست", "شیمی"]
     second.save(force_insert=True)
@@ -50,14 +62,23 @@ def _seed(tmp_path):
     AcademicGrade.create(student=student, exam=second, subject_name="شیمی", score=80)
     AttendanceRecord.create(student=student, date=date(2026, 1, 3), status=AttendanceStatus.ABSENT)
     plan = StudyPlan.create(student=student, start_date=date(2026, 1, 3), end_date=date(2026, 1, 9))
-    StudySession.create(plan=plan, day_of_week=0, start_time="16:00", end_time="17:30", subject_name="زیست", duration_minutes=90)
+    StudySession.create(
+        plan=plan,
+        day_of_week=0,
+        start_time="16:00",
+        end_time="17:30",
+        subject_name="زیست",
+        duration_minutes=90,
+    )
     return manager, student, plan
 
 
 def test_pdf_data_helpers_select_and_aggregate(tmp_path):
     manager, student, plan = _seed(tmp_path)
     try:
-        assert [(row.subject, row.term) for row in pdf_export.formal_scores(student)] == [("زیست", GradeTerm.NOBAT_1)]
+        assert [(row.subject, row.term) for row in pdf_export.formal_scores(student)] == [
+            ("زیست", GradeTerm.NOBAT_1)
+        ]
         assert pdf_export.mock_trends(student)[0].percentage == 70.0
         assert pdf_export.attendance_summary(student).absent == 1
         assert pdf_export.weekly_hours(plan) == ((1.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), 1.5)

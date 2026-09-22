@@ -77,9 +77,7 @@ def read_roster(path) -> list[ImportRow]:
 def write_roster(path, students) -> None:
     path = Path(path)
     suffix = path.suffix.lower()
-    records = [
-        [s.first_name, s.last_name, s.national_id, s.classroom.name] for s in students
-    ]
+    records = [[s.first_name, s.last_name, s.national_id, s.classroom.name] for s in students]
     if suffix == ".xlsx":
         from openpyxl import Workbook
 
@@ -96,8 +94,6 @@ def write_roster(path, students) -> None:
             writer.writerows(records)
     else:
         raise ValueError("فرمت فایل پشتیبانی نمی‌شود؛ فقط xlsx و csv.")
-
-
 
 
 def _valid_national_id(value: str) -> bool:
@@ -122,7 +118,9 @@ def bulk_create_students(rows, *, commit: bool = True, actor=None) -> ImportResu
             continue
         if row.classroom_name not in rooms:
             errors.append(
-                RowError(row.line, row.national_id, "کلاس «{}» یافت نشد.".format(row.classroom_name))
+                RowError(
+                    row.line, row.national_id, "کلاس «{}» یافت نشد.".format(row.classroom_name)
+                )
             )
             continue
         if row.national_id in existing_ids:

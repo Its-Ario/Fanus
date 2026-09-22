@@ -49,8 +49,7 @@ def roll_over_year(new_year, *, keep_classrooms, wipe_vault, actor):
         "SchoolProfile",
         None,
         details=(
-            f"سال جدید: {new_year} · "
-            f"کلاس‌ها {'نگه داشته شد' if keep_classrooms else 'پاک شد'}"
+            f"سال جدید: {new_year} · کلاس‌ها {'نگه داشته شد' if keep_classrooms else 'پاک شد'}"
         ),
     )
     return counts

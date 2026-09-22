@@ -83,10 +83,11 @@ def _require_admin(actor):
         raise BackupError("برای بازیابی به دسترسی «مدیریت کاربران» نیاز دارید.")
     return fresh
 
+
 def _derive(salt: bytes) -> bytes:
-    return HKDF(
-        algorithm=hashes.SHA256(), length=32, salt=salt, info=_HKDF_INFO
-    ).derive(APP_BACKUP_KEY)
+    return HKDF(algorithm=hashes.SHA256(), length=32, salt=salt, info=_HKDF_INFO).derive(
+        APP_BACKUP_KEY
+    )
 
 
 def _seal(plaintext: bytes) -> bytes:
@@ -99,7 +100,7 @@ def _seal(plaintext: bytes) -> bytes:
 def _unseal(raw: bytes) -> bytes:
     if len(raw) < len(MAGIC) + 16 + 12 + 16 or raw[: len(MAGIC)] != MAGIC:
         raise BackupError(_CORRUPT)
-    body = raw[len(MAGIC):]
+    body = raw[len(MAGIC) :]
     salt, nonce, ciphertext = body[:16], body[16:28], body[28:]
     try:
         return AESGCM(_derive(salt)).decrypt(nonce, ciphertext, None)
@@ -109,6 +110,7 @@ def _unseal(raw: bytes) -> bytes:
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
 
 def _sqlite_snapshot(src_path: Path, dest_path: Path) -> None:
     dest_path.unlink(missing_ok=True)
@@ -190,9 +192,13 @@ def create_backup(dest_path, actor, include_vault: bool = False) -> None:
             stage.unlink(missing_ok=True)
 
     record_audit(
-        actor, "backup.create", "Backup", None,
+        actor,
+        "backup.create",
+        "Backup",
+        None,
         "پشتیبان با گاوصندوق ساخته شد" if include_vault else "پشتیبان بدون گاوصندوق ساخته شد",
     )
+
 
 def _parse_version(value):
     try:
@@ -232,7 +238,8 @@ def _read_manifest(zf: zipfile.ZipFile) -> dict:
     if backup_v is None or current_v is None:
         logger.warning(
             "Skipping backup version check: backup=%s current=%s",
-            manifest.get("fanus_version"), get_version(),
+            manifest.get("fanus_version"),
+            get_version(),
         )
     elif backup_v > current_v:
         raise BackupError(_TOO_NEW)
@@ -257,6 +264,7 @@ def inspect_backup(src_path) -> BackupInfo:
     except zipfile.BadZipFile as exc:
         raise BackupError(_CORRUPT) from exc
 
+
 def _close_databases(manager) -> None:
     from src.storage.db import db, set_vault_cipher_key, vault_db
 
@@ -275,9 +283,7 @@ def _close_databases(manager) -> None:
 
 def _apply_restore(manager, data_dir: Path, staged: dict, includes_vault: bool) -> None:
     journal = data_dir / ".restore_journal"
-    journal.write_text(
-        json.dumps({"targets": [str(p) for p in staged]}), encoding="utf-8"
-    )
+    journal.write_text(json.dumps({"targets": [str(p) for p in staged]}), encoding="utf-8")
     done = []
     try:
         _close_databases(manager)
@@ -319,7 +325,9 @@ def _write_restore_audit(actor, includes_vault: bool, fanus_path: Path) -> None:
                 " target_entity, target_id, student_id, details) "
                 "VALUES (?, ?, ?, ?, ?, 'backup.restore', 'Backup', NULL, NULL, ?)",
                 (
-                    str(uuid4()), stamp, stamp,
+                    str(uuid4()),
+                    stamp,
+                    stamp,
                     str(getattr(actor, "id", "")) or None,
                     getattr(actor, "full_name", "") or "—",
                     details,

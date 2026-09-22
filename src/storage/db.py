@@ -186,7 +186,6 @@ class WindowsDpapiAnchor:
 
 @dataclass(frozen=True)
 class DatabaseCredentials:
-
     vault_key: str
 
     def __post_init__(self) -> None:
@@ -207,7 +206,6 @@ class DatabaseCredentials:
 
 
 class DatabaseManager:
-
     def __init__(
         self,
         credentials: Optional[DatabaseCredentials] = None,

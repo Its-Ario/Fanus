@@ -236,7 +236,6 @@ class NewStudentDialog(QDialog):
 
 
 class ImportPreviewDialog(QDialog):
-
     def __init__(self, result, parent=None):
         super().__init__(parent)
         self.setWindowTitle("پیش‌نمایش ورود دانش آموزان")
@@ -678,9 +677,7 @@ class StudentsPage(QWidget):
         try:
             result = bulk_create_students(rows, commit=True, actor=self.current_user)
         except Exception:
-            QMessageBox.critical(
-                self, "خطا", "ثبت دانش آموزان ممکن نشد؛ هیچ رکوردی اضافه نشد."
-            )
+            QMessageBox.critical(self, "خطا", "ثبت دانش آموزان ممکن نشد؛ هیچ رکوردی اضافه نشد.")
             return
         if self.current_user is not None:
             record_audit(
@@ -689,8 +686,7 @@ class StudentsPage(QWidget):
                 "Student",
                 None,
                 details=(
-                    f"{result.created} افزوده، {len(result.skipped)} رد، "
-                    f"{len(result.errors)} خطا"
+                    f"{result.created} افزوده، {len(result.skipped)} رد، {len(result.errors)} خطا"
                 ),
             )
         self._page = 0
