@@ -1,163 +1,265 @@
-# Graph Report - .  (2026-09-03)
+# Graph Report - Fanus  (2026-09-22)
 
 ## Corpus Check
-- Corpus is ~33,178 words - fits in a single context window. You may not need a graph.
+- 86 files · ~74,091 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 360 nodes · 918 edges · 25 communities (24 shown, 1 thin omitted)
-- Extraction: 85% EXTRACTED · 15% INFERRED · 0% AMBIGUOUS · INFERRED: 142 edges (avg confidence: 0.56)
-- Token cost: 83,384 input · 14,714 output
+- 1104 nodes · 3600 edges · 45 communities (42 shown, 3 thin omitted)
+- Extraction: 81% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 698 edges (avg confidence: 0.51)
+- Token cost: 0 input · 0 output
+
+## Graph Freshness
+- Built from commit: `c0de6ae4`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- UI Kit & Theming
-- Data Models & Auth
-- Form Fields & Validation
-- Title Bar & Main Window
-- Sidebar Navigation
-- Config Management
-- Database Init & Vault Unlock
-- App Bootstrap & Wiring
-- Database Manager (Dual DB)
-- Vault Key Derivation
-- Risk Prediction Inference
-- Database Errors & Migration
-- Windows DPAPI Vault Anchor
-- CI Pipeline & Build Deps
-- Persian Digit Utilities
-- Fanus Logo & Branding
-- Vault Anchor Path & Salts
-- Model Training & Tuning
-- Encrypted Field Type
-- Fanus (misc)
+- Colors
+- models.py
+- FirstRunWizard
+- GradeEntryPage
+- .__init__
+- ConfigManager
+- set_vault_cipher_key
+- db.py
+- DatabaseManager
+- .from_vault_pin
+- generator.py
+- student_panel.py
+- WindowsDpapiAnchor
+- Build Windows Executable job (PyInstaller onefile)
+- to_persian_digits
+- Fanus Logo
+- StudentsPage
+- AttendancePage
+- Fanus Exam Model & Grade Entry UI — Design
+- backup_ops.py
+- fanus
+- settings_ops.py
+- Spec — Settings Area (Administrative & Structural Setup)
+- Spec — Analytics Page (آمار — School Overview)
+- Spec — `.fanusbak` Full Backup & Restore
+- settings_page.py
+- _ScoreGrid
+- backup_panel.py
+- Spec — Student Panel (پرونده تحصیلی — Per-Student Record)
+- Fanus Grade System — Design
+- DataTable
+- PrimaryButton
+- ClassesPanel
+- test_grades.py
+- FormField
+- Student Import / Export — Design
+- _AuditModel
+- Daily Attendance — Design
+- 003_reshape_academicgrade.py
+- 001_add_audit_note_metadata.py
+- 004_attendance_record.py
 
 ## God Nodes (most connected - your core abstractions)
-1. `FirstRunWizard` - 39 edges
-2. `DatabaseManager` - 34 edges
-3. `Colors` - 26 edges
-4. `DashboardPage` - 26 edges
-5. `LoginDialog` - 24 edges
-6. `ConfigManager` - 23 edges
-7. `SubjectAverage` - 20 edges
-8. `TitleBar` - 19 edges
-9. `FormField` - 19 edges
-10. `Card` - 19 edges
+1. `Colors` - 80 edges
+2. `PrimaryButton` - 80 edges
+3. `Student` - 74 edges
+4. `SecondaryButton` - 71 edges
+5. `FormField` - 65 edges
+6. `Exam` - 60 edges
+7. `DatabaseManager` - 58 edges
+8. `Dropdown` - 58 edges
+9. `to_persian_digits()` - 56 edges
+10. `Classroom` - 53 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `FakeUser` --uses--> `DatabaseConfigurationError`  [INFERRED]
   tests/test_auth_and_login.py → src/storage/db.py
 - `FakeUser` --uses--> `DatabaseManager`  [INFERRED]
   tests/test_auth_and_login.py → src/storage/db.py
-- `FakeUser` --uses--> `Avatar`  [INFERRED]
-  tests/test_auth_and_login.py → src/views/components/ui_kit.py
-- `FakeUser` --uses--> `LoginDialog`  [INFERRED]
-  tests/test_auth_and_login.py → src/views/pages/login_dialog.py
-- `main()` --calls--> `MainWindow`  [EXTRACTED]
-  main.py → src/views/main_window.py
+- `FakeUser` --uses--> `User`  [INFERRED]
+  tests/test_auth_and_login.py → src/storage/models.py
+- `FakeUser` --uses--> `Classroom`  [INFERRED]
+  tests/test_auth_and_login.py → src/storage/models.py
+- `FakeUser` --uses--> `Student`  [INFERRED]
+  tests/test_auth_and_login.py → src/storage/models.py
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **Offline-first delivery for old hardware: bundled GUI exe + transpiled ML model** — readme_fanus, requirements_app_gui_stack, github_workflows_build_build_windows_job, requirements_train_m2cgen_transpile [INFERRED 0.75]
 - **Dual-database migration regime linked by student_id UUID** — src_storage_migrations_fanus_readme_migration_policy, src_storage_migrations_vault_readme_migration_policy, src_storage_migrations_vault_readme_cross_db_student_id [EXTRACTED 0.75]
 
-## Communities (25 total, 1 thin omitted)
+## Communities (45 total, 3 thin omitted)
 
-### Community 0 - "UI Kit & Theming"
+### Community 0 - "Colors"
+Cohesion: 0.05
+Nodes (55): BarGroup, QComboBox, QTableView, QValidator, AcademicMajor, Classroom, GradeValidationError, Student (+47 more)
+
+### Community 1 - "models.py"
+Cohesion: 0.05
+Nodes (67): Model, QToolButton, encrypt_vault_value(), create_grade(), list_grades(), _number(), SaveResult, save_grades_bulk() (+59 more)
+
+### Community 2 - "FirstRunWizard"
 Cohesion: 0.08
-Nodes (41): date, QLineEdit, Colors, generate_profile_color(), AIInsightCard, apply_soft_shadow(), Card, Divider (+33 more)
+Nodes (8): QFrame, TitleBar, FirstRunWizard, QDialog, AccountChoice, LoginDialog, QDialog, QFrame
 
-### Community 1 - "Data Models & Auth"
-Cohesion: 0.09
-Nodes (29): Model, hash_password(), verify_password(), encrypt_vault_value(), AcademicGrade, AcademicMajor, AttendanceRecord, AuditLog (+21 more)
+### Community 3 - "GradeEntryPage"
+Cohesion: 0.15
+Nodes (5): QMainWindow, MainWindow, GradeEntryPage, _labelled(), QWidget
 
-### Community 2 - "Form Fields & Validation"
-Cohesion: 0.11
-Nodes (11): QLabel, validate_academic_year(), validate_username(), FormField, A labelled text field shared by focused forms such as setup and settings., Propagate changed helper text size through parent layouts immediately., FirstRunWizard, QDialog (+3 more)
+### Community 4 - ".__init__"
+Cohesion: 0.07
+Nodes (17): QIcon, NavItem, QFrame, QPushButton, Sidebar, UserFooter, _ActionPopup, AIInsightCard (+9 more)
 
-### Community 3 - "Title Bar & Main Window"
-Cohesion: 0.11
-Nodes (9): QMainWindow, QFrame, Custom title bar replacing the native OS bar. Fully draggable., TitleBar, MainWindow, LoginDialog, QDialog, QFrame (+1 more)
+### Community 5 - "ConfigManager"
+Cohesion: 0.36
+Nodes (4): Any, AppConfig, ConfigManager, Path
 
-### Community 4 - "Sidebar Navigation"
-Cohesion: 0.16
-Nodes (8): NavItem, QFrame, QPushButton, A sidebar button that collapses cleanly to icon-only mode., Sidebar, UserFooter, Avatar, test_avatar_uses_an_explicit_account_color()
-
-### Community 5 - "Config Management"
-Cohesion: 0.24
-Nodes (8): Any, AppConfig, ConfigManager, Path, Saves config using atomic writing, Manages loading, saving and verifying config.json, Computes a Base64 HMAC-SHA256 signature, Loads config.json from disk
-
-### Community 6 - "Database Init & Vault Unlock"
-Cohesion: 0.20
-Nodes (8): fixture, SqliteDatabase, DatabaseConnectionError, Open and migrate only the public application database., Open and migrate the encrypted vault after its PIN is provided., Raised when a database cannot be opened., in_memory_db(), Provides an isolated, fast, in-memory SQLite database for testing.
-
-### Community 7 - "App Bootstrap & Wiring"
-Cohesion: 0.29
-Nodes (9): main(), setup_logging(), configure_database_manager(), DatabaseCredentials, get_database_manager(), Key material for encrypted vault fields., Configure the application-wide manager exactly once per process., init_database() (+1 more)
-
-### Community 8 - "Database Manager (Dual DB)"
+### Community 6 - "set_vault_cipher_key"
 Cohesion: 0.21
-Nodes (4): DatabaseManager, Owns both databases, schema setup, connections, and transactions., Advance the locally protected state after a committed vault mutation., Close the confidential database and discard derived keys from this process.
+Nodes (6): SqliteDatabase, DatabaseConnectionError, _derive_subkey(), set_vault_cipher_key(), in_memory_db(), fixture
 
-### Community 9 - "Vault Key Derivation"
-Cohesion: 0.23
-Nodes (11): decrypt_vault_value(), _derive_key(), _derive_subkey(), Set (or clear) subkeys from the vault key., Keep encryption and integrity keys cryptographically independent., set_vault_cipher_key(), test_different_vault_pin_derives_a_different_key(), test_manager_creates_two_plain_sqlite_databases() (+3 more)
+### Community 7 - "db.py"
+Cohesion: 0.21
+Nodes (12): _app_asset_path(), main(), Path, _set_windows_app_identity(), setup_logging(), heal_interrupted_restore(), configure_database_manager(), DatabaseCredentials (+4 more)
 
-### Community 10 - "Risk Prediction Inference"
-Cohesion: 0.26
-Nodes (6): Runs instant (< 1ms) inference using exported m2cgen code. Returns:…, RiskPredictor, test_burnout_candidate_prediction(), test_failing_student_prediction(), test_more_absences_increases_risk(), test_perfect_student_prediction()
+### Community 8 - "DatabaseManager"
+Cohesion: 0.15
+Nodes (11): DatabaseConfigurationError, DatabaseError, DatabaseManager, DatabaseMigrationError, RuntimeError, load_students_page(), test_load_students_page_filters_by_major_and_classroom_and_sorts_columns(), test_major_selection_narrows_the_class_filter() (+3 more)
 
-### Community 11 - "Database Errors & Migration"
-Cohesion: 0.25
-Nodes (7): RuntimeError, DatabaseConfigurationError, DatabaseError, DatabaseMigrationError, Base class for errors safe to present to the application layer., Raised when database encryption cannot be configured., Raised when the on-disk schema cannot be brought to the new version.
+### Community 9 - ".from_vault_pin"
+Cohesion: 0.18
+Nodes (12): decrypt_vault_value(), _default_vault_anchor_path(), _derive_key(), _load_or_create_salts(), Path, env(), fixture, test_different_vault_pin_derives_a_different_key() (+4 more)
 
-### Community 12 - "Windows DPAPI Vault Anchor"
-Cohesion: 0.31
-Nodes (4): Fail closed when a Windows-protected anchor disagrees with vault state., Raised when the vault does not match its Windows-protected state anchor., VaultIntegrityError, WindowsDpapiAnchor
+### Community 10 - "generator.py"
+Cohesion: 0.09
+Nodes (52): NamedTuple, setter, block_requests(), low_priority_subjects(), priority_weights(), weekly_blocks(), coefficient_for(), subject_family() (+44 more)
 
-### Community 13 - "CI Pipeline & Build Deps"
-Cohesion: 0.24
-Nodes (10): Build Windows Executable job (PyInstaller onefile), CI Build Pipeline (GitHub Actions), Lint & Test job (Ruff + pytest, Python 3.8, uv), Fanus - offline-first study manager & planner for old hardware, App runtime dependencies (PyQt5, PyInstaller), m2cgen model-to-native-code transpilation, Training dependencies (numpy, pandas, scikit-learn, joblib, m2cgen), Fanus DB migration policy (numbered peewee-migrate, restore-path test) (+2 more)
+### Community 11 - "student_panel.py"
+Cohesion: 0.08
+Nodes (27): QTableWidget, CounselorNote, _actor(), create_note(), list_note_audit(), list_notes(), NotePermissionError, NoteValidationError (+19 more)
 
-### Community 14 - "Persian Digit Utilities"
-Cohesion: 0.48
-Nodes (5): Converts any number or string containing numbers into Persian digits., to_persian_digits(), test_already_persian_digits_unchanged(), test_convert_english_digits_to_persian(), test_mixed_strings()
+### Community 13 - "Build Windows Executable job (PyInstaller onefile)"
+Cohesion: 0.32
+Nodes (8): Build Windows Executable job (PyInstaller onefile), CI Build Pipeline (GitHub Actions), Lint & Test job (Ruff + pytest, Python 3.8, uv), Fanus - offline-first study manager & planner for old hardware, App runtime dependencies (PyQt5, PyInstaller), Fanus DB migration policy (numbered peewee-migrate, restore-path test), Cross-database student_id UUID relationship (vault <-> fanus.db), Counselor vault migration policy (peewee-migrate, preserve cross-db student_id UUID)
 
-### Community 15 - "Fanus Logo & Branding"
+### Community 14 - "to_persian_digits"
+Cohesion: 0.10
+Nodes (39): QFont, QPrinter, QRectF, attendance_summary(), AttendanceSummary, _ensure_font(), export_academic_summary_pdf(), export_weekly_plan_pdf() (+31 more)
+
+### Community 15 - "Fanus Logo"
 Cohesion: 0.47
 Nodes (6): Navy and Amber Brand Palette, Circuit Board Traces and Nodes, Fanus Logo, Fanus Project, Glowing Four-Pointed Star / Sparkle, Circuit-Style Lantern Motif
 
-### Community 16 - "Vault Anchor Path & Salts"
-Cohesion: 0.40
-Nodes (4): _default_vault_anchor_path(), _load_or_create_salts(), Path, Keep the DPAPI-protected anchor outside portable database files.
+### Community 16 - "StudentsPage"
+Cohesion: 0.11
+Nodes (11): ImportResult, ImportRow, bulk_create_students(), Path, read_roster(), _rows_from_csv(), _rows_from_xlsx(), _valid_national_id() (+3 more)
 
-### Community 17 - "Model Training & Tuning"
+### Community 17 - "AttendancePage"
+Cohesion: 0.14
+Nodes (16): list_attendance(), _date, SaveResult, save_attendance_bulk(), AttendancePage, _labelled(), QWidget, _class() (+8 more)
+
+### Community 18 - "Fanus Exam Model & Grade Entry UI — Design"
+Cohesion: 0.07
+Nodes (28): 10. Files touched, 11. `ponytail:` markers to leave in code, 1.1 `Exam` — new (`src/storage/models.py`), 1.2 `ExamClassroom` — new link table, 1.3 `AcademicGrade` — reshaped (`src/storage/models.py`), 1.4 `PUBLIC_MODELS`, 1. Data model, 2. Migration `006_exam_model.py` (`src/storage/migrations/fanus/`) (+20 more)
+
+### Community 19 - "backup_ops.py"
+Cohesion: 0.13
+Nodes (41): _apply_restore(), BackupError, BackupInfo, _build_manifest(), _close_databases(), create_backup(), _derive(), _info() (+33 more)
+
+### Community 22 - "settings_ops.py"
+Cohesion: 0.16
+Nodes (21): hash_password(), verify_password(), record_audit(), _active_actor(), _actor(), change_own_password(), delete_classroom(), PermissionError (+13 more)
+
+### Community 25 - "Spec — Settings Area (Administrative & Structural Setup)"
+Cohesion: 0.07
+Nodes (26): 10. Codex review — disposition, 1. Shell & integration, 2. Access & authorization, 3. Save semantics, 4. Audit, 5. Tab 1 — عمومی و اطلاعات مدرسه, 6.1 Schema change — model layer **and** one migration file, 6.2 Classes list (+18 more)
+
+### Community 26 - "Spec — Analytics Page (آمار — School Overview)"
+Cohesion: 0.09
+Nodes (22): 1. Shell & integration, 2. Data layer, 3. Layout, 4. Filter bar, 5. Chart widgets, 6. Panels, 7. Performance targets (dual-core Win7 / 2 GB), 8. Tests (+14 more)
+
+### Community 27 - "Spec — `.fanusbak` Full Backup & Restore"
+Cohesion: 0.09
+Nodes (22): 10. Test plan — `tests/test_backup.py`, 1.1 `manifest.json`, 1. File format, 2. Module & API — new `src/storage/backup_ops.py`, 3. Create flow (`create_backup`), 4. Restore flow (`restore_backup`), 5.1 The marker, 5.2 `db.py` change — the only edit to existing storage code (+14 more)
+
+### Community 28 - "settings_page.py"
+Cohesion: 0.15
+Nodes (9): parse_levels(), PlannerPanel, QWidget, QWidget, SchoolPanel, QDialog, QWidget, SettingsPage (+1 more)
+
+### Community 29 - "_ScoreGrid"
+Cohesion: 0.18
+Nodes (3): to_ascii_digits(), ExamGridView, _ScoreGrid
+
+### Community 30 - "backup_panel.py"
+Cohesion: 0.17
+Nodes (8): validate_academic_year(), BackupPanel, _heading(), _muted(), QDialog, QLabel, QWidget, RolloverConfirmDialog
+
+### Community 31 - "Spec — Student Panel (پرونده تحصیلی — Per-Student Record)"
+Cohesion: 0.11
+Nodes (18): 1. Shell & integration, 2. Header, 3. Tab 1 — خلاصه و سوابق (summary & history), 4.1 Active-plan view, 4.2 Empty state — no active plan, 4.3 Manual editing (create or edit-existing), 4. Tab 2 — برنامه مطالعاتی هفتگی (weekly study plan), 5.1 Locked state (+10 more)
+
+### Community 32 - "Fanus Grade System — Design"
+Cohesion: 0.11
+Nodes (17): 10. Seed — `src/storage/seed.py`, 11. Tests, 12. `ponytail:` markers to leave in code, 13. Not in scope, 1. Purpose & scope, 2. Data model — `AcademicGrade` (`src/storage/models.py:513`), 3. Term taxonomy, 4. معدل (GPA) — `Student.calculate_gpa()` (`src/storage/models.py:495`) (+9 more)
+
+### Community 33 - "DataTable"
+Cohesion: 0.22
+Nodes (6): DataTable, UserDialog, QAbstractTableModel, QWidget, _UsersModel, UsersPanel
+
+### Community 34 - "PrimaryButton"
+Cohesion: 0.33
+Nodes (8): SchoolProfile, PrimaryButton, SecondaryButton, ClassDialog, _Dialog, PasswordChangeDialog, QDialog, VaultPinDialog
+
+### Community 35 - "ClassesPanel"
+Cohesion: 0.20
+Nodes (4): _ClassesModel, ClassesPanel, QAbstractTableModel, QWidget
+
+### Community 36 - "test_grades.py"
+Cohesion: 0.39
+Nodes (14): _weakness_map(), _round2(), _add_peers(), _exam(), _student(), test_exam_validation(), test_gpa_empty_when_no_moadel_grades(), test_gpa_uses_latest_highest_term_and_weights() (+6 more)
+
+### Community 38 - "Student Import / Export — Design"
+Cohesion: 0.14
+Nodes (13): 1. Scope, 2. Template / file format, 3. `src/storage/student_ops.py` — UI-free module, 4. UI — `src/views/pages/students_page.py`, 5. Wiring, audit, deps, 6. Tests — `tests/test_student_import.py`, 7. File touch list, commit — `bulk_create_students(rows, *, commit=True, actor=None) -> ImportResult` (+5 more)
+
+### Community 39 - "_AuditModel"
+Cohesion: 0.23
+Nodes (4): _AuditModel, QAbstractTableModel, QWidget, SecurityPanel
+
+### Community 40 - "Daily Attendance — Design"
+Cohesion: 0.25
+Nodes (7): Daily Attendance — Design, Data, Not in scope, `src/storage/attendance_ops.py` (UI-free, mirrors `grade_ops`), `src/views/pages/attendance_page.py` — `AttendancePage(QWidget)`, Tests — `tests/test_attendance.py` (asserts + `qtbot`, no framework), Wiring
+
+### Community 41 - "003_reshape_academicgrade.py"
 Cohesion: 0.60
-Nodes (4): load_and_harmonize_datasets(), train_and_export(), benchmark_combination(), main()
+Nodes (3): _columns(), migrate(), _tables()
 
-### Community 18 - "Encrypted Field Type"
-Cohesion: 0.40
-Nodes (3): EncryptedTextField, TextField encrypted with AES-256-GCM with vault key., TextField
+### Community 42 - "001_add_audit_note_metadata.py"
+Cohesion: 0.83
+Nodes (3): migrate(), rollback(), _tables()
+
+### Community 43 - "004_attendance_record.py"
+Cohesion: 0.83
+Nodes (3): migrate(), rollback(), _tables()
 
 ## Knowledge Gaps
-- **6 isolated node(s):** `fanus`, `AcademicMajor`, `StudyPeriod`, `App runtime dependencies (PyQt5, PyInstaller)`, `Training dependencies (numpy, pandas, scikit-learn, joblib, m2cgen)` (+1 more)
+- **130 isolated node(s):** `fanus`, `Context`, `Goals`, `Non-goals (deferred, not this build)`, `Pre-existing conditions this spec must work around` (+125 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `FirstRunWizard` connect `Form Fields & Validation` to `UI Kit & Theming`, `Data Models & Auth`, `Title Bar & Main Window`, `Config Management`, `App Bootstrap & Wiring`?**
-  _High betweenness centrality (0.137) - this node is a cross-community bridge._
-- **Why does `DatabaseManager` connect `Database Manager (Dual DB)` to `UI Kit & Theming`, `Data Models & Auth`, `Config Management`, `Database Init & Vault Unlock`, `App Bootstrap & Wiring`, `Vault Key Derivation`, `Database Errors & Migration`, `Windows DPAPI Vault Anchor`, `Vault Anchor Path & Salts`?**
-  _High betweenness centrality (0.126) - this node is a cross-community bridge._
-- **Why does `ConfigManager` connect `Config Management` to `UI Kit & Theming`, `Form Fields & Validation`, `Database Init & Vault Unlock`, `App Bootstrap & Wiring`, `Database Manager (Dual DB)`, `Database Errors & Migration`, `Windows DPAPI Vault Anchor`?**
-  _High betweenness centrality (0.108) - this node is a cross-community bridge._
-- **Are the 11 inferred relationships involving `FirstRunWizard` (e.g. with `ConfigManager` and `DatabaseCredentials`) actually correct?**
-  _`FirstRunWizard` has 11 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 2 inferred relationships involving `DatabaseManager` (e.g. with `ConfigManager` and `FakeUser`) actually correct?**
-  _`DatabaseManager` has 2 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 20 inferred relationships involving `Colors` (e.g. with `AIInsightCard` and `Avatar`) actually correct?**
-  _`Colors` has 20 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 18 inferred relationships involving `DashboardPage` (e.g. with `MainWindow` and `AcademicGrade`) actually correct?**
-  _`DashboardPage` has 18 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Colors` connect `Colors` to `DataTable`, `FirstRunWizard`, `models.py`, `.__init__`, `FormField`, `PrimaryButton`, `db.py`, `GradeEntryPage`, `student_panel.py`, `StudentsPage`, `AttendancePage`, `settings_page.py`, `_ScoreGrid`, `backup_panel.py`?**
+  _High betweenness centrality (0.072) - this node is a cross-community bridge._
+- **Why does `Student` connect `Colors` to `models.py`, `PrimaryButton`, `GradeEntryPage`, `test_grades.py`, `ClassesPanel`, `DataTable`, `DatabaseManager`, `generator.py`, `StudentsPage`, `AttendancePage`, `backup_ops.py`, `settings_ops.py`, `settings_page.py`, `_ScoreGrid`?**
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+- **Why does `to_persian_digits()` connect `to_persian_digits` to `Colors`, `models.py`, `PrimaryButton`, `GradeEntryPage`, `.__init__`, `FormField`, `student_panel.py`, `StudentsPage`, `AttendancePage`, `backup_ops.py`, `settings_ops.py`, `_ScoreGrid`, `backup_panel.py`?**
+  _High betweenness centrality (0.044) - this node is a cross-community bridge._
+- **Are the 60 inferred relationships involving `Colors` (e.g. with `BarChartWidget` and `LineChartWidget`) actually correct?**
+  _`Colors` has 60 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 41 inferred relationships involving `PrimaryButton` (e.g. with `Colors` and `AttendancePage`) actually correct?**
+  _`PrimaryButton` has 41 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 37 inferred relationships involving `Student` (e.g. with `PlanParams` and `PlanResult`) actually correct?**
+  _`Student` has 37 INFERRED edges - model-reasoned connections that need verification._
+- **Are the 37 inferred relationships involving `SecondaryButton` (e.g. with `Colors` and `AttendancePage`) actually correct?**
+  _`SecondaryButton` has 37 INFERRED edges - model-reasoned connections that need verification._
