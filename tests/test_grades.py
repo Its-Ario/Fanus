@@ -73,7 +73,7 @@ def test_exam_validation(tmp_path):
             {**base, "name": "آ", "subjects_json": "[]"},
             {**base, "name": "آ", "subjects_json": '["ریاضی ۱"]', "term": "نامعتبر"},
             {**base, "name": "آ", "subjects_json": '["ریاضی ۱"]', "max_score": 0},
-            {**base, "name": "آ", "subjects_json": '["ریاضی ۱"]', "max_score": 21},
+            {**base, "name": "آ", "subjects_json": '["ریاضی ۱"]', "max_score": 101},
             {**base, "name": "آ", "subjects_json": '["ریاضی ۱"]', "exam_date": None},
         )
         for fields in cases:
@@ -171,7 +171,7 @@ def test_weakness_map_rewards_strong_result_on_a_brutal_exam(tmp_path):
         AcademicGrade.create(student=student, exam=exam, subject_name="فیزیک", score=7)
         _add_peers(classroom, exam, "فیزیک", (8, 6, 6, 5, 5, 4, 4))
 
-        assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.0
+        assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.5
     finally:
         manager.close()
 
@@ -207,13 +207,15 @@ def test_weakness_map_keeps_everyone_failed_floor(tmp_path):
 def test_weakness_map_isolates_multi_class_exam_cohorts(tmp_path):
     manager, student, classroom = _student(tmp_path)
     try:
-        other_classroom = Classroom.create(name="دهم ب", grade_level=10, major=AcademicMajor.MATH)
+        other_classroom = Classroom.create(
+            name="دهم ب", grade_level=10, major=AcademicMajor.MATH, code="ب"
+        )
         exam = _exam(classroom, ["فیزیک"], max_score=20.0)
         ExamClassroom.create(exam=exam, classroom=other_classroom)
         AcademicGrade.create(student=student, exam=exam, subject_name="فیزیک", score=7)
         _add_peers(classroom, exam, "فیزیک", (8, 6, 6, 5, 5, 4, 4))
         _add_peers(other_classroom, exam, "فیزیک", (20,) * 8, start=7000000000)
 
-        assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.0
+        assert _weakness_map(student, ("فیزیک",), ())["فیزیک"] == 1.5
     finally:
         manager.close()

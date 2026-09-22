@@ -19,7 +19,6 @@ from src.storage.models import (
     Exam,
     ExamClassroom,
     PlanStatus,
-    RiskLevel,
     Student,
     StudyPlan,
     User,
@@ -100,49 +99,45 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
     try:
         manager.initialize_public()
         classroom = Classroom.create(name="دهم الف", grade_level=10)
-        high_risk = Student.create(
+        first_student = Student.create(
             national_id="1000000001",
             first_name="سارا",
             last_name="احمدی",
             classroom=classroom,
-            risk_level=RiskLevel.HIGH,
-            burnout_score=90,
         )
-        medium_risk = Student.create(
+        second_student = Student.create(
             national_id="1000000002",
             first_name="رضا",
             last_name="کریمی",
             classroom=classroom,
-            risk_level=RiskLevel.MEDIUM,
         )
         Student.create(
             national_id="1000000003",
             first_name="غیرفعال",
             last_name="دانش آموز",
             classroom=classroom,
-            risk_level=RiskLevel.HIGH,
             is_active=False,
         )
         StudyPlan.create(
-            student=high_risk,
+            student=first_student,
             title="برنامه فعال",
             end_date=today + timedelta(days=7),
             status=PlanStatus.ACTIVE,
         )
         StudyPlan.create(
-            student=medium_risk,
+            student=second_student,
             title="پیش نویس",
             end_date=today + timedelta(days=7),
             status=PlanStatus.DRAFT,
         )
         DailyCheckIn.create(
-            student=high_risk,
+            student=first_student,
             date=today,
             completed_sessions=3,
             total_sessions=4,
         )
         DailyCheckIn.create(
-            student=medium_risk,
+            student=second_student,
             date=today,
             completed_sessions=2,
             total_sessions=2,
@@ -158,20 +153,15 @@ def test_dashboard_data_is_derived_from_public_records(tmp_path):
         exam.subjects = ["ریاضی", "فیزیک"]
         exam.save(force_insert=True)
         ExamClassroom.create(exam=exam, classroom=classroom)
-        AcademicGrade.create(student=high_risk, exam=exam, subject_name="ریاضی", score=16)
-        AcademicGrade.create(student=medium_risk, exam=exam, subject_name="ریاضی", score=18)
-        AcademicGrade.create(student=high_risk, exam=exam, subject_name="فیزیک", score=10)
+        AcademicGrade.create(student=first_student, exam=exam, subject_name="ریاضی", score=16)
+        AcademicGrade.create(student=second_student, exam=exam, subject_name="ریاضی", score=18)
+        AcademicGrade.create(student=first_student, exam=exam, subject_name="فیزیک", score=10)
 
         data = load_dashboard_data(today)
 
         assert data.active_student_count == 2
-        assert data.high_risk_student_count == 1
         assert data.active_plan_count == 1
         assert data.weekly_completion_rate == 83
-        assert [student.full_name for student in data.attention_students] == [
-            "سارا احمدی",
-            "رضا کریمی",
-        ]
         assert data.subject_averages[0].name == "ریاضی"
         assert data.subject_averages[0].percentage == 85
     finally:

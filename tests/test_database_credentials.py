@@ -36,6 +36,7 @@ def test_manager_creates_two_plain_sqlite_databases(tmp_path):
         fanus_path=fanus_path,
         vault_path=vault_path,
         migrations_dir=tmp_path / "migrations",
+        state_anchor_path=tmp_path / "vault-anchor",
     )
 
     try:
@@ -73,6 +74,7 @@ def test_vault_state_commitment_changes_after_a_vault_mutation(tmp_path):
         fanus_path=tmp_path / "fanus.db",
         vault_path=tmp_path / "vault.db",
         migrations_dir=tmp_path / "migrations",
+        state_anchor_path=tmp_path / "vault-anchor",
     )
     try:
         manager.initialize()
