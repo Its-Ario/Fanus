@@ -22,6 +22,7 @@ from src.storage.models import (
     Classroom,
     DailyCheckIn,
     Exam,
+    PlanStatus,
     SchoolProfile,
     Student,
     StudyPlan,
@@ -205,6 +206,8 @@ def load_analytics_data(
         AttendanceRecord.select().join(Student).join(Classroom).where(*conditions).exists()
     )
 
+    week_start = _week_start(today)
+    week_end = week_start + timedelta(days=7)
     workload_rows = (
         StudySession.select(
             StudySession.subject_name,
@@ -213,7 +216,12 @@ def load_analytics_data(
         .join(StudyPlan)
         .join(Student)
         .join(Classroom)
-        .where(*conditions)
+        .where(
+            *conditions,
+            StudyPlan.status == PlanStatus.ACTIVE,
+            StudyPlan.start_date < week_end,
+            StudyPlan.end_date >= week_start,
+        )
         .group_by(StudySession.subject_name)
         .having(fn.SUM(StudySession.duration_minutes) > 0)
         .order_by(fn.SUM(StudySession.duration_minutes).desc())
