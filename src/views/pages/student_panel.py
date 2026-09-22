@@ -9,6 +9,7 @@ from PyQt5.QtGui import QColor, QPainter, QPen
 from PyQt5.QtWidgets import (
     QButtonGroup,
     QCheckBox,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -26,6 +27,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
+from src import pdf_export
 from src.planner import generator
 from src.storage.db import DatabaseCredentials, get_database_manager
 from src.storage.models import (
@@ -281,6 +283,9 @@ class SummaryTab(QWidget):
     def _add_grades(self, student):
         grades = Card()
         grades.body_layout.addWidget(_section_title("نمرات"))
+        export = SecondaryButton("خروجی کارنامه PDF", icon="printer")
+        export.clicked.connect(self._export_summary)
+        grades.body_layout.addWidget(export, 0, Qt.AlignLeft)
         toggle = QCheckBox("نمایش امتحان‌های کلاسی و آزمایشی")
         toggle.setLayoutDirection(Qt.RightToLeft)
         grades.body_layout.addWidget(toggle)
@@ -343,6 +348,22 @@ class SummaryTab(QWidget):
             recent.body_layout.addWidget(label)
         self.layout.addWidget(recent)
 
+    def _export_summary(self):
+        student = self.panel.student
+        path, _ = QFileDialog.getSaveFileName(
+            self, "ذخیره کارنامه", f"کارنامه-{student.full_name}.pdf", "PDF Files (*.pdf)"
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".pdf"):
+            path += ".pdf"
+        try:
+            pdf_export.export_summary_pdf(student, path)
+        except Exception as exc:
+            QMessageBox.critical(self, "خروجی PDF", f"ایجاد PDF ناموفق بود: {exc}")
+            return
+        QMessageBox.information(self, "خروجی PDF", f"کارنامه ذخیره شد:\n{path}")
+
 
 class PlanTab(QWidget):
     def __init__(self, panel):
@@ -396,8 +417,7 @@ class PlanTab(QWidget):
         edit = PrimaryButton("ویرایش دستی", icon="pencil")
         edit.clicked.connect(self._begin_edit)
         export = SecondaryButton("چاپ برنامه A4 PDF", icon="printer")
-        export.setEnabled(False)
-        export.setToolTip("خروجی PDF هنوز فعال نشده است.")
+        export.clicked.connect(self._export_weekly_plan)
         archive = SecondaryButton("پایان برنامه", icon="archive")
         archive.clicked.connect(self._archive)
         for button in (regenerate, edit, export, archive):
@@ -620,6 +640,22 @@ class PlanTab(QWidget):
             archive_plan(self.plan)
             self.reload()
             self.panel.summary.reload()
+
+    def _export_weekly_plan(self):
+        path, _ = QFileDialog.getSaveFileName(
+            self, "ذخیره برنامه هفتگی", f"برنامه-هفتگی-{self.panel.student.full_name}.pdf",
+            "PDF Files (*.pdf)",
+        )
+        if not path:
+            return
+        if not path.lower().endswith(".pdf"):
+            path += ".pdf"
+        try:
+            pdf_export.export_weekly_plan_pdf(self.plan, path)
+        except Exception as exc:
+            QMessageBox.critical(self, "خروجی PDF", f"ایجاد PDF ناموفق بود: {exc}")
+            return
+        QMessageBox.information(self, "خروجی PDF", f"برنامه هفتگی ذخیره شد:\n{path}")
 
 
 class NotesTab(QWidget):
