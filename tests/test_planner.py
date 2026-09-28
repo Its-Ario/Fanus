@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date
 
 from src.planner import budget, catalog, grid, solver, validate
@@ -12,8 +13,10 @@ from src.storage.models import (
     PlanStatus,
     SchoolProfile,
     Student,
+    StudyPlan,
     StudySession,
 )
+from src.views.pages.student_panel import regenerate_plan
 
 SCHOOL_DAYS = catalog.DEFAULT_SCHOOL_DAYS
 SCHOOL_HOURS = ("07:30", "13:30")
@@ -208,11 +211,96 @@ def test_generate_plan_generous_time_has_no_deficit(tmp_path):
         manager.close()
 
 
-def test_generate_plan_low_time_emits_deficit_warning(tmp_path):
+def test_generate_plan_low_time_reports_deficit_without_saving_invalid_plan(tmp_path):
     manager, student = _seed(tmp_path, daily_hours=1.0)
     try:
         result = generate_plan(student, get_student_params(student))
-        assert result.plan is not None
-        assert any("کمبود" in w for w in result.warnings)
+        assert result.plan is None
+        assert any("کمبود" in error for error in result.errors)
+        assert any(error.startswith("H5:") for error in result.errors)
+        assert StudyPlan.select().where(StudyPlan.student == student).count() == 0
+    finally:
+        manager.close()
+
+
+def test_invalid_schedule_is_not_persisted(tmp_path):
+    manager, student = _seed(tmp_path, daily_hours=0.0)
+    try:
+        result = generate_plan(student, get_student_params(student))
+        assert result.plan is None
+        assert any(error.startswith("H5:") for error in result.errors)
+        assert StudyPlan.select().where(StudyPlan.student == student).count() == 0
+    finally:
+        manager.close()
+
+
+def test_friday_reservations_must_fit_school_calendar(tmp_path):
+    manager, student = _seed(tmp_path)
+    try:
+        params = replace(get_student_params(student), school_days=tuple(range(7)))
+        result = generate_plan(student, params)
+        assert result.plan is None
+        assert any("آزمون جمعه" in error and "مدرسه" in error for error in result.errors)
+        assert StudyPlan.select().where(StudyPlan.student == student).count() == 0
+    finally:
+        manager.close()
+
+
+def test_regeneration_keeps_active_plan_when_new_schedule_is_invalid(tmp_path):
+    manager, student = _seed(tmp_path)
+    try:
+        active, _ = regenerate_plan(student)
+        student.daily_active_hours = 0.0
+        student.save()
+
+        try:
+            regenerate_plan(student)
+            assert False, "expected a validation error"
+        except ValueError as exc:
+            assert "H5:" in str(exc)
+
+        assert StudyPlan.select().where(StudyPlan.student == student).count() == 1
+        assert StudyPlan.get_by_id(active.id).status == PlanStatus.ACTIVE
+    finally:
+        manager.close()
+
+
+def test_regeneration_does_not_duplicate_locked_friday_exam(tmp_path):
+    manager, student = _seed(tmp_path)
+    try:
+        _, _ = regenerate_plan(student)
+        current, _ = regenerate_plan(student)
+        friday_exams = current.sessions.where(
+            (StudySession.day_of_week == catalog.DAY_FRIDAY)
+            & (StudySession.start_time == catalog.FRIDAY_MOCK_WINDOW[0])
+            & (StudySession.end_time == catalog.FRIDAY_MOCK_WINDOW[1])
+        )
+        assert friday_exams.count() == 1
+        assert friday_exams.get().session_type == "آزمون"
+    finally:
+        manager.close()
+
+
+def test_regeneration_rejects_locked_friday_conflict(tmp_path):
+    manager, student = _seed(tmp_path)
+    try:
+        active, _ = regenerate_plan(student)
+        StudySession.create(
+            plan=active,
+            day_of_week=catalog.DAY_FRIDAY,
+            start_time="09:00",
+            end_time="10:00",
+            subject_name="تعهد دیگر",
+            is_locked=True,
+        )
+
+        try:
+            regenerate_plan(student)
+            assert False, "expected a locked-session conflict"
+        except ValueError as exc:
+            assert "جمعه" in str(exc)
+
+        assert StudyPlan.select().where(StudyPlan.student == student).count() == 1
+        assert StudyPlan.get_by_id(active.id).status == PlanStatus.ACTIVE
     finally:
         manager.close()

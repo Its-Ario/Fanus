@@ -162,10 +162,52 @@ def _locked_spans(student: Student) -> Dict[int, List[Tuple[int, int]]]:
     if not active:
         return spans
     for session in active.sessions.where(StudySession.is_locked == True):  # noqa: E712
+        if (
+            session.day_of_week == catalog.DAY_FRIDAY
+            and session.start_time == catalog.FRIDAY_MOCK_WINDOW[0]
+            and session.end_time == catalog.FRIDAY_MOCK_WINDOW[1]
+            and session.session_type == "آزمون"
+            and session.subject_name == "آزمون جامع هفتگی"
+        ):
+            continue
         spans.setdefault(session.day_of_week, []).append(
             (grid.to_minutes(session.start_time), grid.to_minutes(session.end_time))
         )
     return spans
+
+
+def _fixed_conflicts(
+    params: PlanParams, locked: Dict[int, List[Tuple[int, int]]]
+) -> List[str]:
+    errors = []
+    reserved = [
+        ("آزمون جمعه", tuple(map(grid.to_minutes, catalog.FRIDAY_MOCK_WINDOW))),
+        ("مرور جمعه", tuple(map(grid.to_minutes, catalog.FRIDAY_BUFFER_WINDOW))),
+    ]
+    wake_start = grid.to_minutes(params.sleep_window[1])
+    wake_end = grid.to_minutes(params.sleep_window[0])
+    school = tuple(map(grid.to_minutes, params.school_hours))
+    meals = [tuple(map(grid.to_minutes, window)) for window in catalog.MEAL_WINDOWS]
+    for name, (start, end) in reserved:
+        if start < wake_start or end > wake_end:
+            errors.append(f"{name} با ساعات خواب هم پوشانی دارد.")
+        if catalog.DAY_FRIDAY in params.school_days and start < school[1] and school[0] < end:
+            errors.append(f"{name} با ساعات مدرسه هم پوشانی دارد.")
+        if any(start < meal_end and meal_start < end for meal_start, meal_end in meals):
+            errors.append(f"{name} با وعده غذایی هم پوشانی دارد.")
+    for day, spans in locked.items():
+        ordered = sorted(spans)
+        for index, (start, end) in enumerate(ordered):
+            if start >= end:
+                errors.append(f"تعهد ثابت روز {day} بازه زمانی نامعتبر دارد.")
+            if index and start < ordered[index - 1][1]:
+                errors.append(f"تعهدهای ثابت روز {day} با هم هم پوشانی دارند.")
+            if day == catalog.DAY_FRIDAY and any(
+                start < reserved_end and reserved_start < end
+                for _, (reserved_start, reserved_end) in reserved
+            ):
+                errors.append(f"تعهد ثابت روز {day} با آزمون یا مرور جمعه هم پوشانی دارد.")
+    return errors
 
 
 def _prune_general(
@@ -232,7 +274,7 @@ def _build_schedule(
 
     deficit = best.unplaced * (best.block_minutes / 60.0)
     best.notes = [
-        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی. برنامه ناقص تولید شد."
+        f"کمبود حدود {deficit:.1f} ساعت زمان جهت پوشش کامل ضرایب درسی."
     ]
     return best
 
@@ -362,6 +404,9 @@ def generate_plan(student: Student, params: PlanParams) -> PlanResult:
     coeff = {s: catalog.coefficient_for(s, major) for s in subjects}
     weakness = _weakness_map(student, subjects, params.weakness_overrides)
     locked = _locked_spans(student) if params.keep_locked else {}
+    conflicts = _fixed_conflicts(params, locked)
+    if conflicts:
+        return PlanResult(plan=None, warnings=(), errors=tuple(conflicts))
     schedule = _build_schedule(subjects, coeff, weakness, params, locked)
 
     violations = validate.check_hard(
@@ -376,7 +421,7 @@ def generate_plan(student: Student, params: PlanParams) -> PlanResult:
 
     warnings = list(schedule.notes)
     if violations:
-        warnings.append("هشدار: " + ";".join(violations))
+        return PlanResult(plan=None, warnings=(), errors=tuple(warnings + violations))
 
     plan = _persist(student, params, schedule, locked)
     return PlanResult(plan=plan, warnings=tuple(warnings), errors=())

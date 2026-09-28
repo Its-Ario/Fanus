@@ -175,6 +175,8 @@ def regenerate_plan(student):
             student,
             generator.get_student_params(student, keep_locked=bool(active)),
         )
+        if result.errors or result.plan is None:
+            raise ValueError("ساخت برنامه به دلیل این تداخل ها ممکن نیست:\n" + "\n".join(result.errors))
         if active:
             active.status = PlanStatus.ARCHIVED
             active.save()
